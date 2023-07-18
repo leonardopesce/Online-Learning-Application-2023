@@ -3,58 +3,70 @@ import matplotlib.pyplot as plt
 from Environment import *
 from UCB import *
 from TS import *
+
+
 # Considered category is C1
 category = 'C1'
 
-# create an experiment to compare performance
-# define basic setting with 5 arms
+# Setting of the environment parameters
 n_arms = 5
+arms_values = {'C1': np.array([500, 550, 600, 650, 700]),
+               'C2': np.array([500, 550, 600, 650, 700]),
+               'C3': np.array([500, 550, 600, 650, 700])}
+probabilities = {'C1': np.array([0.05, 0.05, 0.2, 0.1, 0.05]),
+                 'C2': np.array([0.05, 0.05, 0.1, 0.2, 0.1]),
+                 'C3': np.array([0.1, 0.3, 0.2, 0.05, 0.05])}
+bids_to_clicks = {'C1': np.array([1, 1, 0.5]),
+                  'C2': np.array([2, 2, 0.5]),
+                  'C3': np.array([3, 3, 0.5])}
+bids_to_cum_costs = {'C1': np.array([100, 0.5, 0.5]),
+                     'C2': np.array([2, 2, 0.5]),
+                     'C3': np.array([3, 3, 0.5])}
+other_costs = 200
 
-# Bernoulli distribution for the reward functions of the arms
-#p = np.array([0.15, 0.1, 0.1, 0.35])
-
+# TODO need to create the clairvoyant
 # last one is the optimal one
 #opt = p[3]
 
-# horizon of the experiment
+# Time horizon of the experiment
 T = 365
 
-# since the reward functions are stochastic to better visualize the results and remove the noise
+# Since the reward functions are stochastic to better visualize the results and remove the noise
 # we have to perform at least 1000 experiments
 n_experiments = 1000
 
-# store the rewards for each experiment for the learners
+# Store the rewards for each experiment for the learners
 ts_reward_per_experiment = []
 ucb_reward_per_experiment = []
 
-# in each iteration we simulate the learner-environment interaction
+# Each iteration simulates the learner-environment interaction
 for e in range(0, n_experiments):
-    # define environment with the arms and prob distr defined before
-    env = Environment()
-    # define the learners
+    # Define the environment
+    env = Environment(n_arms, arms_values, probabilities, bids_to_clicks, bids_to_cum_costs, other_costs)
+    # Define the learners
     ts_learner = TSLearner(n_arms)
     ucb_learner = UCBLearner(n_arms)
 
-    # iterate on the number of rounds
+    # Iterate over the number of rounds
     for t in range(0, T):
-        # simulate the interaction learner-environment
-        # Thompson Sampling Learner
+        # Simulate the interaction learner-environment
+        # TS Learner
         pulled_arm = ts_learner.pull_arm()
         bernoulli_realization = env.round_pricing(pulled_arm, category)
         reward = env.reward(category, pulled_arm, bernoulli_realization)
         ts_learner.update(pulled_arm, reward)
 
-        # Upper Confidence Bound Learner
+        # UCB Learner
         pulled_arm = ucb_learner.pull_arm()
         bernoulli_realization = env.round_pricing(pulled_arm, category)
         reward = env.round_pricing(category, pulled_arm, bernoulli_realization)
         ucb_learner.update(pulled_arm, reward)
 
-    # store the values of the collected rewards of the learners
+    # Store the values of the collected rewards of the learners
     ts_reward_per_experiment.append(ts_learner.collected_rewards)
     ucb_reward_per_experiment.append(ucb_learner.collected_rewards)
 
-# plot the results
+# Plot the results
 plt.figure(0)
 plt.xlabel("t")
 plt.ylabel("Reward")

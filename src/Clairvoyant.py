@@ -1,6 +1,7 @@
 import numpy as np
 from Environment import *
 
+
 class ClairvoyantLearner:
     """
 
@@ -39,7 +40,6 @@ class ClairvoyantLearner:
             cum_daily_costs = fun(bid, *self.environment.bids_to_cum_costs[category])
             values = np.append(values, n_clicks * conversion_times_margin - cum_daily_costs)
 
-        print(values)
         best_bid_idx = np.random.choice(np.where(values == values.max())[0])
 
         return best_bid_idx, self.environment.bids[best_bid_idx], values[best_bid_idx]
@@ -55,8 +55,23 @@ class ClairvoyantLearner:
 
         return best_price_idx, best_price, best_bid_idx, best_bid, reward
 
+
 category = 'C1'
-env = Environment()
+n_arms = 5
+arms_values = {'C1': np.array([500, 550, 600, 650, 700]),
+               'C2': np.array([500, 550, 600, 650, 700]),
+               'C3': np.array([500, 550, 600, 650, 700])}
+probabilities = {'C1': np.array([0.05, 0.05, 0.2, 0.1, 0.05]),
+                 'C2': np.array([0.05, 0.05, 0.1, 0.2, 0.1]),
+                 'C3': np.array([0.1, 0.3, 0.2, 0.05, 0.05])}
+bids_to_clicks = {'C1': np.array([1, 1, 0.5]),
+                  'C2': np.array([2, 2, 0.5]),
+                  'C3': np.array([3, 3, 0.5])}
+bids_to_cum_costs = {'C1': np.array([100, 0.5, 0.5]),
+                     'C2': np.array([2, 2, 0.5]),
+                     'C3': np.array([3, 3, 0.5])}
+other_costs = 200
+env = Environment(n_arms, arms_values, probabilities, bids_to_clicks, bids_to_cum_costs, other_costs)
 clairvoyant = ClairvoyantLearner(env)
 #clairvoyant.maximize_reward_from_price(category)
 #print(clairvoyant.maximize_reward_from_price(category))

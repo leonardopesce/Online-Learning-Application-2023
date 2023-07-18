@@ -27,24 +27,16 @@ class Environment:
     # TO DO specify what are the parameters
     """
 
-    def __init__(self):#, bids_to_clicks, bids_to_cum_costs, arms_values, probabilities): # TO DO rendiamo parametrica la definizione degli attributi
-        self.n_arms = 5
-        self.arms_values = {'C1': np.array([500, 550, 600, 650, 700]),
-                            'C2': np.array([500, 550, 600, 650, 700]),
-                            'C3': np.array([500, 550, 600, 650, 700])}
-        self.probabilities = {'C1': np.array([0.05, 0.05, 0.2, 0.1, 0.05]),
-                              'C2': np.array([0.05, 0.05, 0.1, 0.2, 0.1]),
-                              'C3': np.array([0.1, 0.3, 0.2, 0.05, 0.05])}
+    def __init__(self, n_arms, arms_values, probabilities, bids_to_clicks, bids_to_cum_costs, other_costs):
+        self.n_arms = n_arms
+        self.arms_values = arms_values
+        self.probabilities = probabilities
         self.bids = np.linspace(0.5, 20, 100)
-        self.bids_to_clicks = {'C1': np.array([1, 1, 0.5]),
-                               'C2': np.array([2, 2, 0.5]),
-                               'C3': np.array([3, 3, 0.5])}
+        self.bids_to_clicks = bids_to_clicks
         self.bids_to_clicks_variance = 0.2
-        self.bids_to_cum_costs = {'C1': np.array([100, 0.5, 0.5]),
-                                  'C2': np.array([2, 2, 0.5]),
-                                  'C3': np.array([3, 3, 0.5])}
+        self.bids_to_cum_costs = bids_to_cum_costs
         self.bids_to_cum_costs_variance = 0.2
-        self.other_costs = 200
+        self.other_costs = other_costs
 
     def round_pricing(self, pulled_arm, category):
         """
@@ -66,7 +58,6 @@ class Environment:
         :param category: category for which it is needed to
         :return:
         """
-        # Forse al posto di bid dovremmo mettere degli indici e fissare dei valori di bid giocabili? DA CAMBIARE
 
         clicks_given_bid = max(0, fun(self.bids[bid_idx], *self.bids_to_clicks[category]) + np.random.randn() * np.sqrt(self.bids_to_clicks_variance))
         cost_given_bid = max(0, fun(self.bids[bid_idx], *self.bids_to_cum_costs[category]) + np.random.randn() * np.sqrt(self.bids_to_cum_costs_variance))
@@ -188,9 +179,24 @@ class Environment:
 
 def test():
     # TESTING
-    env = Environment()
+    n_arms = 5
+    arms_values = {'C1': np.array([500, 550, 600, 650, 700]),
+                   'C2': np.array([500, 550, 600, 650, 700]),
+                   'C3': np.array([500, 550, 600, 650, 700])}
+    probabilities = {'C1': np.array([0.05, 0.05, 0.2, 0.1, 0.05]),
+                     'C2': np.array([0.05, 0.05, 0.1, 0.2, 0.1]),
+                     'C3': np.array([0.1, 0.3, 0.2, 0.05, 0.05])}
+    bids_to_clicks = {'C1': np.array([1, 1, 0.5]),
+                      'C2': np.array([2, 2, 0.5]),
+                      'C3': np.array([3, 3, 0.5])}
+    bids_to_cum_costs = {'C1': np.array([100, 0.5, 0.5]),
+                         'C2': np.array([2, 2, 0.5]),
+                         'C3': np.array([3, 3, 0.5])}
+    other_costs = 200
+    env = Environment(n_arms, arms_values, probabilities, bids_to_clicks, bids_to_cum_costs, other_costs)
     env.plot_advertising_model('C1', color='r', axes=None)
     env.plot_whole_advertising_model()
     env.plot_whole_pricing_model()
 
-test()
+
+# test()
