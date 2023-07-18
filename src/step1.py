@@ -4,11 +4,18 @@ from Environment import *
 from UCB import *
 from TS import *
 
+"""
+Simulation for the step 1: learning for pricing 
+Consider the case in which all the users belong to class C1. Assume that the curves related to the advertising part of 
+the problem are known, while the curve related to the pricing problem is not. Apply the UCB1 and TS algorithms, 
+reporting the plots of the average (over a sufficiently large number of runs) value and standard deviation of the 
+cumulative regret, cumulative reward, instantaneous regret, and instantaneous reward.
+"""
 
 # Considered category is C1
 category = 'C1'
 
-# Setting of the environment parameters
+# Setting the environment parameters
 n_arms = 5
 arms_values = {'C1': np.array([500, 550, 600, 650, 700]),
                'C2': np.array([500, 550, 600, 650, 700]),
@@ -53,13 +60,13 @@ for e in range(0, n_experiments):
         # TS Learner
         pulled_arm = ts_learner.pull_arm()
         bernoulli_realization = env.round_pricing(pulled_arm, category)
-        reward = env.reward(category, pulled_arm, bernoulli_realization)
+        reward = env.reward(category, pulled_arm, bernoulli_realization) # TODO update the reward part
         ts_learner.update(pulled_arm, reward)
 
         # UCB Learner
         pulled_arm = ucb_learner.pull_arm()
         bernoulli_realization = env.round_pricing(pulled_arm, category)
-        reward = env.round_pricing(category, pulled_arm, bernoulli_realization)
+        reward = env.round_pricing(category, pulled_arm, bernoulli_realization) # TODO update the reward part
         ucb_learner.update(pulled_arm, reward)
 
     # Store the values of the collected rewards of the learners
@@ -87,6 +94,5 @@ plt.show()
 #plt.plot(np.cumsum(np.mean(opt - gr_reward_per_experiment, axis=0)), 'g')  # green for Greedy
 #plt.legend(["TS", "Greedy"])
 #plt.show()
-
 # the regret of the greedy algorithm increases linearly,
 # while the instantaneous regret of TS decreases as the number of round increases

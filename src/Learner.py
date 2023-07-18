@@ -3,14 +3,13 @@ import numpy as np
 
 class Learner:
     """
-    Superclass of all the types of learner.
-    # TO DO specify what are the parameters (formato da decidere)
-    n_arms: number of arms the learner can play.
-    t: current round step.
-    pulled_arms: arms played in each time step.
-    rewards_per_arm: rewards obtained divided by arm.
-    collected_rewards: rewards collected in each time step.
+    Superclass of all the types of learner
 
+    :param int n_arms: Number of arms the learner can play
+    t: Current time step
+    pulled_arms: Arms played in each time step
+    rewards_per_arm: Rewards obtained for each arm
+    collected_rewards: Rewards collected in each time step
     """
 
     def __init__(self, n_arms):
@@ -25,10 +24,10 @@ class Learner:
 
     def update_observations(self, pulled_arm, reward):
         """
-        Updates the observations lists, once the reward is returned by the environment.
+        Updates the observations lists, once the reward is returned by the environment
 
-        :param pulled_arm: arm pulled in the current time step;
-        :param reward: reward collected in the current time step playing the pulled arm.
+        :param int pulled_arm: Arm pulled in the current time step
+        :param float reward: Reward collected in the current time step playing the pulled arm
         """
 
         self.pulled_arms.append(pulled_arm)

@@ -4,13 +4,14 @@ import matplotlib.pyplot as plt
 
 def fun(x, scale, slope, starting_value):
     """
-    It returns a logarithmic function used to model the advertising setting.
+    It returns a logarithmic function used to model the advertising setting
 
-    :param x: value of independent variable, in this setting, it is the bid.
-    :param scale: parameter that affects the scale of the function.
-    :param slope: parameter that affects the slope of the function.
-    :param starting_value: value before which the functions are zero.
-    :return: value assumed by the logarithmic function.
+    :param float x: Value of independent variable, in this setting, it is the bid
+    :param float scale: Parameter that affects the scale of the function
+    :param float slope: Parameter that affects the slope of the function
+    :param float starting_value: Value before which the function is zero
+    :return: Value assumed by the logarithmic function
+    :rtype: float
     """
 
     return scale * np.log(slope * (x + 1 / slope - starting_value))
@@ -22,10 +23,26 @@ class Environment:
     - the average dependence between the number of clicks and the bid;
     - the average cumulative daily click cost for the bid;
     - the conversion rate for 5 different prices.
-    The Environment class allows the agents to interact with it using its functions.
+    The Environment class allows the agents to interact with it using its functions
 
-    # TO DO specify what are the parameters
+    :param int n_arms: Number of arms
+    :param dict arms_values: Dictionary that maps each class of users to the values(price of the product) associated to the arms
+    :param dict probabilities: Dictionary that maps each class to the bernoulli probabilities associated to the arms
+    bids: array of 100 possible bid values
+    :param dict bids_to_clicks: Dictionary that maps each class to the parameters to build the function that models the number of clicks given the bid
+    bids_to_clicks_variance: Variance of the gaussian noise associated to the function that models the number of clicks given the bid
+    :param dict bids_to_cum_costs: Dictionary that maps each class to the parameters to build the function that models the cumulative daily click cost given the bid
+    bids_to_cum_costs_variance: Variance of the gaussian noise associated to the function that models the cumulative daily click cost given the bid
+    :param float other_costs: Cost of the product
     """
+
+    bids_to_clicks = {'C1': np.array([1, 1, 0.5]),
+                      'C2': np.array([2, 2, 0.5]),
+                      'C3': np.array([3, 3, 0.5])}
+    bids_to_cum_costs = {'C1': np.array([100, 0.5, 0.5]),
+                         'C2': np.array([2, 2, 0.5]),
+                         'C3': np.array([3, 3, 0.5])}
+    other_costs = 200
 
     def __init__(self, n_arms, arms_values, probabilities, bids_to_clicks, bids_to_cum_costs, other_costs):
         self.n_arms = n_arms
@@ -40,10 +57,12 @@ class Environment:
 
     def round_pricing(self, pulled_arm, category):
         """
+        Simulates a round in a pricing scenario, returning the realization of the pulled arm for the given class of users
 
-        :param pulled_arm:
-        :param category:
-        :return:
+        :param int pulled_arm: Arm pulled in the current time step
+        :param str category: Class of the user
+        :return: Realization of the pulled arm, either 0(not buy) or 1(buy)
+        :rtype: int
         """
 
         reward = np.random.binomial(1, self.probabilities[category][pulled_arm])
@@ -52,11 +71,13 @@ class Environment:
 
     def round_advertising(self, bid_idx, category):
         """
-        Simulates the advertising model returning the number of clicks given the bid and the cumulative daily click cost
-        given the bid.
-        :param bid_idx: index of the bid used in the current round
-        :param category: category for which it is needed to
-        :return:
+        Simulates a round in an advertising scenario, returning the number of clicks and the cumulative daily click cost
+        given the bid and the class of users
+
+        :param int bid_idx: Index of the bid used in the current round
+        :param str category: Class of the user
+        :return: Number of clicks, cumulative daily click cost
+        :rtype: tuple
         """
 
         clicks_given_bid = max(0, fun(self.bids[bid_idx], *self.bids_to_clicks[category]) + np.random.randn() * np.sqrt(self.bids_to_clicks_variance))
@@ -64,18 +85,48 @@ class Environment:
 
         return clicks_given_bid, cost_given_bid
 
-    def round(self, pulled_arm, bid, category):
+    def round(self, pulled_arm, bid_idx, category):
+        """
+        Simulates a round in a pricing-advertising scenario, returning the realization of the pulled arm,
+        number of clicks and cumulative daily click cost given the pulled arm, the bid and the class of users
+
+        :param int pulled_arm: Arm pulled in the current time step
+        :param int bid_idx: Index of the bid used in the current round
+        :param str category: Class of the user
+        :return: Realization of the pulled arm, number of clicks, cumulative daily click cost
+        :rtype: tuple
         """
 
-        :param pulled_arm:
-        :param bid:
-        :param category:
-        :return:
+        return self.round_pricing(pulled_arm, category), self.round_advertising(bid_idx, category)
+
+    def reward(self, category, price_idx, conversion_prob, n_clicks, cum_daily_costs):
+        """
+        Compute the reward defined as the number of daily clicks multiplied by the conversion probability multiplied by
+        the margin minus the cumulative daily costs due to the advertising
+
+        :param str category: Class of the user
+        :param int price_idx: Index of the price
+        :param float conversion_prob: Conversion probability
+        :param float n_clicks: Number of daily clicks
+        :param float cum_daily_costs: Cumulative daily cost due to the advertising
+        :return: Reward
+        :rtype: float
         """
 
-        return self.round_pricing(pulled_arm, category), self.round_advertising(bid, category)
+        return n_clicks * conversion_prob * (self.arms_values[category][price_idx] - self.other_costs) - cum_daily_costs
 
     def plot_pricing_model(self, category, color='r', axes=None, show=True):
+        """
+        Plot the bernoulli probabilities associated to the arms of the given class of users
+
+        :param str category: Class of the user
+        :param str color: Color of the plot
+        :param plt.Axes axes: Axes of the plot
+        :param bool show: Boolean to show the plot
+        :return: Axes of the plot
+        :rtype: plt.Axes
+        """
+
         if axes is None:
             _, axes = plt.subplots(1, 1)
 
@@ -93,9 +144,11 @@ class Environment:
 
     def plot_whole_pricing_model(self, mapping={'C1': 'r', 'C2': 'b', 'C3': 'g'}):
         """
+        Plot the bernoulli probabilities associated to the arms of all classes of users
 
-        :param mapping:
-        :return:
+        :param dict mapping: Mapping between classes of users and colors to use for the plot
+        :return: Axes of the plot
+        :rtype: plt.Axes
         """
 
         _, axes = plt.subplots(1, 1)
@@ -109,13 +162,16 @@ class Environment:
 
     def plot_advertising_model(self, category, xlim=15, color='r', axes=None, show=True):
         """
+        Plot the function that models the number of clicks given the bid and the function that models the cumulative
+        daily click cost given the bid, for the given class of users
 
-        :param category:
-        :param xlim:
-        :param color:
-        :param axes:
-        :param show:
-        :return:
+        :param str category: Class of the user
+        :param float xlim: Max value for the x-axis
+        :param str color: Color of the plot
+        :param plt.Axes axes: Axes of the plot
+        :param bool show: Boolean to show the plot
+        :return: Axes of the plot
+        :rtype: plt.Axes
         """
 
         if axes is None:
@@ -151,10 +207,13 @@ class Environment:
 
     def plot_whole_advertising_model(self, xlim=15, mapping={'C1': 'r', 'C2': 'b', 'C3': 'g'}):
         """
+        Plot the function that models the number of clicks given the bid and the function that models the cumulative
+        daily click cost given the bid, for all the classes of users
 
-        :param xlim:
-        :param mapping:
-        :return:
+        :param xlim: Max value for the x-axis
+        :param dict mapping: Mapping between classes of users and colors to use for the plot
+        :return: Axes of the plot
+        :rtype: plt.Axes
         """
 
         _, axes = plt.subplots(1, 2)
@@ -165,16 +224,6 @@ class Environment:
         plt.show()
 
         return axes
-
-    def reward(self, category, price_idx, conversion_prob, n_clicks, cum_daily_costs):
-        """
-        the reward is defined as the number of daily clicks multiplied by the conversion probability multiplied by the
-        margin minus the cumulative daily costs due to the advertising.
-
-        :return:
-        """
-
-        return n_clicks * conversion_prob * (self.arms_values[category][price_idx] - self.other_costs) - cum_daily_costs
 
 
 def test():

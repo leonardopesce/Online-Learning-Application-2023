@@ -4,8 +4,10 @@ from Learner import *
 
 class TSLearner(Learner):
     """
-    Learner that applies the Thompson Sampling algorithm.
-    beta_parameters: parameters of the Beta distribution, one for each arm.
+    Learner that applies the Thompson Sampling(TS) algorithm
+
+    :param int n_arms: Number of arms
+    beta_parameters: Parameters of the Beta distribution, one for each arm
     """
 
     def __init__(self, n_arms):
@@ -15,10 +17,11 @@ class TSLearner(Learner):
 
     def pull_arm(self):
         """
-        Chooses the arm to play based on the Thompson Sampling algorithm, therefore sampling the Beta distribution and
-        choosing the arm from whose distribution is extracted the maximum value.
+        Chooses the arm to play based on the TS algorithm, therefore sampling the Beta distribution and
+        choosing the arm from whose distribution is extracted the maximum value
 
-        :return: index of the arm to pull.
+        :return: Index of the arm to pull
+        :rtype: int
         """
 
         idx = np.argmax(np.random.beta(self.beta_parameters[:, 0], self.beta_parameters[:, 1]))
@@ -27,10 +30,10 @@ class TSLearner(Learner):
     def update(self, pulled_arm, reward):
         """
         Updating alpha and beta of the beta distribution given the observations of the results obtained by playing the
-        pulled arm in the environment.
+        pulled arm in the environment
 
-        :param pulled_arm: arm pulled in the current time step.
-        :param reward: reward collected in the current time step playing the pulled arm.
+        :param int pulled_arm: Arm pulled in the current time step
+        :param float reward: Reward collected in the current time step playing the pulled arm
         """
 
         self.t += 1

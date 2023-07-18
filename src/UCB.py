@@ -4,10 +4,12 @@ from Learner import *
 
 class UCBLearner(Learner):
     """
-    Learner that applies the Upper Confidence 1 algorithm.
-    self.empirical_means: empirical means.
-    self.times_arms_played: number of times that an arm has been played.
-    self.confidence: upper confidence interval.
+    Learner that applies the Upper Confidence Bound 1(UCB1) algorithm
+
+    :param int n_arms: Number of arms
+    empirical_means: Empirical means
+    times_arms_played: Number of times that an arm has been played
+    confidence: upper Confidence interval
     """
 
     def __init__(self, n_arms):
@@ -18,10 +20,11 @@ class UCBLearner(Learner):
 
     def pull_arm(self):
         """
-        Chooses the arm to play based on the Upper Confidence 1 algorithm, therefore choosing the arm with higher upper
-        confidence bound, which is the sum of the mean of the reward of the arm plus a confidence interval.
+        Chooses the arm to play based on the UCB1 algorithm, therefore choosing the arm with higher upper
+        confidence bound, which is the mean of the reward of the arm plus the confidence interval
 
-        :return: index of the arm to pull.
+        :return: Index of the arm to pull
+        :rtype: int
         """
 
         upper_confidence_bound = self.empirical_means + self.confidence
@@ -31,11 +34,11 @@ class UCBLearner(Learner):
 
     def update(self, pulled_arm, reward):
         """
-        Updating given the observations of the results obtained by playing the
-        pulled arm in the environment.
+        Updating the attributes given the observations of the results obtained by playing the
+        pulled arm in the environment
 
-        :param pulled_arm: arm pulled in the current time step.
-        :param reward: reward collected in the current time step playing the pulled arm.
+        :param int pulled_arm: Arm pulled in the current time step
+        :param float reward: Reward collected in the current time step playing the pulled arm
         """
 
         self.t += 1
