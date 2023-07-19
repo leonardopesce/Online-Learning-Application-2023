@@ -1,8 +1,7 @@
-import numpy as np
 from Environment import *
 
 
-class ClairvoyantLearner:
+class Clairvoyant:
     """
 
     """
@@ -61,18 +60,19 @@ n_arms = 5
 arms_values = {'C1': np.array([500, 550, 600, 650, 700]),
                'C2': np.array([500, 550, 600, 650, 700]),
                'C3': np.array([500, 550, 600, 650, 700])}
-probabilities = {'C1': np.array([0.05, 0.05, 0.2, 0.1, 0.05]),
+probabilities = {'C1': np.array([0.01, 0.01, 0.05, 0.02, 0.01]),
                  'C2': np.array([0.05, 0.05, 0.1, 0.2, 0.1]),
                  'C3': np.array([0.1, 0.3, 0.2, 0.05, 0.05])}
 bids_to_clicks = {'C1': np.array([1, 1, 0.5]),
                   'C2': np.array([2, 2, 0.5]),
                   'C3': np.array([3, 3, 0.5])}
-bids_to_cum_costs = {'C1': np.array([100, 0.5, 0.5]),
+bids_to_cum_costs = {'C1': np.array([10, 0.5, 0.5]),
                      'C2': np.array([2, 2, 0.5]),
                      'C3': np.array([3, 3, 0.5])}
-other_costs = 200
+other_costs = 400
 env = Environment(n_arms, arms_values, probabilities, bids_to_clicks, bids_to_cum_costs, other_costs)
-clairvoyant = ClairvoyantLearner(env)
+clairvoyant = Clairvoyant(env)
 #clairvoyant.maximize_reward_from_price(category)
 #print(clairvoyant.maximize_reward_from_price(category))
-print(str(clairvoyant.maximize_reward(category)))
+#print(str(clairvoyant.maximize_reward(category)))
+#env.plot_whole_advertising_model()

@@ -16,6 +16,8 @@ def fun(x, scale, slope, starting_value):
 
     return scale * np.log(slope * (x + 1 / slope - starting_value))
 
+def fun1(x):
+    return 100 * (1.0 - np.exp(-4*x+3*x**3))
 
 class Environment:
     """
@@ -36,19 +38,12 @@ class Environment:
     :param float other_costs: Cost of the product
     """
 
-    bids_to_clicks = {'C1': np.array([1, 1, 0.5]),
-                      'C2': np.array([2, 2, 0.5]),
-                      'C3': np.array([3, 3, 0.5])}
-    bids_to_cum_costs = {'C1': np.array([100, 0.5, 0.5]),
-                         'C2': np.array([2, 2, 0.5]),
-                         'C3': np.array([3, 3, 0.5])}
-    other_costs = 200
-
+    # TODO cambiare n_arms in n_prices
     def __init__(self, n_arms, arms_values, probabilities, bids_to_clicks, bids_to_cum_costs, other_costs):
         self.n_arms = n_arms
         self.arms_values = arms_values
         self.probabilities = probabilities
-        self.bids = np.linspace(0.5, 20, 100)
+        self.bids = np.linspace(0.5, 15, 100)
         self.bids_to_clicks = bids_to_clicks
         self.bids_to_clicks_variance = 0.2
         self.bids_to_cum_costs = bids_to_cum_costs
@@ -99,7 +94,7 @@ class Environment:
 
         return self.round_pricing(pulled_arm, category), self.round_advertising(bid_idx, category)
 
-    def reward(self, category, price_idx, conversion_prob, n_clicks, cum_daily_costs):
+    def get_reward(self, category, price_idx, conversion_prob, n_clicks, cum_daily_costs):
         """
         Compute the reward defined as the number of daily clicks multiplied by the conversion probability multiplied by
         the margin minus the cumulative daily costs due to the advertising
@@ -114,6 +109,38 @@ class Environment:
         """
 
         return n_clicks * conversion_prob * (self.arms_values[category][price_idx] - self.other_costs) - cum_daily_costs
+
+    def get_reward_from_price(self, category, price_idx, conversion_prob, bid_idx):
+        """
+        Compute the reward defined as the number of daily clicks multiplied by the conversion probability multiplied by
+        the margin minus the cumulative daily costs due to the advertising
+
+        :param str category: Class of the user
+        :param int price_idx: Index of the price
+        :param float conversion_prob: Conversion probability
+        :param float n_clicks: Number of daily clicks
+        :param float cum_daily_costs: Cumulative daily cost due to the advertising
+        :return: Reward
+        :rtype: float
+        """
+
+        n_clicks = fun(self.bids[bid_idx], *self.bids_to_clicks[category])
+        cum_daily_costs = fun(self.bids[bid_idx], *self.bids_to_cum_costs[category])
+        return n_clicks * conversion_prob * (self.arms_values[category][price_idx] - self.other_costs) - cum_daily_costs
+
+    def get_conversion_times_margin(self, category, price_idx, conversion_probability=None):
+        """
+        Compute the product between the conversion probability and the margin
+
+        :param str category: Class of the user
+        :param int price_idx: Index of the price
+        :param float conversion_probability: If not given the value from the model is used, otherwise you can pass the realization of the arm
+        :return: Product between the conversion probability and the margin
+        :rtype: float
+        """
+        if conversion_probability is None:
+            return self.probabilities[category][price_idx] * (self.arms_values[category][price_idx] - self.other_costs)
+        return conversion_probability * (self.arms_values[category][price_idx] - self.other_costs)
 
     def plot_pricing_model(self, category, color='r', axes=None, show=True):
         """

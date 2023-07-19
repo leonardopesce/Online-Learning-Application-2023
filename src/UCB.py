@@ -1,4 +1,3 @@
-import numpy as np
 from Learner import *
 
 
@@ -8,14 +7,12 @@ class UCBLearner(Learner):
 
     :param int n_arms: Number of arms
     empirical_means: Empirical means
-    times_arms_played: Number of times that an arm has been played
     confidence: upper Confidence interval
     """
 
     def __init__(self, n_arms):
         super().__init__(n_arms)
         self.empirical_means = np.zeros(n_arms)
-        self.times_arms_played = np.zeros(n_arms)
         self.confidence = np.array([np.inf] * n_arms)
 
     def pull_arm(self):
@@ -42,10 +39,7 @@ class UCBLearner(Learner):
         """
 
         self.t += 1
-        self.times_arms_played[pulled_arm] += 1
-        self.empirical_means[pulled_arm] = (self.empirical_means[pulled_arm] * (self.times_arms_played[pulled_arm] - 1) + reward) / self.times_arms_played[pulled_arm]
-
-        for arm in range(self.n_arms):
-            self.confidence[arm] = (2 * np.log(self.t) / self.times_arms_played[arm]) ** 0.5 if self.times_arms_played[arm] > 0 else np.inf
-
         self.update_observations(pulled_arm, reward)
+        self.empirical_means[pulled_arm] = (self.empirical_means[pulled_arm] * (self.times_arms_played[pulled_arm] - 1) + reward) / self.times_arms_played[pulled_arm]
+        for arm in range(self.n_arms):
+            self.confidence[arm] = 100 * np.sqrt((2 * np.log(self.t) / self.times_arms_played[arm])) if self.times_arms_played[arm] > 0 else np.inf
