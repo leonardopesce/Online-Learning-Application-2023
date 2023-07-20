@@ -23,24 +23,25 @@ bids_to_cum_costs = {'C1': np.array([100, 0.5, 0.5]),
                      'C3': np.array([3, 3, 0.5])}
 other_costs = 200
 
+# Bids setup
 n_bids = 100
 min_bid = 0.5
 max_bid = 20.0
 bids = np.linspace(min_bid, max_bid, n_bids)
-sigma = 10
+sigma = 2
 
+# Time horizon and experiments
 T = 365
-n_experiments = 20
+n_experiments = 2
 gpts_rewards_per_experiment = []
 gpts_clicks_per_experiment = []
 gpts_cum_costs_per_experiment = []
 
 
-def maximize_reward_from_price(cat, env):
-
+def maximize_reward_from_price(cat, environ):
     values = np.array([])
-    for idx, price in enumerate(env.arms_values[cat]):
-        values = np.append(values, env.probabilities[cat][idx] * (price - env.other_costs))
+    for idx, price in enumerate(environ.arms_values[cat]):
+        values = np.append(values, environ.probabilities[cat][idx] * (price - environ.other_costs))
 
     best_price_idx = np.random.choice(np.where(values == values.max())[0])
     return best_price_idx, values[best_price_idx]
@@ -56,19 +57,25 @@ for e in range(0, n_experiments):
         n_clicks, costs = env.round_advertising(pulled_arm, category)
 
         reward = env.reward(category=category, price_idx=price_idx, n_clicks=n_clicks, cum_daily_costs=costs)
-        gpts_learner.update(pulled_arm, reward)
+        
+        # Here we update the internal state of the learner passing it the reward,
+        # the number of clicks and the costs sampled from the environment.
+        gpts_learner.update(pulled_arm, (reward, n_clicks, costs))
+
+        # Plotting the collected clicks after each round.
+        if t == T-1:
+            gpts_learner.plot_clicks()
+            gpts_learner.plot_costs()
 
     gpts_rewards_per_experiment.append(gpts_learner.collected_rewards)
     gpts_clicks_per_experiment.append(gpts_learner.collected_clicks)
     gpts_cum_costs_per_experiment.append(gpts_learner.collected_costs)
 
-#print(gpts_clicks_per_experiment)
-#print(gpts_cum_costs_per_experiment)
-
 #opt = np.max(env.means)
 plt.figure(0)
 plt.xlabel('Bids')
 #plt.plot(np.cumsum(np.mean(opt - gpts_rewards_per_experiment, axis=0)), 'g')
-plt.plot(np.mean(gpts_clicks_per_experiment, axis=0), color='g')
-plt.plot(np.mean(gpts_cum_costs_per_experiment, axis=0), color='b')
+plt.plot(np.cumsum(np.mean(gpts_rewards_per_experiment, axis=0)))
+# plt.plot(np.mean(gpts_clicks_per_experiment, axis=0), color='g')
+# plt.plot(np.mean(gpts_cum_costs_per_experiment, axis=0), color='b')
 plt.show()
