@@ -3,20 +3,30 @@ from Environment import *
 
 class Clairvoyant:
     """
+    Learner that knows the model of the environment and so can play the best values of price to solve the pricing
+    problem and the best values of the bid to solve the advertising problem
 
+    environment: Environment where has to be solved the problem
     """
+
     def __init__(self, environment):
         """
-
-        :param environment:
+        Initialize the learner given the environment to solve
+        :param environment: Environment where has to be solved the problem
         """
+
         self.environment = environment
 
     def maximize_reward_from_price(self, category):
         """
+        Find the price, considering a single category, that maximizes the part of the reward depending on the pricing
+        problem independently with respect to the advertising quantities, thus it finds the price that maximizes the
+        conversion probability multiplied by the margin
 
-        :param category:
-        :return:
+        :param category: Category considered in the maximization of the reward
+        :return: Index of the best price in the list of the prices, value of the best price, value of the product
+        conversion probability times the margin using the best price
+        :rtype: tuple
         """
         values = np.array([])
         for idx, price in enumerate(self.environment.arms_values[category]):
@@ -28,10 +38,15 @@ class Clairvoyant:
 
     def maximize_reward_from_bid(self, category, conversion_times_margin):
         """
+        Find the bid, considering a single category, that maximizes the reward, defined as the number of daily clicks
+        multiplied by the conversion probability multiplied by the margin minus the cumulative daily costs due to the
+        advertising, given the product between the conversion probability and the margin
 
-        :param category:
-        :param conversion_times_margin:
-        :return:
+        :param category: Category considered in the maximization of the reward
+        :param conversion_times_margin: Conversion probability multiplied by the margin to use in the computation
+        :return: Index of the best bid in the list of the bids, value of the best bid, value of the reward using the
+        best bid and the given product between conversion probability and the margin
+        :rtype: tuple
         """
         values = np.array([])
         for bid in self.environment.bids:
@@ -45,9 +60,15 @@ class Clairvoyant:
 
     def maximize_reward(self, category):
         """
+        Find the price and the bid, considering a single category, that maximize the reward, defined as the number of
+        daily clicks multiplied by the conversion probability multiplied by the margin minus the cumulative daily costs
+        due to the advertising
 
-        :param category:
-        :return:
+        :param category: Category considered in the maximization of the reward
+        :return: Index of the best price in the list of the prices, value of the best price, index of the best bid in
+        the list of the bids, value of the best bid, value of the reward using the best price and the best bid when
+        computing it
+        :rtype: tuple
         """
         best_price_idx, best_price, conversion_times_margin = self.maximize_reward_from_price(category)
         best_bid_idx, best_bid, reward = self.maximize_reward_from_bid(category, conversion_times_margin)
