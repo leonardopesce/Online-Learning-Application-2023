@@ -39,3 +39,6 @@ class TSRewardLearner(Learner):
         self.update_observations(pulled_arm, reward)
         self.beta_parameters[pulled_arm, 0] = self.beta_parameters[pulled_arm, 0] + bernoulli_realization
         self.beta_parameters[pulled_arm, 1] = self.beta_parameters[pulled_arm, 1] + 1.0 - bernoulli_realization
+
+    def get_conv_prob(self, pulled_arm):
+        return self.beta_parameters[pulled_arm, 0] / (self.beta_parameters[pulled_arm, 0] + self.beta_parameters[pulled_arm, 1])

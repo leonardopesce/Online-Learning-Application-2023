@@ -92,7 +92,7 @@ class Environment:
         :rtype: tuple
         """
 
-        return self.round_pricing(pulled_arm, category), self.round_advertising(bid_idx, category)
+        return self.round_pricing(pulled_arm, category), *self.round_advertising(bid_idx, category)
 
     def get_reward(self, category, price_idx, conversion_prob, n_clicks, cum_daily_costs):
         """

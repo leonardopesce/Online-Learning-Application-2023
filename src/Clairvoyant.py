@@ -12,7 +12,8 @@ class Clairvoyant:
     def __init__(self, environment):
         """
         Initialize the learner given the environment to solve
-        :param environment: Environment where has to be solved the problem
+
+        :param Environment environment: Environment where has to be solved the problem
         """
 
         self.environment = environment
@@ -23,7 +24,7 @@ class Clairvoyant:
         problem independently with respect to the advertising quantities, thus it finds the price that maximizes the
         conversion probability multiplied by the margin
 
-        :param category: Category considered in the maximization of the reward
+        :param str category: Category considered in the maximization of the reward
         :return: Index of the best price in the list of the prices, value of the best price, value of the product
         conversion probability times the margin using the best price
         :rtype: tuple
@@ -42,8 +43,8 @@ class Clairvoyant:
         multiplied by the conversion probability multiplied by the margin minus the cumulative daily costs due to the
         advertising, given the product between the conversion probability and the margin
 
-        :param category: Category considered in the maximization of the reward
-        :param conversion_times_margin: Conversion probability multiplied by the margin to use in the computation
+        :param str category: Category considered in the maximization of the reward
+        :param float conversion_times_margin: Conversion probability multiplied by the margin to use in the computation
         :return: Index of the best bid in the list of the bids, value of the best bid, value of the reward using the
         best bid and the given product between conversion probability and the margin
         :rtype: tuple
@@ -64,7 +65,7 @@ class Clairvoyant:
         daily clicks multiplied by the conversion probability multiplied by the margin minus the cumulative daily costs
         due to the advertising
 
-        :param category: Category considered in the maximization of the reward
+        :param str category: Category considered in the maximization of the reward
         :return: Index of the best price in the list of the prices, value of the best price, index of the best bid in
         the list of the bids, value of the best bid, value of the reward using the best price and the best bid when
         computing it
