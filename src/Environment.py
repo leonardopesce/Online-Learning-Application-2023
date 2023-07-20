@@ -17,6 +17,12 @@ def fun(x, scale, slope, starting_value):
     return scale * np.log(slope * (x + 1 / slope - starting_value))
 
 
+# TODO che facciamo con questa, provarla?
+def fun1(x):
+    return 1000 * (1.0 - np.exp(-2 * x))
+    #return 100 * (1.0 - np.exp(-4*x+3*x**3))
+
+
 class Environment:
     """
     The Environment class defines the advertising and pricing environment using for each class the models of:
@@ -25,7 +31,7 @@ class Environment:
     - the conversion rate for 5 different prices.
     The Environment class allows the agents to interact with it using its functions
 
-    :param int n_arms: Number of arms
+    :param int n_prices: Number of arms
     :param dict arms_values: Dictionary that maps each class of users to the values(price of the product) associated to the arms
     :param dict probabilities: Dictionary that maps each class to the bernoulli probabilities associated to the arms
     bids: array of 100 possible bid values
@@ -36,19 +42,11 @@ class Environment:
     :param float other_costs: Cost of the product
     """
 
-    bids_to_clicks = {'C1': np.array([1, 1, 0.5]),
-                      'C2': np.array([2, 2, 0.5]),
-                      'C3': np.array([3, 3, 0.5])}
-    bids_to_cum_costs = {'C1': np.array([100, 0.5, 0.5]),
-                         'C2': np.array([2, 2, 0.5]),
-                         'C3': np.array([3, 3, 0.5])}
-    other_costs = 200
-
-    def __init__(self, n_arms, arms_values, probabilities, bids_to_clicks, bids_to_cum_costs, other_costs):
-        self.n_arms = n_arms
+    def __init__(self, n_prices, arms_values, probabilities, bids_to_clicks, bids_to_cum_costs, other_costs):
+        self.n_prices = n_prices
         self.arms_values = arms_values
         self.probabilities = probabilities
-        self.bids = np.linspace(0.5, 20, 100)
+        self.bids = np.linspace(0.5, 15, 100)
         self.bids_to_clicks = bids_to_clicks
         self.bids_to_clicks_variance = 0.2
         self.bids_to_cum_costs = bids_to_cum_costs
@@ -65,9 +63,9 @@ class Environment:
         :rtype: int
         """
 
-        reward = np.random.binomial(1, self.probabilities[category][pulled_arm])
+        realization = np.random.binomial(1, self.probabilities[category][pulled_arm])
 
-        return reward
+        return realization
 
     def round_advertising(self, bid_idx, category):
         """
@@ -99,7 +97,31 @@ class Environment:
 
         return self.round_pricing(pulled_arm, category), self.round_advertising(bid_idx, category)
 
-    def reward(self, category, price_idx, n_clicks, cum_daily_costs, conversion_prob=None):
+    def get_n_clicks(self, category, bid_idx):
+        """
+        Return the number of clicks given the bid and class of the user
+
+        :param str category: Class of the user
+        :param bid_idx: Index of the bid
+        :return: Number of clicks
+        :rtype: float
+        """
+
+        return fun(self.bids[bid_idx], *self.bids_to_clicks[category])
+
+    def get_cum_daily_costs(self, category, bid_idx):
+        """
+        Return the cumulative daily costs due to advertising given the bid and class of the user
+
+        :param str category: Class of the user
+        :param bid_idx: Index of the bid
+        :return: Cumulative daily costs
+        :rtype: float
+        """
+
+        return fun(self.bids[bid_idx], *self.bids_to_cum_costs[category])
+
+    def get_reward(self, category, price_idx, conversion_prob, n_clicks, cum_daily_costs):
         """
         Compute the reward defined as the number of daily clicks multiplied by the conversion probability multiplied by
         the margin minus the cumulative daily costs due to the advertising
@@ -115,6 +137,37 @@ class Environment:
         conversion_prob = self.probabilities[category][price_idx] if conversion_prob is None else conversion_prob
 
         return n_clicks * conversion_prob * (self.arms_values[category][price_idx] - self.other_costs) - cum_daily_costs
+
+    def get_reward_from_price(self, category, price_idx, conversion_prob, bid_idx):
+        """
+        Compute the reward defined as the number of daily clicks multiplied by the conversion probability multiplied by
+        the margin minus the cumulative daily costs due to the advertising. The advertising scenario si assumed to be known
+
+        :param str category: Class of the user
+        :param int price_idx: Index of the price
+        :param float conversion_prob: Conversion probability
+        :param bid_idx: Index of the bid
+        :return: Reward
+        :rtype: float
+        """
+
+        n_clicks = fun(self.bids[bid_idx], *self.bids_to_clicks[category])
+        cum_daily_costs = fun(self.bids[bid_idx], *self.bids_to_cum_costs[category])
+        return n_clicks * conversion_prob * (self.arms_values[category][price_idx] - self.other_costs) - cum_daily_costs
+
+    def get_conversion_times_margin(self, category, price_idx, conversion_probability=None):
+        """
+        Compute the product between the conversion probability and the margin
+
+        :param str category: Class of the user
+        :param int price_idx: Index of the price
+        :param float conversion_probability: If not given the value from the model is used, otherwise you can pass the realization of the arm
+        :return: Product between the conversion probability and the margin
+        :rtype: float
+        """
+        if conversion_probability is None:
+            return self.probabilities[category][price_idx] * (self.arms_values[category][price_idx] - self.other_costs)
+        return conversion_probability * (self.arms_values[category][price_idx] - self.other_costs)
 
     def plot_pricing_model(self, category, color='r', axes=None, show=True):
         """
@@ -229,24 +282,24 @@ class Environment:
 
 def test():
     # TESTING
-    n_arms = 5
+    n_prices = 5
     arms_values = {'C1': np.array([500, 550, 600, 650, 700]),
                    'C2': np.array([500, 550, 600, 650, 700]),
                    'C3': np.array([500, 550, 600, 650, 700])}
     probabilities = {'C1': np.array([0.05, 0.05, 0.2, 0.1, 0.05]),
                      'C2': np.array([0.05, 0.05, 0.1, 0.2, 0.1]),
                      'C3': np.array([0.1, 0.3, 0.2, 0.05, 0.05])}
-    bids_to_clicks = {'C1': np.array([1, 1, 0.5]),
+    bids_to_clicks = {'C1': np.array([3, 1, 0.5]),
                       'C2': np.array([2, 2, 0.5]),
                       'C3': np.array([3, 3, 0.5])}
-    bids_to_cum_costs = {'C1': np.array([100, 0.5, 0.5]),
+    bids_to_cum_costs = {'C1': np.array([10, 0.5, 0.5]),
                          'C2': np.array([2, 2, 0.5]),
                          'C3': np.array([3, 3, 0.5])}
     other_costs = 200
-    env = Environment(n_arms, arms_values, probabilities, bids_to_clicks, bids_to_cum_costs, other_costs)
+    env = Environment(n_prices, arms_values, probabilities, bids_to_clicks, bids_to_cum_costs, other_costs)
     env.plot_advertising_model('C1', color='r', axes=None)
     env.plot_whole_advertising_model()
     env.plot_whole_pricing_model()
 
 
-test()
+# test()

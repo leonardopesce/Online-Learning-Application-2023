@@ -1,23 +1,32 @@
-import numpy as np
 from Environment import *
 
 
-class ClairvoyantLearner:
+class Clairvoyant:
+    """
+    Learner that knows the model of the environment and so can play the best values of price to solve the pricing
+    problem and the best values of the bid to solve the advertising problem
+
+    environment: Environment where has to be solved the problem
     """
 
-    """
     def __init__(self, environment):
         """
-
-        :param environment:
+        Initialize the learner given the environment to solve
+        :param environment: Environment where has to be solved the problem
         """
+
         self.environment = environment
 
     def maximize_reward_from_price(self, category):
         """
+        Find the price, considering a single category, that maximizes the part of the reward depending on the pricing
+        problem independently with respect to the advertising quantities, thus it finds the price that maximizes the
+        conversion probability multiplied by the margin
 
-        :param category:
-        :return:
+        :param category: Category considered in the maximization of the reward
+        :return: Index of the best price in the list of the prices, value of the best price, value of the product
+        conversion probability times the margin using the best price
+        :rtype: tuple
         """
         values = np.array([])
         for idx, price in enumerate(self.environment.arms_values[category]):
@@ -29,10 +38,15 @@ class ClairvoyantLearner:
 
     def maximize_reward_from_bid(self, category, conversion_times_margin):
         """
+        Find the bid, considering a single category, that maximizes the reward, defined as the number of daily clicks
+        multiplied by the conversion probability multiplied by the margin minus the cumulative daily costs due to the
+        advertising, given the product between the conversion probability and the margin
 
-        :param category:
-        :param conversion_times_margin:
-        :return:
+        :param category: Category considered in the maximization of the reward
+        :param conversion_times_margin: Conversion probability multiplied by the margin to use in the computation
+        :return: Index of the best bid in the list of the bids, value of the best bid, value of the reward using the
+        best bid and the given product between conversion probability and the margin
+        :rtype: tuple
         """
         values = np.array([])
         for bid in self.environment.bids:
@@ -46,33 +60,55 @@ class ClairvoyantLearner:
 
     def maximize_reward(self, category):
         """
+        Find the price and the bid, considering a single category, that maximize the reward, defined as the number of
+        daily clicks multiplied by the conversion probability multiplied by the margin minus the cumulative daily costs
+        due to the advertising
 
-        :param category:
-        :return:
+        :param category: Category considered in the maximization of the reward
+        :return: Index of the best price in the list of the prices, value of the best price, index of the best bid in
+        the list of the bids, value of the best bid, value of the reward using the best price and the best bid when
+        computing it
+        :rtype: tuple
         """
         best_price_idx, best_price, conversion_times_margin = self.maximize_reward_from_price(category)
         best_bid_idx, best_bid, reward = self.maximize_reward_from_bid(category, conversion_times_margin)
 
         return best_price_idx, best_price, best_bid_idx, best_bid, reward
 
+    def check(self, category):
+        # To check whether all the rewards are positive
+        for idx, price in enumerate(self.environment.arms_values[category]):
+            margin = self.environment.probabilities[category][idx] * (price - self.environment.other_costs)
+            print("===========")
+            for bid in self.environment.bids:
+                n_clicks = fun(bid, *self.environment.bids_to_clicks[category])
+                cum_daily_costs = fun(bid, *self.environment.bids_to_cum_costs[category])
+                value = n_clicks * margin - cum_daily_costs
+                print(value)
 
-category = 'C1'
-n_arms = 5
-arms_values = {'C1': np.array([500, 550, 600, 650, 700]),
-               'C2': np.array([500, 550, 600, 650, 700]),
-               'C3': np.array([500, 550, 600, 650, 700])}
-probabilities = {'C1': np.array([0.05, 0.05, 0.2, 0.1, 0.05]),
-                 'C2': np.array([0.05, 0.05, 0.1, 0.2, 0.1]),
-                 'C3': np.array([0.1, 0.3, 0.2, 0.05, 0.05])}
-bids_to_clicks = {'C1': np.array([1, 1, 0.5]),
-                  'C2': np.array([2, 2, 0.5]),
-                  'C3': np.array([3, 3, 0.5])}
-bids_to_cum_costs = {'C1': np.array([100, 0.5, 0.5]),
-                     'C2': np.array([2, 2, 0.5]),
-                     'C3': np.array([3, 3, 0.5])}
-other_costs = 200
-env = Environment(n_arms, arms_values, probabilities, bids_to_clicks, bids_to_cum_costs, other_costs)
-clairvoyant = ClairvoyantLearner(env)
-#clairvoyant.maximize_reward_from_price(category)
-#print(clairvoyant.maximize_reward_from_price(category))
-print(str(clairvoyant.maximize_reward(category)))
+
+def test():
+    category = 'C1'
+    n_prices = 5
+    arms_values = {'C1': np.array([500, 550, 600, 650, 700]),
+                   'C2': np.array([500, 550, 600, 650, 700]),
+                   'C3': np.array([500, 550, 600, 650, 700])}
+    probabilities = {'C1': np.array([0.05, 0.05, 0.2, 0.1, 0.05]),
+                     'C2': np.array([0.05, 0.05, 0.1, 0.2, 0.1]),
+                     'C3': np.array([0.1, 0.3, 0.2, 0.05, 0.05])}
+    bids_to_clicks = {'C1': np.array([1, 1, 0.5]),
+                      'C2': np.array([2, 2, 0.5]),
+                      'C3': np.array([3, 3, 0.5])}
+    bids_to_cum_costs = {'C1': np.array([10, 0.5, 0.5]),
+                         'C2': np.array([2, 2, 0.5]),
+                         'C3': np.array([3, 3, 0.5])}
+    other_costs = 300
+    env = Environment(n_prices, arms_values, probabilities, bids_to_clicks, bids_to_cum_costs, other_costs)
+    clairvoyant = Clairvoyant(env)
+    print(clairvoyant.maximize_reward_from_price(category))
+    print(clairvoyant.maximize_reward(category))
+    env.plot_whole_advertising_model()
+    clairvoyant.check(category)
+
+
+# test()
