@@ -14,7 +14,7 @@ class TSGaussianLearner(Learner):
         super().__init__(n_arms)
         # Initialize the parameters for the Gaussian distribution (mean and variance) for each arm
         self.means = np.zeros(self.n_arms)
-        #self.sigmas = np.ones(self.n_arms) * 1e2
+        # self.sigmas = np.ones(self.n_arms) * 1e2
         self.variances = np.ones(self.n_arms) * 10
 
     def pull_arm(self):
