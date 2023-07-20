@@ -5,15 +5,15 @@ class UCBLearner(Learner):
     """
     Learner that applies the Upper Confidence Bound 1(UCB1) algorithm
 
-    :param int n_arms: Number of arms
+    :param np.ndarray arms_values: Values associated to the arms
     empirical_means: Empirical means
     confidence: upper Confidence interval
     """
 
-    def __init__(self, n_arms):
-        super().__init__(n_arms)
-        self.empirical_means = np.zeros(n_arms)
-        self.confidence = np.array([np.inf] * n_arms)
+    def __init__(self, arms_values):
+        super().__init__(arms_values)
+        self.empirical_means = np.zeros(self.n_arms)
+        self.confidence = np.array([np.inf] * self.n_arms)
 
     def pull_arm(self):
         """

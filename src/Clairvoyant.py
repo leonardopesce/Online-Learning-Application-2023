@@ -76,25 +76,40 @@ class Clairvoyant:
 
         return best_price_idx, best_price, best_bid_idx, best_bid, reward
 
+    def check(self, category):
+        # To check whether all the rewards are positive
+        for idx, price in enumerate(self.environment.arms_values[category]):
+            margin = self.environment.probabilities[category][idx] * (price - self.environment.other_costs)
+            print("===========")
+            for bid in self.environment.bids:
+                n_clicks = fun(bid, *self.environment.bids_to_clicks[category])
+                cum_daily_costs = fun(bid, *self.environment.bids_to_cum_costs[category])
+                value = n_clicks * margin - cum_daily_costs
+                print(value)
 
-category = 'C1'
-n_arms = 5
-arms_values = {'C1': np.array([500, 550, 600, 650, 700]),
-               'C2': np.array([500, 550, 600, 650, 700]),
-               'C3': np.array([500, 550, 600, 650, 700])}
-probabilities = {'C1': np.array([0.01, 0.01, 0.05, 0.02, 0.01]),
-                 'C2': np.array([0.05, 0.05, 0.1, 0.2, 0.1]),
-                 'C3': np.array([0.1, 0.3, 0.2, 0.05, 0.05])}
-bids_to_clicks = {'C1': np.array([1, 1, 0.5]),
-                  'C2': np.array([2, 2, 0.5]),
-                  'C3': np.array([3, 3, 0.5])}
-bids_to_cum_costs = {'C1': np.array([10, 0.5, 0.5]),
-                     'C2': np.array([2, 2, 0.5]),
-                     'C3': np.array([3, 3, 0.5])}
-other_costs = 400
-env = Environment(n_arms, arms_values, probabilities, bids_to_clicks, bids_to_cum_costs, other_costs)
-clairvoyant = Clairvoyant(env)
-#clairvoyant.maximize_reward_from_price(category)
-#print(clairvoyant.maximize_reward_from_price(category))
-#print(str(clairvoyant.maximize_reward(category)))
-#env.plot_whole_advertising_model()
+
+def test():
+    category = 'C1'
+    n_prices = 5
+    arms_values = {'C1': np.array([500, 550, 600, 650, 700]),
+                   'C2': np.array([500, 550, 600, 650, 700]),
+                   'C3': np.array([500, 550, 600, 650, 700])}
+    probabilities = {'C1': np.array([0.05, 0.05, 0.2, 0.1, 0.05]),
+                     'C2': np.array([0.05, 0.05, 0.1, 0.2, 0.1]),
+                     'C3': np.array([0.1, 0.3, 0.2, 0.05, 0.05])}
+    bids_to_clicks = {'C1': np.array([1, 1, 0.5]),
+                      'C2': np.array([2, 2, 0.5]),
+                      'C3': np.array([3, 3, 0.5])}
+    bids_to_cum_costs = {'C1': np.array([10, 0.5, 0.5]),
+                         'C2': np.array([2, 2, 0.5]),
+                         'C3': np.array([3, 3, 0.5])}
+    other_costs = 300
+    env = Environment(n_prices, arms_values, probabilities, bids_to_clicks, bids_to_cum_costs, other_costs)
+    clairvoyant = Clairvoyant(env)
+    print(clairvoyant.maximize_reward_from_price(category))
+    print(clairvoyant.maximize_reward(category))
+    env.plot_whole_advertising_model()
+    clairvoyant.check(category)
+
+
+# test()
