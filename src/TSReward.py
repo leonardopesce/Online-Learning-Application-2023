@@ -5,14 +5,14 @@ class TSRewardLearner(Learner):
     """
     Learner that applies the Thompson Sampling(TS) algorithm taking into account the reward is not binary
 
-    :param int n_arms: Number of arms
+    :param np.ndarray arms_values: Values associated to the arms
     beta_parameters: Parameters of the Beta distribution, one for each arm
     """
 
-    def __init__(self, n_arms):
-        super().__init__(n_arms)
+    def __init__(self, arms_values):
+        super().__init__(arms_values)
         # Initializing the Beta distribution of each arm to a uniform distribution
-        self.beta_parameters = np.ones((n_arms, 2))
+        self.beta_parameters = np.ones((self.n_arms, 2))
 
     def pull_arm(self, arms_values, cost, n_clicks, cum_daily_costs):
         """
@@ -44,3 +44,6 @@ class TSRewardLearner(Learner):
         self.update_observations(pulled_arm, reward)
         self.beta_parameters[pulled_arm, 0] = self.beta_parameters[pulled_arm, 0] + np.sum(bernoulli_realization)
         self.beta_parameters[pulled_arm, 1] = self.beta_parameters[pulled_arm, 1] + np.sum(1 - bernoulli_realization)
+
+    def get_conv_prob(self, pulled_arm):
+        return self.beta_parameters[pulled_arm, 0] / (self.beta_parameters[pulled_arm, 0] + self.beta_parameters[pulled_arm, 1])

@@ -36,7 +36,7 @@ T = 365
 
 # Since the reward functions are stochastic to better visualize the results and remove the noise
 # we have to perform a sufficiently large number experiments
-n_experiments = 300
+n_experiments = 200
 
 # Store the rewards for each experiment for the learners
 ts_reward_per_experiment = []
@@ -56,27 +56,31 @@ best_price_idx, best_price, best_bid_idx, best_bid, best_reward = clairvoyant.ma
 # Each iteration simulates the learner-environment interaction
 for e in tqdm(range(0, n_experiments)):
     # Define the learners
-    ts_learner = TSRewardLearner(n_prices)
-    ucb_learner = UCBLearner(n_prices)
+    ts_learner = TSRewardLearner(arms_values[category])
+    ucb_learner = UCBLearner(arms_values[category])
 
     # Iterate over the number of rounds
     for t in range(0, T):
         # Simulate the interaction learner-environment
         # TS Learner
-        n_clicks = env.get_n_clicks(category, best_bid_idx)
-        cum_daily_costs = env.get_cum_daily_costs(category, best_bid_idx)
-        pulled_arm = ts_learner.pull_arm(arms_values[category], other_costs, n_clicks, cum_daily_costs)
+        #n_clicks = env.get_n_clicks(category, best_bid_idx)
+        #cum_daily_costs = env.get_cum_daily_costs(category, best_bid_idx)
+        #pulled_arm = ts_learner.pull_arm(arms_values[category], other_costs, n_clicks, cum_daily_costs)
         # TODO check se necessari, cioè se devo ottimizzare i valori
+        best_bids_idx = [clairvoyant.maximize_reward_from_bid(category, ts_learner.get_conv_prob(arm) * (env.arms_values[category][arm] - env.other_costs))[0] for arm in range(n_prices)]
+        n_clicks_list = np.array([env.get_n_clicks(category, bid) for bid in best_bids_idx])
+        cum_daily_costs_list = np.array([env.get_cum_daily_costs(category, bid) for bid in best_bids_idx])
+        pulled_arm = ts_learner.pull_arm(arms_values[category], other_costs, n_clicks_list, cum_daily_costs_list)
         # devo prendere la conversion prob e quindi il margin per ogni prezzo e trovo la bid migliore per ogni prezzo e
         # conversion_times_margin = env.get_conversion_times_margin(category, pulled_arm, conversion_probability=bernoulli_realization)
         # _, _, reward = clairvoyant.maximize_reward_from_bid(category, conversion_times_margin)
-        bernoulli_realizations = np.array([env.round_pricing(pulled_arm, category) for _ in range(0, int(np.floor(n_clicks)))])
-        reward = env.get_reward_from_price(category, pulled_arm, np.mean(bernoulli_realizations), best_bid_idx)
+        bernoulli_realizations = np.array([env.round_pricing(pulled_arm, category) for _ in range(0, int(np.floor(n_clicks_list[pulled_arm])))])
+        reward = env.get_reward_from_price(category, pulled_arm, np.mean(bernoulli_realizations), best_bids_idx[pulled_arm])
         ts_learner.update(pulled_arm, reward, bernoulli_realizations)
 
         # UCB Learner
         pulled_arm = ucb_learner.pull_arm()
-        bernoulli_realizations = np.array([env.round_pricing(pulled_arm, category) for _ in range(0, int(np.floor(n_clicks)))])
+        bernoulli_realizations = np.array([env.round_pricing(pulled_arm, category) for _ in range(0, int(np.floor(n_clicks_list[pulled_arm])))])
         #conversion_times_margin = env.get_conversion_times_margin(category, pulled_arm, conversion_probability=bernoulli_realization)
         #_, _, reward = clairvoyant.maximize_reward_from_bid(category, conversion_times_margin)
         reward = env.get_reward_from_price(category, pulled_arm, np.mean(bernoulli_realizations), best_bid_idx)
