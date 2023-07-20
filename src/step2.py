@@ -31,11 +31,18 @@ bids = np.linspace(min_bid, max_bid, n_bids)
 sigma = 2
 
 # Time horizon and experiments
-T = 365
+T = 10
 n_experiments = 2
 gpts_rewards_per_experiment = []
 gpts_clicks_per_experiment = []
+gpts_mean_clicks_per_experiment = []
+gpts_sigmas_clicks_per_experiment = []
 gpts_cum_costs_per_experiment = []
+gpts_mean_cum_costs_per_experiment = []
+gpts_sigmas_cum_costs_per_experiment = []
+gpts_pulled_bids_per_experiment = []
+
+
 
 
 def maximize_reward_from_price(cat, environ):
@@ -61,21 +68,41 @@ for e in range(0, n_experiments):
         # Here we update the internal state of the learner passing it the reward,
         # the number of clicks and the costs sampled from the environment.
         gpts_learner.update(pulled_arm, (reward, n_clicks, costs))
-
+        '''
         # Plotting the collected clicks after each round.
         if t == T-1:
             gpts_learner.plot_clicks()
-            gpts_learner.plot_costs()
+            gpts_learner.plot_costs()'''
 
     gpts_rewards_per_experiment.append(gpts_learner.collected_rewards)
     gpts_clicks_per_experiment.append(gpts_learner.collected_clicks)
+    gpts_mean_clicks_per_experiment.append(gpts_learner.means_clicks)
+    gpts_sigmas_clicks_per_experiment.append(gpts_learner.sigmas_clicks)
     gpts_cum_costs_per_experiment.append(gpts_learner.collected_costs)
+    gpts_mean_cum_costs_per_experiment.append(gpts_learner.means_costs)
+    gpts_sigmas_cum_costs_per_experiment.append(gpts_learner.sigmas_costs)
+    gpts_pulled_bids_per_experiment.append(gpts_learner.pulled_bids)
+
+def plot():
+    plt.figure(0)
+    #plt.scatter(gpts_pulled_bids_per_experiment, np.mean(np.array(gpts_clicks_per_experiment), axis=0), color='r', label='prova mike')
+    plt.plot(bids, np.mean(np.array(gpts_mean_clicks_per_experiment), axis=0), color='r', label='mean clicks')
+    plt.fill_between(bids, np.mean(np.array(gpts_mean_clicks_per_experiment), axis=0) - np.mean(np.array(gpts_sigmas_clicks_per_experiment), axis=0), np.mean(np.array(gpts_mean_clicks_per_experiment), axis=0) + np.mean(np.array(gpts_sigmas_clicks_per_experiment), axis=0), alpha=0.2, color='r')
+
+    plt.figure(1)
+    plt.plot(bids, np.mean(np.array(gpts_mean_cum_costs_per_experiment), axis=0), color='b', label='mean costs')
+    plt.fill_between(bids, np.mean(np.array(gpts_mean_cum_costs_per_experiment), axis=0) - np.mean(np.array(gpts_sigmas_cum_costs_per_experiment), axis=0),
+                     np.mean(np.array(gpts_mean_cum_costs_per_experiment), axis=0) + np.mean(np.array(gpts_sigmas_cum_costs_per_experiment), axis=0), alpha=0.2, color='b')
+    plt.legend()
+    plt.show()
 
 #opt = np.max(env.means)
-plt.figure(0)
-plt.xlabel('Bids')
+#plt.figure(0)
+#plt.xlabel('Bids')
 #plt.plot(np.cumsum(np.mean(opt - gpts_rewards_per_experiment, axis=0)), 'g')
-plt.plot(np.cumsum(np.mean(gpts_rewards_per_experiment, axis=0)))
+#plt.plot(np.cumsum(np.mean(gpts_rewards_per_experiment, axis=0)))
 # plt.plot(np.mean(gpts_clicks_per_experiment, axis=0), color='g')
 # plt.plot(np.mean(gpts_cum_costs_per_experiment, axis=0), color='b')
-plt.show()
+#plt.show()
+
+plot()
