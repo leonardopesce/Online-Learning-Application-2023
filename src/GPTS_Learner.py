@@ -1,10 +1,27 @@
-from Learner import *
 import numpy as np
 from sklearn.gaussian_process import GaussianProcessRegressor
-from sklearn.gaussian_process.kernels import RBF, ConstantKernel as C
+from sklearn.gaussian_process.kernels import RBF, ConstantKernel as C, WhiteKernel as W
 import matplotlib.pyplot as plt
 
+from Learner import *
+from Environment import fun
+
 class GPTS_Learner(Learner):
+    """Gaussian Process Thompson Sampling Learner. Inherits from Learner.
+
+    Parameters:
+    -----
+        :param np.array arms: List of arms to be pulled. In this case the arms are the bids.
+        :param np.array means_clicks: Means of the Gaussian distributions of the clicks.
+        :param np.array means_costs: Means of the Gaussian distributions of the costs.
+        :param np.array sigmas_clicks: Standard deviations of the Gaussian distributions of the clicks.
+        :param np.array sigmas_costs: Standard deviations of the Gaussian distributions of the costs.
+        :param list pulled_bids: List of pulled bids.
+        :param np.array collected_clicks: List of collected clicks.
+        :param np.array collected_costs: List of collected costs.
+        :param GaussianProcessRegressor gp_clicks: Gaussian Process Regressor for the clicks curve.
+        :param GaussianProcessRegressor gp_costs: Gaussian Process Regressor for the costs curve.
+    """
 
     def __init__(self, n_arms, arms):
         super().__init__(n_arms)
@@ -17,14 +34,19 @@ class GPTS_Learner(Learner):
         self.collected_clicks = np.array([])
         self.collected_costs = np.array([])
 
-        alpha_clicks = 0.5
-        alpha_costs = 0.5
-        kernel_clicks = C(1.0, (1e-5, 1e5)) * RBF(1.0, (1e-5, 1e5))
-        kernel_costs = C(1.0, (1e-5, 1e5)) * RBF(1.0, (1e-5, 1e5))
-        self.gp_clicks = GaussianProcessRegressor(kernel = kernel_clicks, alpha = alpha_clicks ** 2, n_restarts_optimizer = 10)
-        self.gp_costs = GaussianProcessRegressor(kernel = kernel_costs, alpha = alpha_costs ** 2, n_restarts_optimizer = 10)
+        kernel_clicks = C(1.0) * RBF(1.0) + W(1e-1)
+        kernel_costs = C(1.0) * RBF(1.0) + W(1e-1)
+        self.gp_clicks = GaussianProcessRegressor(kernel = kernel_clicks, n_restarts_optimizer = 10)
+        self.gp_costs = GaussianProcessRegressor(kernel = kernel_costs, n_restarts_optimizer = 10)
 
-    def update_observations(self, pulled_arm, reward):
+    def update_observations(self, pulled_arm : int, reward) -> None:
+        """Update the reward, number of clicks and cumulative costs after having pulled the selected arm.
+
+        Args:
+        -----
+            :param int pulled_arm: index of the pulled bid.
+            :param tuple reward: tuple of the form (reward, n_clicks, costs) sampled from the environment.
+        """
         # Here reward is a tuple:
         # reward[0] = reward of the environment
         # reward[1] = n_clicks sampled from the environment
@@ -36,7 +58,9 @@ class GPTS_Learner(Learner):
         self.collected_clicks = np.append(self.collected_clicks, reward[1])
         self.collected_costs = np.append(self.collected_costs, reward[2])
 
-    def update_model(self):
+    def update_model(self) -> None:
+        """Updates the means and standard deviations of the Gaussian distributions of the clicks and costs curves fitting a Gaussian process model.
+        """
         x = np.atleast_2d(self.pulled_bids).T
         y = self.collected_clicks
         self.gp_clicks.fit(x, y)
@@ -48,12 +72,28 @@ class GPTS_Learner(Learner):
         self.means_costs, self.sigmas_costs = self.gp_costs.predict(np.atleast_2d(self.arms).T, return_std=True)
         self.sigmas_costs = np.maximum(self.sigmas_costs, 1e-2)
 
-    def update(self, pulled_arm, reward):
+    def update(self, pulled_arm : int, reward) -> None:
+        """Updates the timestep, the observations and the model of the thompson sampling algorithm.
+
+        Args:
+        -----
+            :param int pulled_arm: index of the pulled bid
+            :param tuple reward: tuple of the form (reward, n_clicks, costs) sampled from the environment.
+        """
         self.t += 1
         self.update_observations(pulled_arm, reward)
         self.update_model()
 
-    def pull_arm_GPs(self, prob_margin):
+    def pull_arm_GPs(self, prob_margin : float) -> int:
+        """Decides which arm to pull based on the current estimations of the clicks and cumulative daily costs.
+
+        Args:
+        -----
+            :param float prob_margin: conversion_rate * (price - other_costs)
+
+        Returns:
+            : _description_
+        """
         # Sampling from a normal distribution with mean and std estimated by the GP
         # Do the same for clicks and costs.
         sampled_values_clicks = np.random.normal(self.means_clicks, self.sigmas_clicks)
@@ -68,7 +108,7 @@ class GPTS_Learner(Learner):
         # Return the index of the pulled bid.
         return bid_idx
     
-    def plot_clicks(self):
+    def plot_clicks(self) -> None:
         plt.figure(0)
         plt.scatter(self.pulled_bids, self.collected_clicks, color='r', label = 'clicks per bid')
         plt.plot(self.arms, self.means_clicks, color='r', label = 'mean clicks')
@@ -76,10 +116,10 @@ class GPTS_Learner(Learner):
         plt.legend()
         plt.show()
 
-    def plot_costs(self):
+    def plot_costs(self) -> None:
         plt.figure(1)
         plt.scatter(self.pulled_bids, self.collected_costs, color='b', label = 'costs per bid')
         plt.plot(self.arms, self.means_costs, color='b', label = 'mean costs')
-        plt.fill_between(self.arms, self.means_costs - self.sigmas_costs, self.means_costs + self.sigmas_costs, alpha=0.2, color='b')        
+        plt.fill_between(self.arms, self.means_costs - self.sigmas_costs, self.means_costs + self.sigmas_costs, alpha=0.2, color='b')    
         plt.legend()
         plt.show()
