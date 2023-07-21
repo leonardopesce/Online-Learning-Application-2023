@@ -32,8 +32,8 @@ bids = np.linspace(min_bid, max_bid, n_bids)
 sigma = 2
 
 # Time horizon and experiments
-T = 50
-n_experiments = 100
+T = 365
+n_experiments = 1
 gpts_rewards_per_experiment = []
 gpts_clicks_per_experiment = []
 gpts_mean_clicks_per_experiment = []
@@ -64,7 +64,8 @@ for e in tqdm(range(0, n_experiments)):
         # Here we update the internal state of the learner passing it the reward,
         # the number of clicks and the costs sampled from the environment.
         gpts_learner.update(pulled_arm, (reward, n_clicks, costs))
-
+    # gpts_learner.plot_clicks()
+    # gpts_learner.plot_costs()
     gpts_rewards_per_experiment.append(gpts_learner.collected_rewards)
     gpts_clicks_per_experiment.append(gpts_learner.collected_clicks)
     gpts_mean_clicks_per_experiment.append(gpts_learner.means_clicks)
