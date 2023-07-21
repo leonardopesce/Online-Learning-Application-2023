@@ -42,4 +42,6 @@ class UCBLearner(Learner):
         self.update_observations(pulled_arm, reward)
         self.empirical_means[pulled_arm] = (self.empirical_means[pulled_arm] * (self.times_arms_played[pulled_arm] - 1) + reward) / self.times_arms_played[pulled_arm]
         for arm in range(self.n_arms):
-            self.confidence[arm] = 100 * np.sqrt((2 * np.log(self.t) / self.times_arms_played[arm])) if self.times_arms_played[arm] > 0 else np.inf
+            self.confidence[arm] = 1000 * np.sqrt((2 * np.log(self.t) / self.times_arms_played[arm])) if self.times_arms_played[arm] > 0 else np.inf
+        # con 200 UCB better than TS, with 500 TS is beter
+        #TODO choose the constant

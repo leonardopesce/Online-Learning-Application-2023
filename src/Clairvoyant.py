@@ -29,12 +29,12 @@ class Clairvoyant:
         :rtype: tuple
         """
         values = np.array([])
-        for idx, price in enumerate(self.environment.arms_values[category]):
+        for idx, price in enumerate(self.environment.prices[category]):
             values = np.append(values, self.environment.probabilities[category][idx] * (price - self.environment.other_costs))
 
         best_price_idx = np.random.choice(np.where(values == values.max())[0])
 
-        return best_price_idx, self.environment.arms_values[category][best_price_idx], values[best_price_idx]
+        return best_price_idx, self.environment.prices[category][best_price_idx], values[best_price_idx]
 
     def maximize_reward_from_bid(self, category, conversion_times_margin):
         """
@@ -77,7 +77,8 @@ class Clairvoyant:
 
     def check(self, category):
         # To check whether all the rewards are positive
-        for idx, price in enumerate(self.environment.arms_values[category]):
+        values = [[] for _ in range(5)]
+        for idx, price in enumerate(self.environment.prices[category]):
             margin = self.environment.probabilities[category][idx] * (price - self.environment.other_costs)
             print("===========")
             for bid in self.environment.bids:
@@ -85,30 +86,35 @@ class Clairvoyant:
                 cum_daily_costs = fun(bid, *self.environment.bids_to_cum_costs[category])
                 value = n_clicks * margin - cum_daily_costs
                 print(value)
+                values[idx].append(value)
 
+        return values
 
 def test():
     category = 'C1'
     n_prices = 5
-    arms_values = {'C1': np.array([500, 550, 600, 650, 700]),
+    prices = {'C1': np.array([500, 550, 600, 650, 700]),
                    'C2': np.array([500, 550, 600, 650, 700]),
                    'C3': np.array([500, 550, 600, 650, 700])}
-    probabilities = {'C1': np.array([0.05, 0.05, 0.2, 0.1, 0.05]),
+    probabilities = {'C1': np.array([0.03, 0.04, 0.05, 0.03, 0.01]),
                      'C2': np.array([0.05, 0.05, 0.1, 0.2, 0.1]),
                      'C3': np.array([0.1, 0.3, 0.2, 0.05, 0.05])}
-    bids_to_clicks = {'C1': np.array([1, 1, 0.5]),
+    bids_to_clicks = {'C1': np.array([100, 2, 0.0]),
                       'C2': np.array([2, 2, 0.5]),
                       'C3': np.array([3, 3, 0.5])}
-    bids_to_cum_costs = {'C1': np.array([10, 0.5, 0.5]),
+    bids_to_cum_costs = {'C1': np.array([20, 0.5, 0.0]),
                          'C2': np.array([2, 2, 0.5]),
                          'C3': np.array([3, 3, 0.5])}
-    other_costs = 300
-    env = Environment(n_prices, arms_values, probabilities, bids_to_clicks, bids_to_cum_costs, other_costs)
+    other_costs = 400
+    env = Environment(n_prices, prices, probabilities, bids_to_clicks, bids_to_cum_costs, other_costs)
     clairvoyant = Clairvoyant(env)
     print(clairvoyant.maximize_reward_from_price(category))
     print(clairvoyant.maximize_reward(category))
-    env.plot_whole_advertising_model()
-    clairvoyant.check(category)
-
+    #env.plot_whole_advertising_model()
+    values = clairvoyant.check(category)
+    for i in range(5):
+        print(values[i][21])
 
 # test()
+# Using the exponential function for number of clicks and cumulative daily cost the best bid is different for each price
+# and the best index is in the middle

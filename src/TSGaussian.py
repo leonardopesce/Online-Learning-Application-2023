@@ -5,13 +5,13 @@ class TSGaussianLearner(Learner):
     """
     Learner that applies the Gaussian Thompson Sampling(TS) algorithm
 
-    :param int n_arms: Number of arms
+    :param np.ndarray arms_values: Values associated to the arms
     means: Means of the arms
     sigmas: Standard devitions of the arms
     """
 
-    def __init__(self, n_arms):
-        super().__init__(n_arms)
+    def __init__(self, arms_values):
+        super().__init__(arms_values)
         # Initialize the parameters for the Gaussian distribution (mean and variance) for each arm
         self.means = np.zeros(self.n_arms)
         # self.sigmas = np.ones(self.n_arms) * 1e2
