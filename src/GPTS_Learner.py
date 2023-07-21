@@ -3,13 +3,10 @@ import matplotlib.pyplot as plt
 
 import torch
 
-from sklearn.gaussian_process import GaussianProcessRegressor
-from sklearn.gaussian_process.kernels import RBF, ConstantKernel as C, WhiteKernel as W
 from gpytorch.kernels import RBFKernel, ScaleKernel
 from gpytorch.likelihoods import GaussianLikelihood
 
-from Learner import *
-from Environment import fun
+from Learner import Learner
 from GPs import BaseGaussianProcess
 
 class GPTS_Learner(Learner):
@@ -22,11 +19,15 @@ class GPTS_Learner(Learner):
         :param np.array means_costs: Means of the Gaussian distributions of the costs.
         :param np.array sigmas_clicks: Standard deviations of the Gaussian distributions of the clicks.
         :param np.array sigmas_costs: Standard deviations of the Gaussian distributions of the costs.
+        :param np.array lower_bounds_clicks: Lower bounds of the Gaussian distributions of the clicks.
+        :param np.array lower_bounds_costs: Lower bounds of the Gaussian distributions of the costs.
+        :param np.array upper_bounds_clicks: Upper bounds of the Gaussian distributions of the clicks.
+        :param np.array upper_bounds_costs: Upper bounds of the Gaussian distributions of the costs.
         :param list pulled_bids: List of pulled bids.
         :param np.array collected_clicks: List of collected clicks.
         :param np.array collected_costs: List of collected costs.
-        :param GaussianProcessRegressor gp_clicks: Gaussian Process Regressor for the clicks curve.
-        :param GaussianProcessRegressor gp_costs: Gaussian Process Regressor for the costs curve.
+        :param BaseGaussianProcess gp_clicks: Gaussian Process Regressor for the clicks curve.
+        :param BaseGaussianProcess gp_costs: Gaussian Process Regressor for the costs curve.
     """
 
     def __init__(self, arms):
@@ -44,17 +45,13 @@ class GPTS_Learner(Learner):
         self.collected_clicks = np.array([])
         self.collected_costs = np.array([])
 
-        # kernel_clicks = C(1.0) * RBF(1.0) + W(1e-1)
-        # kernel_costs = C(1.0) * RBF(1.0) + W(1e-1)
         kernel_clicks = ScaleKernel(RBFKernel())
         kernel_costs = ScaleKernel(RBFKernel())
         likelihood_clicks = GaussianLikelihood()
         likelihood_costs = GaussianLikelihood()
         
-        # self.gp_clicks = GaussianProcessRegressor(kernel = kernel_clicks, n_restarts_optimizer = 10)
-        # self.gp_costs = GaussianProcessRegressor(kernel = kernel_costs, n_restarts_optimizer = 10)
-        self.gp_clicks = BaseGaussianProcess(train_x=torch.Tensor(self.pulled_bids), train_y=torch.Tensor(self.collected_clicks), likelihood=likelihood_clicks, kernel=kernel_clicks)
-        self.gp_costs = BaseGaussianProcess(train_x=torch.Tensor(self.pulled_bids), train_y=torch.Tensor(self.collected_costs), likelihood=likelihood_costs, kernel=kernel_costs)
+        self.gp_clicks = BaseGaussianProcess(likelihood=likelihood_clicks, kernel=kernel_clicks)
+        self.gp_costs = BaseGaussianProcess(likelihood=likelihood_costs, kernel=kernel_costs)
 
     def update_observations(self, pulled_arm : int, reward) -> None:
         """Update the reward, number of clicks and cumulative costs after having pulled the selected arm.
@@ -77,20 +74,18 @@ class GPTS_Learner(Learner):
 
     def update_model(self) -> None:
         """Updates the means and standard deviations of the Gaussian distributions of the clicks and costs curves fitting a Gaussian process model."""
-        # x = np.atleast_2d(self.pulled_bids).T       # Bids previously pulled
-        x = torch.Tensor(self.pulled_bids)
-        # y = self.collected_clicks                   # Clicks previously collected.
-        y = torch.Tensor(self.collected_clicks)
+        x = torch.Tensor(self.pulled_bids)            # Bids previously pulled.
+        y = torch.Tensor(self.collected_clicks)       # Clicks previously collected.
+
+        # Fitting the Gaussian Process Regressor relative to clicks and making a prediction for the current round.
         self.gp_clicks.fit(x, y)
-        # self.means_clicks, self.sigmas_clicks = self.gp_clicks.predict(np.atleast_2d(self.arms).T, return_std=True)
         self.means_clicks, self.sigmas_clicks, self.lower_bounds_clicks, self.upper_bounds_clicks = self.gp_clicks.predict(torch.Tensor(self.arms))
         self.sigmas_clicks = np.sqrt(self.sigmas_clicks)
         self.sigmas_clicks = np.maximum(self.sigmas_clicks, 1e-2)
 
-        # y = self.collected_costs                    # Daily costs previously collected.
-        y = torch.Tensor(self.collected_costs)
+        # Fitting the Gaussian Process Regressor relative to costs and making a prediction for the current round.
+        y = torch.Tensor(self.collected_costs)        # Daily costs previously collected.
         self.gp_costs.fit(x, y)
-        # self.means_costs, self.sigmas_costs = self.gp_costs.predict(np.atleast_2d(self.arms).T, return_std=True)
         self.means_costs, self.sigmas_costs, self.lower_bounds_costs, self.upper_bounds_costs = self.gp_costs.predict(torch.Tensor(self.arms))
         self.sigmas_costs = np.sqrt(self.sigmas_costs)
         self.sigmas_costs = np.maximum(self.sigmas_costs, 1e-2)
@@ -134,19 +129,19 @@ class GPTS_Learner(Learner):
         return bid_idx
     
     def plot_clicks(self) -> None:
+        """Plot the clicks curve and the confidence interval together with the data points."""
         plt.figure(0)
         plt.scatter(self.pulled_bids, self.collected_clicks, color='r', label = 'clicks per bid')
         plt.plot(self.arms, self.means_clicks, color='r', label = 'mean clicks')
-        # plt.fill_between(self.arms, self.means_clicks - self.sigmas_clicks, self.means_clicks + self.sigmas_clicks, alpha=0.2, color='r')
         plt.fill_between(self.arms, self.lower_bounds_clicks, self.upper_bounds_clicks, alpha=0.2, color='r')
         plt.legend()
         plt.show()
 
     def plot_costs(self) -> None:
+        """Plot the costs curve and the confidence interval together with the data points."""
         plt.figure(1)
         plt.scatter(self.pulled_bids, self.collected_costs, color='b', label = 'costs per bid')
         plt.plot(self.arms, self.means_costs, color='b', label = 'mean costs')
-        # plt.fill_between(self.arms, self.means_costs - self.sigmas_costs, self.means_costs + self.sigmas_costs, alpha=0.2, color='b')
-        plt.fill_between(self.arms, self.lower_bounds_costs, self.upper_bounds_costs, alpha=0.2, color='b') 
+        plt.fill_between(self.arms, self.lower_bounds_costs, self.upper_bounds_costs, alpha=0.2, color='b')
         plt.legend()
         plt.show()
