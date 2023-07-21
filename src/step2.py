@@ -3,12 +3,13 @@ import matplotlib.pyplot as plt
 from Environment import *
 from GPTS_Learner import *
 from tqdm import tqdm
+from Clairvoyant import Clairvoyant
 
 # Considered category is C1
 category = 'C1'
 
 # Setting the environment parameters
-n_arms = 5
+n_prices = 5
 arms_values = {'C1': np.array([500, 550, 600, 650, 700]),
                'C2': np.array([500, 550, 600, 650, 700]),
                'C3': np.array([500, 550, 600, 650, 700])}
@@ -31,8 +32,8 @@ bids = np.linspace(min_bid, max_bid, n_bids)
 sigma = 2
 
 # Time horizon and experiments
-T = 10
-n_experiments = 2
+T = 50
+n_experiments = 100
 gpts_rewards_per_experiment = []
 gpts_clicks_per_experiment = []
 gpts_mean_clicks_per_experiment = []
@@ -42,37 +43,27 @@ gpts_mean_cum_costs_per_experiment = []
 gpts_sigmas_cum_costs_per_experiment = []
 gpts_pulled_bids_per_experiment = []
 
+# Define the environment
+env = Environment(n_prices, arms_values, probabilities, bids_to_clicks, bids_to_cum_costs, other_costs)
+# Define the clairvoyant
+clairvoyant = Clairvoyant(env)
+# Optimize the problem
+best_price_idx, best_price, best_bid_idx, best_bid, best_reward = clairvoyant.maximize_reward(category)
 
+for e in tqdm(range(0, n_experiments)):
+    gpts_learner = GPTS_Learner(arms=bids)
 
-
-def maximize_reward_from_price(cat, environ):
-    values = np.array([])
-    for idx, price in enumerate(environ.arms_values[cat]):
-        values = np.append(values, environ.probabilities[cat][idx] * (price - environ.other_costs))
-
-    best_price_idx = np.random.choice(np.where(values == values.max())[0])
-    return best_price_idx, values[best_price_idx]
-
-for e in range(0, n_experiments):
-    env = Environment(n_arms, arms_values, probabilities, bids_to_clicks, bids_to_cum_costs, other_costs)
-    gpts_learner = GPTS_Learner(n_arms=n_bids, arms=bids)
-
-    for t in tqdm(range(0, T)):
+    for t in range(0, T):
         # GP Thompson Sampling
-        price_idx, prob_margin = maximize_reward_from_price(category, env)
+        price_idx, price, prob_margin = clairvoyant.maximize_reward_from_price(category)
         pulled_arm = gpts_learner.pull_arm_GPs(prob_margin)
         n_clicks, costs = env.round_advertising(pulled_arm, category)
 
-        reward = env.reward(category=category, price_idx=price_idx, n_clicks=n_clicks, cum_daily_costs=costs)
+        reward = env.get_reward(category=category, price_idx=price_idx, n_clicks=n_clicks, cum_daily_costs=costs)
         
         # Here we update the internal state of the learner passing it the reward,
         # the number of clicks and the costs sampled from the environment.
         gpts_learner.update(pulled_arm, (reward, n_clicks, costs))
-        '''
-        # Plotting the collected clicks after each round.
-        if t == T-1:
-            gpts_learner.plot_clicks()
-            gpts_learner.plot_costs()'''
 
     gpts_rewards_per_experiment.append(gpts_learner.collected_rewards)
     gpts_clicks_per_experiment.append(gpts_learner.collected_clicks)
@@ -83,7 +74,7 @@ for e in range(0, n_experiments):
     gpts_sigmas_cum_costs_per_experiment.append(gpts_learner.sigmas_costs)
     gpts_pulled_bids_per_experiment.append(gpts_learner.pulled_bids)
 
-def plot():
+def plot_adv_curves():
     plt.figure(0)
     #plt.scatter(gpts_pulled_bids_per_experiment, np.mean(np.array(gpts_clicks_per_experiment), axis=0), color='r', label='prova mike')
     plt.plot(bids, np.mean(np.array(gpts_mean_clicks_per_experiment), axis=0), color='r', label='mean clicks')
@@ -96,6 +87,24 @@ def plot():
     plt.legend()
     plt.show()
 
+def plot_instantaneous_regret() -> None:
+    regret_ts_mean = np.mean(best_reward - np.array(gpts_rewards_per_experiment), axis=0)
+    regret_ts_std = np.std(best_reward - gpts_rewards_per_experiment, axis=0)
+
+    plt.figure(2)
+    plt.plot(regret_ts_mean, 'r', label='Instantaneous Regret')
+    plt.fill_between(range(0, T), regret_ts_mean - regret_ts_std, regret_ts_mean + regret_ts_std, color='r', alpha=0.2)
+    plt.show()
+
+def plot_cumulative_regret() -> None:
+    cumulative_regret_ts_mean = np.mean(np.cumsum(best_reward - gpts_rewards_per_experiment, axis=1), axis=0)
+    cumulative_regret_ts_std = np.std(np.cumsum(best_reward - gpts_rewards_per_experiment, axis=1), axis=0)
+
+    plt.figure(3)
+    plt.plot(cumulative_regret_ts_mean, 'b', label='Cumulative Regret')
+    plt.fill_between(range(0,T), cumulative_regret_ts_mean - cumulative_regret_ts_std, cumulative_regret_ts_mean + cumulative_regret_ts_std, color='b', alpha=0.2)
+    plt.show()
+
 #opt = np.max(env.means)
 #plt.figure(0)
 #plt.xlabel('Bids')
@@ -105,4 +114,10 @@ def plot():
 # plt.plot(np.mean(gpts_cum_costs_per_experiment, axis=0), color='b')
 #plt.show()
 
-plot()
+plot_adv_curves()
+#plot_instantaneous_regret()
+plot_cumulative_regret()
+
+# TODO tutti i plot da fare
+# TODO capire se ha senso plottare i punti delle curve
+# TODO GP-UCB

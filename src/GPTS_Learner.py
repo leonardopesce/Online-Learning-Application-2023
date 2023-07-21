@@ -2,6 +2,7 @@ import numpy as np
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import RBF, ConstantKernel as C, WhiteKernel as W
 import matplotlib.pyplot as plt
+from goppy import OnlineGP
 
 from Learner import *
 from Environment import fun
@@ -19,12 +20,12 @@ class GPTS_Learner(Learner):
         :param list pulled_bids: List of pulled bids.
         :param np.array collected_clicks: List of collected clicks.
         :param np.array collected_costs: List of collected costs.
-        :param GaussianProcessRegressor gp_clicks: Gaussian Process Regressor for the clicks curve.
-        :param GaussianProcessRegressor gp_costs: Gaussian Process Regressor for the costs curve.
+        :param OnlineGP gp_clicks: Gaussian Process Regressor for the clicks curve.
+        :param OnlineGP gp_costs: Gaussian Process Regressor for the costs curve.
     """
 
-    def __init__(self, n_arms, arms):
-        super().__init__(n_arms)
+    def __init__(self, arms):
+        super().__init__(arms)
         self.arms = arms
         self.means_clicks = np.zeros(self.n_arms)
         self.sigmas_clicks = np.ones(self.n_arms)*10
@@ -36,6 +37,9 @@ class GPTS_Learner(Learner):
 
         kernel_clicks = C(1.0) * RBF(1.0) + W(1e-1)
         kernel_costs = C(1.0) * RBF(1.0) + W(1e-1)
+
+        #self.gp_clicks = OnlineGP(kernel_clicks, noise_var=0.1)
+        #self.gp_costs = OnlineGP(kernel_costs, noise_var=0.1)
         self.gp_clicks = GaussianProcessRegressor(kernel = kernel_clicks, n_restarts_optimizer = 10)
         self.gp_costs = GaussianProcessRegressor(kernel = kernel_costs, n_restarts_optimizer = 10)
 
@@ -61,15 +65,25 @@ class GPTS_Learner(Learner):
     def update_model(self) -> None:
         """Updates the means and standard deviations of the Gaussian distributions of the clicks and costs curves fitting a Gaussian process model.
         """
+
         x = np.atleast_2d(self.pulled_bids).T
         y = self.collected_clicks
+        #x = np.atleast_2d(self.pulled_bids[-1]).T
+        #y = self.collected_clicks[-1]
         self.gp_clicks.fit(x, y)
+        #self.gp_clicks.add(x, y)
         self.means_clicks, self.sigmas_clicks = self.gp_clicks.predict(np.atleast_2d(self.arms).T, return_std=True)
+        #self.means_clicks, self.sigmas_clicks = self.gp_clicks.predict(np.atleast_2d(self.arms).T, what=('mean', 'mse'))
+        self.sigmas_clicks = np.sqrt(self.sigmas_clicks)
         self.sigmas_clicks = np.maximum(self.sigmas_clicks, 1e-2)
 
         y = self.collected_costs
         self.gp_costs.fit(x, y)
+        #y = self.collected_costs[-1]
+        #self.gp_costs.add(x, y)
         self.means_costs, self.sigmas_costs = self.gp_costs.predict(np.atleast_2d(self.arms).T, return_std=True)
+        #self.means_costs, self.sigmas_costs = self.gp_costs.predict(np.atleast_2d(self.arms).T, what=('mean', 'mse'))
+        self.sigmas_costs = np.sqrt(self.sigmas_costs)
         self.sigmas_costs = np.maximum(self.sigmas_costs, 1e-2)
 
     def update(self, pulled_arm : int, reward) -> None:
