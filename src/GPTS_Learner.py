@@ -11,7 +11,7 @@ class GPTS_Learner(Learner):
     """Gaussian Process Thompson Sampling Learner. Inherits from Learner.
 
     Parameters:
-    -----
+    -----------
         :param np.array arms: List of arms to be pulled. In this case the arms are the bids.
         :param np.array means_clicks: Means of the Gaussian distributions of the clicks.
         :param np.array means_costs: Means of the Gaussian distributions of the costs.
@@ -63,6 +63,7 @@ class GPTS_Learner(Learner):
         self.collected_costs = np.append(self.collected_costs, reward[2])
 
     def update_model(self) -> None:
+<<<<<<< Updated upstream
         """Updates the means and standard deviations of the Gaussian distributions of the clicks and costs curves fitting a Gaussian process model.
         """
 
@@ -70,6 +71,12 @@ class GPTS_Learner(Learner):
         y = self.collected_clicks
         #x = np.atleast_2d(self.pulled_bids[-1]).T
         #y = self.collected_clicks[-1]
+=======
+        """Updates the means and standard deviations of the Gaussian distributions of the clicks and costs curves fitting a Gaussian process model."""
+        x = np.atleast_2d(self.pulled_bids).T       # Bids previously pulled
+
+        y = self.collected_clicks                   # Clicks previously collected.
+>>>>>>> Stashed changes
         self.gp_clicks.fit(x, y)
         #self.gp_clicks.add(x, y)
         self.means_clicks, self.sigmas_clicks = self.gp_clicks.predict(np.atleast_2d(self.arms).T, return_std=True)
@@ -77,7 +84,7 @@ class GPTS_Learner(Learner):
         self.sigmas_clicks = np.sqrt(self.sigmas_clicks)
         self.sigmas_clicks = np.maximum(self.sigmas_clicks, 1e-2)
 
-        y = self.collected_costs
+        y = self.collected_costs                    # Daily costs previously collected. 
         self.gp_costs.fit(x, y)
         #y = self.collected_costs[-1]
         #self.gp_costs.add(x, y)
@@ -106,7 +113,9 @@ class GPTS_Learner(Learner):
             :param float prob_margin: conversion_rate * (price - other_costs)
 
         Returns:
-            : _description_
+        --------
+            :return: index of the bid to pull in the current round.
+            :rtype: int
         """
         # Sampling from a normal distribution with mean and std estimated by the GP
         # Do the same for clicks and costs.
