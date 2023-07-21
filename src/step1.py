@@ -81,10 +81,11 @@ for e in tqdm(range(0, n_experiments)):
         # UCB Learner
         pulled_arm = ucb_learner.pull_arm()
         bernoulli_realizations = np.array([env.round_pricing(pulled_arm, category) for _ in range(0, int(np.floor(n_clicks_list[pulled_arm])))])
-        #conversion_times_margin = env.get_conversion_times_margin(category, pulled_arm, conversion_probability=bernoulli_realization)
-        #_, _, reward = clairvoyant.maximize_reward_from_bid(category, conversion_times_margin)
+        best_bids_idx = clairvoyant.maximize_reward_from_bid(category, ucb_learner.get_conv_prob(pulled_arm) * (env.arms_values[category][pulled_arm] - env.other_costs))[0]
+        n_clicks_list = env.get_n_clicks(category, best_bids_idx)
+        cum_daily_costs_list = env.get_cum_daily_costs(category, best_bids_idx)
         reward = env.get_reward_from_price(category, pulled_arm, np.mean(bernoulli_realizations), best_bid_idx)
-        ucb_learner.update(pulled_arm, reward)
+        ucb_learner.update(pulled_arm, reward, bernoulli_realizations)
 
 
     # Store the values of the collected rewards of the learners

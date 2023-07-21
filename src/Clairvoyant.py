@@ -54,7 +54,6 @@ class Clairvoyant:
             n_clicks = fun(bid, *self.environment.bids_to_clicks[category])
             cum_daily_costs = fun(bid, *self.environment.bids_to_cum_costs[category])
             values = np.append(values, n_clicks * conversion_times_margin - cum_daily_costs)
-
         best_bid_idx = np.random.choice(np.where(values == values.max())[0])
 
         return best_bid_idx, self.environment.bids[best_bid_idx], values[best_bid_idx]
