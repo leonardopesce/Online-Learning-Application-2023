@@ -21,12 +21,12 @@ class TSRewardLearner(Learner):
 
         :param np.ndarray arms_values: Array with the prices associated to the arms
         :param float cost: Cost associated to all the arms
-        :param float n_clicks: Number of clicks
-        :param float cum_daily_costs: Cumulative daily costs
+        :param np.ndarray n_clicks: Number of clicks
+        :param np.ndarray cum_daily_costs: Cumulative daily costs
         :return: Index of the arm to pull
         :rtype: int
         """
-        # TODO che sia da considerare anche la parte del'adv? al momento la consideriamo
+        #TODO che sia da considerare anche la parte del'adv? al momento la consideriamo
         idx = np.argmax(n_clicks * np.random.beta(self.beta_parameters[:, 0], self.beta_parameters[:, 1]) * (arms_values - cost) - cum_daily_costs)
         return idx
 

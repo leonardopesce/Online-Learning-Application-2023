@@ -56,3 +56,6 @@ class UCBLearner(Learner):
         :param int pulled_arm: Arm considered in the computation
         """
         return self.successes_per_arm[pulled_arm] / self.total_observations_per_arm[pulled_arm] if self.total_observations_per_arm[pulled_arm] else 0
+
+        # con 200 UCB better than TS, with 500 TS is beter
+        #TODO choose the constant
