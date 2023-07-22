@@ -19,8 +19,8 @@ category = 'C1'
 # Setting the environment parameters
 n_prices = 5
 prices = {'C1': np.array([500, 550, 600, 650, 700]),
-               'C2': np.array([500, 550, 600, 650, 700]),
-               'C3': np.array([500, 550, 600, 650, 700])}
+          'C2': np.array([500, 550, 600, 650, 700]),
+          'C3': np.array([500, 550, 600, 650, 700])}
 probabilities = {'C1': np.array([0.03, 0.04, 0.05, 0.03, 0.01]),
                  'C2': np.array([0.05, 0.05, 0.1, 0.2, 0.1]),
                  'C3': np.array([0.1, 0.3, 0.2, 0.05, 0.05])}
@@ -75,17 +75,17 @@ for e in tqdm(range(0, n_experiments)):
         best_bids_idx = [clairvoyant.maximize_reward_from_bid(category, ts_learner.get_conv_prob(arm) * (env.prices[category][arm] - env.other_costs))[0] for arm in range(n_prices)]
         n_clicks_list = np.array([env.get_n_clicks(category, bid) for bid in best_bids_idx])
         cum_daily_costs_list = np.array([env.get_cum_daily_costs(category, bid) for bid in best_bids_idx])
-        pulled_arm = ts_learner.pull_arm(prices[category], other_costs, n_clicks_list, cum_daily_costs_list)
+        pulled_arm = ts_learner.pull_arm(other_costs, n_clicks_list, cum_daily_costs_list)
         # conversion_times_margin = env.get_conversion_times_margin(category, pulled_arm, conversion_probability=bernoulli_realization)
         # _, _, reward = clairvoyant.maximize_reward_from_bid(category, conversion_times_margin)
-        bernoulli_realizations = np.array([env.round_pricing(pulled_arm, category) for _ in range(0, int(np.floor(n_clicks_list[pulled_arm])))])
+        bernoulli_realizations = env.round_pricing(category, pulled_arm, int(np.floor(n_clicks_list[pulled_arm])))
         reward = env.get_reward_from_price(category, pulled_arm, np.mean(bernoulli_realizations), best_bids_idx[pulled_arm])
         ts_learner.update(pulled_arm, reward, bernoulli_realizations)
 
         # UCB Learner
         pulled_arm = ucb_learner.pull_arm()
-        bernoulli_realizations = np.array([env.round_pricing(pulled_arm, category) for _ in range(0, int(np.floor(n_clicks_list[pulled_arm])))])
-        best_bids_idx = clairvoyant.maximize_reward_from_bid(category, ucb_learner.get_conv_prob(pulled_arm) * (env.arms_values[category][pulled_arm] - env.other_costs))[0]
+        bernoulli_realizations = env.round_pricing(category, pulled_arm, int(np.floor(n_clicks_list[pulled_arm])))
+        best_bids_idx = clairvoyant.maximize_reward_from_bid(category, ucb_learner.get_conv_prob(pulled_arm) * (env.prices[category][pulled_arm] - env.other_costs))[0]
         n_clicks_list = env.get_n_clicks(category, best_bids_idx)
         cum_daily_costs_list = env.get_cum_daily_costs(category, best_bids_idx)
         reward = env.get_reward_from_price(category, pulled_arm, np.mean(bernoulli_realizations), best_bid_idx)
@@ -100,9 +100,10 @@ for e in tqdm(range(0, n_experiments)):
     ucb_best.append(np.argmax(ucb_learner.empirical_means + ucb_learner.confidence))
     ts_best.append(np.argmax(ts_learner.beta_parameters[:, 0] / (ts_learner.beta_parameters[:, 0] + ts_learner.beta_parameters[:, 1])))
 
-# Print occurrences of best arm
-print(Counter(ucb_best))
+# Print occurrences of best arm in TS
 print(Counter(ts_best))
+# Print occurrences of best arm in UCB1
+print(Counter(ucb_best))
 
 # Plot the results, comparison TS-UCB
 _, axes = plt.subplots(2, 2, figsize=(20, 20))

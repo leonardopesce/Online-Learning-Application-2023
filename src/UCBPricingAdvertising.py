@@ -1,18 +1,18 @@
 import numpy as np
 
-from GPTS_Learner import GPTS_Learner
-from TSReward import TSRewardLearner
+from GPUCB_Learner import GPUCB_Learner
+from UCB import UCBLearner
 
-# TODO This learner maximize the reward given prices and bids in a joint way. Do we what this?
+# TODO This learner maximize the reward given prices and bids in a joint way
 
 
-class TSLearnerPricingAdvertising:
+class UCBLearnerPricingAdvertising:
     """
-    Learner that applies the Thompson Sampling(TS) algorithm to the problem of advertising and pricing
+    Learner that applies the Upper Confidence Bound 1(UCB1) algorithm to the problem of advertising and pricing
 
     Attributes:
-        TS_pricing: Learner that applies the Thompson Sampling(TS) algorithm to the pricing problem
-        GPTS_advertising: Learner that applies the Gaussian Process Thompson Sampling(GPTS) algorithm to the advertising problem
+        UCB_pricing: Learner that applies the Upper Confidence Bound 1(UCB1) algorithm to the pricing problem
+        GPUCB_advertising: Learner that applies the Upper Confidence Bound 1(UCB1) algorithm to the advertising problem
     """
 
     def __init__(self, prices, bids):
@@ -23,13 +23,15 @@ class TSLearnerPricingAdvertising:
         :params numpy.ndarray bids: Bids in the advertising problem
         """
 
-        self.TS_pricing = TSRewardLearner(prices)
-        self.GPTS_advertising = GPTS_Learner(bids)
+        self.UCB_pricing = UCBLearner(prices)
+        self.GPUCB_advertising = GPUCB_Learner(bids)
 
     def pull_arm(self, other_costs):
         """
-        Chooses the price to play based on the TS algorithm, therefore it samples the Beta distribution and the Gaussian
-        processes of the advertising problem and then it chooses the price and the bid that maximize the reward
+        Chooses the price to play based on the UCB1 algorithm, therefore it computes the upper confidence bounds of the
+        conversion probabilities of the prices, the upper confidence bounds of the number of clicks using the Gaussian
+        process and the lower confidence bounds of the cumulative daily costs using the Gaussian process, then it
+        chooses the price and the bid that maximize the reward
 
         :param float other_costs: Know costs of the product, used to compute the margin
 
@@ -37,18 +39,14 @@ class TSLearnerPricingAdvertising:
         :rtype: tuple
         """
 
-        # Sampling the beta distributions in order to have the estimates of the conversion probabilities
-        beta_distributions = self.TS_pricing.get_betas()
-        sampled_beta_distributions = np.random.beta(beta_distributions[:, 0], beta_distributions[:, 1])
-        # Computing the product between the estimates of the conversion probabilities and the margins
-        conversion_times_margin = sampled_beta_distributions * (self.TS_pricing.arms_values - other_costs)
-
-        # Sampling from a normal distribution with mean and std estimated by the GP
-        sampled_values_clicks = self.GPTS_advertising.sample_clicks()
-        sampled_values_costs = self.GPTS_advertising.sample_costs()
+        # Getting the upper confidence bounds from the learner of the price
+        prices_upper_conf_bounds = self.UCB_pricing.get_upper_confidence_bounds()
+        conversion_times_margin = prices_upper_conf_bounds * (self.UCB_pricing.get_arms() - other_costs)
+        # Getting the upper confidence bounds of the number of clicks from the learner of the bids (advertising problem)
+        upper_conf_bounds_clicks, lower_conf_bounds_costs = self.GPUCB_advertising.get_confidence_bounds()
 
         # Computing the reward got for each price and bid it is possible to pull.
-        rewards = sampled_values_clicks[None, :] * conversion_times_margin[:, None] - sampled_values_costs[None, :]
+        rewards = upper_conf_bounds_clicks[None, :] * conversion_times_margin[:, None] - lower_conf_bounds_costs[None, :]
         # Pulling the bid that maximizes the reward
         flat_index_maximum = np.argmax(rewards)
         num_prices, num_bids = rewards.shape
@@ -70,8 +68,8 @@ class TSLearnerPricingAdvertising:
         :param float reward: Reward collected in the current time step playing the pulled arm
         """
 
-        self.TS_pricing.update(pulled_price, reward, bernoulli_realizations)
-        self.GPTS_advertising.update(pulled_bid, (reward, n_clicks, costs_adv))
+        self.UCB_pricing.update(pulled_price, reward, bernoulli_realizations)
+        self.GPUCB_advertising.update(pulled_bid, (reward, n_clicks, costs_adv))
 
     def get_pulled_prices(self):
         """
@@ -81,7 +79,7 @@ class TSLearnerPricingAdvertising:
         :rtype: list
         """
 
-        return self.TS_pricing.pulled_arms
+        return self.UCB_pricing.pulled_arms
 
     def get_pulled_bids(self):
         """
@@ -91,4 +89,4 @@ class TSLearnerPricingAdvertising:
         :rtype: list
         """
 
-        return self.GPTS_advertising.pulled_arms
+        return self.GPUCB_advertising.pulled_arms
