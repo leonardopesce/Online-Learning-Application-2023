@@ -5,25 +5,32 @@ class TSLearner(Learner):
     """
     Learner that applies the Thompson Sampling(TS) algorithm
 
-    :param np.ndarray arms_values: Values associated to the arms
-    beta_parameters: Parameters of the Beta distribution, one for each arm
+    Attributes:
+        beta_parameters: Parameters of the Beta distribution, one for each arm
     """
 
     def __init__(self, arms_values):
+        """
+        Initializes the TS learner
+
+        :param np.ndarray arms_values: Values associated to the arms
+        """
+
         super().__init__(arms_values)
         # Initializing the Beta distribution of each arm to a uniform distribution
         self.beta_parameters = np.ones((self.n_arms, 2))
 
     def pull_arm(self):
         """
-        Chooses the arm to play based on the TS algorithm, therefore sampling the Beta distribution and
-        choosing the arm from whose distribution is extracted the maximum value
+        Chooses the arm to play based on the TS algorithm, therefore sampling the Beta distribution and choosing the arm
+        from whose distribution is extracted the maximum value
 
         :return: Index of the arm to pull
         :rtype: int
         """
 
         idx = np.argmax(np.random.beta(self.beta_parameters[:, 0], self.beta_parameters[:, 1]))
+
         return idx
 
     def update(self, pulled_arm, reward):

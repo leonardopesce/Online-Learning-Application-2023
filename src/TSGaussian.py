@@ -1,6 +1,6 @@
 from Learner import *
 
-
+# TODO TS gaussian can be removed?
 class TSGaussianLearner(Learner):
     """
     Learner that applies the Gaussian Thompson Sampling(TS) algorithm
