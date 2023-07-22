@@ -14,7 +14,8 @@ def fun(x, scale, slope, starting_value):
     :rtype: float
     """
 
-    return scale * np.log(slope * (x + 1 / slope - starting_value))
+    #return scale * np.log(slope * (x + 1 / slope - starting_value))
+    return scale * (1.0 - np.exp(-slope * x))
 
 
 # TODO che facciamo con questa, provarla?
