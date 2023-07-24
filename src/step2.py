@@ -36,7 +36,7 @@ bids = np.linspace(min_bid, max_bid, n_bids)
 sigma = 2
 
 # Time horizon and experiments
-T = 200
+T = 100
 n_experiments = 10
 gpts_rewards_per_experiment = []
 gpts_clicks_per_experiment = []
@@ -76,12 +76,12 @@ for e in tqdm(range(0, n_experiments)):
         # GP Thompson Sampling
         pulled_arm = gpts_learner.pull_arm_GPs(prob_margin)
         n_clicks, costs = env.round_advertising(category, pulled_arm)
-        reward_gpts = env.get_reward(category=category, price_idx=price_idx, n_clicks=n_clicks, cum_daily_costs=costs)
+        reward_gpts = env.get_reward(category=category, price_idx=price_idx, conversion_prob=probabilities[category][price_idx], n_clicks=n_clicks, cum_daily_costs=costs)
 
         # GP UCB
         pulled_arm = gpucb_learner.pull_arm_GPs(prob_margin)
         n_clicks, costs = env.round_advertising(category, pulled_arm)
-        reward_gpucb = env.get_reward(category=category, price_idx=price_idx, n_clicks=n_clicks, cum_daily_costs=costs)
+        reward_gpucb = env.get_reward(category=category, price_idx=price_idx, conversion_prob=probabilities[category][price_idx], n_clicks=n_clicks, cum_daily_costs=costs)
         
         # Here we update the internal state of the learner passing it the reward,
         # the number of clicks and the costs sampled from the environment.

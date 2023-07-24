@@ -3,6 +3,7 @@ from Clairvoyant import *
 from UCB import *
 from NonStationaryEnvironment import *
 from SWUCB import SWUCBLearner
+from CUSUM_UCB_Learner import CUSUM_UCB_Learner
 
 """
 Simulation for the step 5: dealing with non-stationary environments with two abrupt changes 
@@ -48,11 +49,12 @@ window_size = 50
 
 # Since the reward functions are stochastic to better visualize the results and remove the noise
 # we have to perform a sufficiently large number experiments
-n_experiments = 200
+n_experiments = 50
 
 # Store the rewards for each experiment for the learners
 ucb_reward_per_experiment = []
 swucb_reward_per_experiment = []
+cusum_ucb_reward_per_experiment = []
 best_rewards = np.array([])
 
 # Define the environment
@@ -77,6 +79,9 @@ for e in tqdm(range(0, n_experiments)):
     env_swucb = NonStationaryEnvironment(n_prices, prices, probabilities, bids_to_clicks, bids_to_cum_costs, other_costs, phases_duration)
     swucb_learner = SWUCBLearner(prices[category], window_size)
 
+    env_cusum_ucb = NonStationaryEnvironment(n_prices, prices, probabilities, bids_to_clicks, bids_to_cum_costs, other_costs, phases_duration)
+    cusum_ucb_learner = CUSUM_UCB_Learner(prices[category])
+
     # Iterate over the number of rounds
     for t in range(0, T):
         # UCB Learner
@@ -97,9 +102,20 @@ for e in tqdm(range(0, n_experiments)):
         reward = env_swucb.get_reward_from_price(category, pulled_arm, np.mean(bernoulli_realizations), best_bid_idx)
         swucb_learner.update(pulled_arm, reward, bernoulli_realizations)
 
+        # CUSUM UCB Learner
+        # SWUCB Learner
+        pulled_arm = cusum_ucb_learner.pull_arm()
+        best_bid_idx = clairvoyant.maximize_reward_from_bid(category, cusum_ucb_learner.get_conv_prob(pulled_arm) * (
+                env_cusum_ucb.prices[category][pulled_arm] - env_cusum_ucb.other_costs))[0]
+        n_clicks = env_cusum_ucb.get_n_clicks(category, best_bid_idx)
+        bernoulli_realizations = env_cusum_ucb.round_pricing(pulled_arm, n_clicks=int(np.floor(n_clicks)))
+        reward = env_cusum_ucb.get_reward_from_price(category, pulled_arm, np.mean(bernoulli_realizations), best_bid_idx)
+        cusum_ucb_learner.update(pulled_arm, reward, bernoulli_realizations)
+
     # Store the values of the collected rewards of the learners
     ucb_reward_per_experiment.append(ucb_learner.collected_rewards)
     swucb_reward_per_experiment.append(swucb_learner.collected_rewards)
+    cusum_ucb_reward_per_experiment.append(cusum_ucb_learner.collected_rewards)
 
 #TODO make functions to plot
 
@@ -110,14 +126,20 @@ regret_ucb_mean = np.mean(best_rewards - ucb_reward_per_experiment, axis=0)
 regret_ucb_std = np.std(best_rewards - ucb_reward_per_experiment, axis=0)
 regret_swucb_mean = np.mean(best_rewards - swucb_reward_per_experiment, axis=0)
 regret_swucb_std = np.std(best_rewards - swucb_reward_per_experiment, axis=0)
+regret_cusum_ucb_mean = np.mean(best_rewards - cusum_ucb_reward_per_experiment, axis=0)
+regret_cusum_ucb_std = np.std(best_rewards - cusum_ucb_reward_per_experiment, axis=0)
 cumulative_regret_ucb_mean = np.mean(np.cumsum(best_rewards - ucb_reward_per_experiment, axis=1), axis=0)
 cumulative_regret_ucb_std = np.std(np.cumsum(best_rewards - ucb_reward_per_experiment, axis=1), axis=0)
 cumulative_regret_swucb_mean = np.mean(np.cumsum(best_rewards - swucb_reward_per_experiment, axis=1), axis=0)
 cumulative_regret_swucb_std = np.std(np.cumsum(best_rewards - swucb_reward_per_experiment, axis=1), axis=0)
+cumulative_regret_cusum_ucb_mean = np.mean(np.cumsum(best_rewards - cusum_ucb_reward_per_experiment, axis=1), axis=0)
+cumulative_regret_cusum_ucb_std = np.std(np.cumsum(best_rewards - cusum_ucb_reward_per_experiment, axis=1), axis=0)
 reward_ucb_mean = np.mean(ucb_reward_per_experiment, axis=0)
 reward_ucb_std = np.std(ucb_reward_per_experiment, axis=0)
 reward_swucb_mean = np.mean(swucb_reward_per_experiment, axis=0)
 reward_swucb_std = np.std(swucb_reward_per_experiment, axis=0)
+reward_cusum_ucb_mean = np.mean(cusum_ucb_reward_per_experiment, axis=0)
+reward_cusum_ucb_std = np.std(cusum_ucb_reward_per_experiment, axis=0)
 cumulative_reward_ucb_mean = np.mean(np.cumsum(ucb_reward_per_experiment, axis=1), axis=0)
 cumulative_reward_ucb_std = np.std(np.cumsum(ucb_reward_per_experiment, axis=1), axis=0)
 cumulative_reward_swucb_mean = np.mean(np.cumsum(swucb_reward_per_experiment, axis=1), axis=0)
@@ -126,23 +148,26 @@ cumulative_reward_swucb_std = np.std(np.cumsum(swucb_reward_per_experiment, axis
 axes[0].set_title('Instantaneous regret plot')
 axes[0].plot(regret_swucb_mean, 'r')
 axes[0].plot(regret_ucb_mean, 'g')
+axes[0].plot(regret_cusum_ucb_mean, 'y')
 axes[0].axhline(y=0, color='b', linestyle='--')
-axes[0].legend(["SWUCB", "UCB"])
+axes[0].legend(["SWUCB", "UCB", "CUSUM_UCB"])
 axes[0].set_xlabel("t")
 axes[0].set_ylabel("Instantaneous regret")
 
 axes[1].set_title('Instantaneous reward plot')
 axes[1].plot(reward_swucb_mean, 'r')
 axes[1].plot(reward_ucb_mean, 'g')
+axes[1].plot(reward_cusum_ucb_mean, 'y')
 axes[1].plot(best_rewards, 'b')
-axes[1].legend(["SWUCB", "UCB", "Clairvoyant"])
+axes[1].legend(["SWUCB", "UCB", "CUSUM_UCB", "Clairvoyant"])
 axes[1].set_xlabel("t")
 axes[1].set_ylabel("Instantaneous reward")
 
 axes[2].set_title('Cumulative regret plot')
 axes[2].plot(cumulative_regret_swucb_mean, 'r')
 axes[2].plot(cumulative_regret_ucb_mean, 'g')
-axes[2].legend(["SWUCB", "UCB"])
+axes[2].plot(cumulative_regret_cusum_ucb_mean, 'y')
+axes[2].legend(["SWUCB", "UCB", "CUSUM_UCB"])
 axes[2].set_xlabel("t")
 axes[2].set_ylabel("Cumulative regret")
 

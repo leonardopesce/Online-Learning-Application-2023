@@ -57,7 +57,8 @@ class GPUCB_Learner(Learner):
         for arm in range(self.n_arms):
             self.confidence_clicks[arm] = np.sqrt((2 * np.log(self.t) / self.times_arms_played[arm])) if self.times_arms_played[arm] > 0 else 50
         self.confidence_clicks = self.confidence_clicks * self.sigmas_clicks'''
-        self.confidence_clicks = np.sqrt(100) * self.sigmas_clicks
+        prova = self.n_arms * (self.t ** 2) * (np.pi ** 2) / (6 * 0.9)
+        self.confidence_clicks = 2 * np.log(prova) * self.sigmas_clicks
 
         # Fitting the Gaussian Process Regressor relative to costs and making a prediction for the current round.
         y = torch.Tensor(self.collected_costs)        # Daily costs previously collected.
@@ -69,7 +70,7 @@ class GPUCB_Learner(Learner):
         for arm in range(self.n_arms):
             self.confidence_costs[arm] = np.sqrt((2 * np.log(self.t) / self.times_arms_played[arm])) if self.times_arms_played[arm] > 0 else 10
         self.confidence_costs = self.confidence_costs * self.sigmas_costs'''
-        self.confidence_costs = np.sqrt(100) * self.sigmas_costs
+        self.confidence_costs = 2 * np.log(prova) * self.sigmas_costs
 
     def pull_arm_GPs(self, prob_margin) -> int:
         """
