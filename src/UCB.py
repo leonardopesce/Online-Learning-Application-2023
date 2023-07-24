@@ -56,6 +56,9 @@ class UCBLearner(Learner):
         self.empirical_means[pulled_arm] = (self.empirical_means[pulled_arm] * (self.times_arms_played[pulled_arm] - 1) + reward) / self.times_arms_played[pulled_arm]
         for arm in range(self.n_arms):
             self.confidence[arm] = 1000 * np.sqrt((2 * np.log(self.t) / self.times_arms_played[arm])) if self.times_arms_played[arm] > 0 else np.inf
+        # con 200 UCB better than TS, with 500 TS is better. At the moment we use 1000 since the maximum expected reward is around 900
+        # we wrote in our notebook to put as constant the max value possible. Maybe we could assume that is data is known from previous market analysis
+        # TODO choose the constant
 
     def get_conv_prob(self, pulled_arm):
         """
@@ -67,7 +70,8 @@ class UCBLearner(Learner):
         :rtype: float
         """
 
-        return self.successes_per_arm[pulled_arm] / self.total_observations_per_arm[pulled_arm] if self.total_observations_per_arm[pulled_arm] else 0
+        return self.successes_per_arm[pulled_arm] / self.total_observations_per_arm[pulled_arm] if self.total_observations_per_arm[pulled_arm] else 1
+        #TODO maybe in else put 1 to be optimistic in the case we don't have data
 
     def get_upper_confidence_bounds(self):
         """
@@ -78,6 +82,3 @@ class UCBLearner(Learner):
         """
 
         return self.empirical_means + self.confidence
-
-    # con 200 UCB better than TS, with 500 TS is better
-    #TODO choose the constant

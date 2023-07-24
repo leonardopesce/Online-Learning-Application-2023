@@ -2,18 +2,14 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-# TODO starting_value could be removed
-# TODO to remove the logarithmic function
-def fun(x, scale, slope, starting_value):
+def fun(x, scale, slope):
     """
     It returns an exponential function used to model the advertising setting
 
     :param float x: Value of independent variable, in this setting, it is the bid
     :param float scale: Parameter that affects the scale of the function
     :param float slope: Parameter that affects the slope of the function
-    :param float starting_value: Value before which the function is zero
-
-    :return: Value assumed by the logarithmic function
+    :return: Value assumed by the exponential function
     :rtype: float
     """
 
@@ -262,10 +258,10 @@ class Environment:
         if axes is None:
             _, axes = plt.subplots(1, 2)
 
-        x = np.linspace(0, self.bids_to_clicks[category][2], 100)
-        y = np.zeros((100,))
-        axes[0].plot(x, y, color=color)
-        x = np.linspace(self.bids_to_clicks[category][2], xlim, 100)
+        #x = np.linspace(0, self.bids_to_clicks[category][2], 100)
+        #y = np.zeros((100,))
+        #axes[0].plot(x, y, color=color)
+        x = np.linspace(0, xlim, 100)
         y = fun(x, *self.bids_to_clicks[category])
         axes[0].plot(x, y, color=color, label=category)
         axes[0].set_title('Clicks given the bid')
@@ -273,10 +269,10 @@ class Environment:
         axes[0].set_ylabel('Number of clicks')
         axes[0].legend()
 
-        x = np.linspace(0, self.bids_to_cum_costs[category][2], 100)
-        y = np.zeros((100,))
-        axes[1].plot(x, y, color=color)
-        x = np.linspace(self.bids_to_cum_costs[category][2], xlim, 100)
+        #x = np.linspace(0, self.bids_to_cum_costs[category][2], 100)
+        #y = np.zeros((100,))
+        #axes[1].plot(x, y, color=color)
+        x = np.linspace(0, xlim, 100)
         y = fun(x, *self.bids_to_cum_costs[category])
         axes[1].plot(x, y, color=color, label=category)
         axes[1].set_title('Cost of the clicks given the bid')
@@ -322,12 +318,12 @@ def test():
     probabilities = {'C1': np.array([0.05, 0.05, 0.2, 0.1, 0.05]),
                      'C2': np.array([0.05, 0.05, 0.1, 0.2, 0.1]),
                      'C3': np.array([0.1, 0.3, 0.2, 0.05, 0.05])}
-    bids_to_clicks = {'C1': np.array([1000, 2, 0.0]),
-                      'C2': np.array([2, 2, 0.5]),
-                      'C3': np.array([3, 3, 0.5])}
-    bids_to_cum_costs = {'C1': np.array([200, 0.5, 0.0]),
-                         'C2': np.array([2, 2, 0.5]),
-                         'C3': np.array([3, 3, 0.5])}
+    bids_to_clicks = {'C1': np.array([100, 2]),
+                      'C2': np.array([90, 2]),
+                      'C3': np.array([80, 3])}
+    bids_to_cum_costs = {'C1': np.array([20, 0.5]),
+                         'C2': np.array([18, 0.4]),
+                         'C3': np.array([16, 0.45])}
     other_costs = 200
 
     env = Environment(n_prices, prices, probabilities, bids_to_clicks, bids_to_cum_costs, other_costs)
