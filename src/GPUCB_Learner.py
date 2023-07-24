@@ -57,19 +57,19 @@ class GPUCB_Learner(Learner):
         for arm in range(self.n_arms):
             self.confidence_clicks[arm] = np.sqrt((2 * np.log(self.t) / self.times_arms_played[arm])) if self.times_arms_played[arm] > 0 else 50
         self.confidence_clicks = self.confidence_clicks * self.sigmas_clicks'''
-        self.confidence_clicks = np.sqrt(10) * self.sigmas_clicks
+        self.confidence_clicks = np.sqrt(100) * self.sigmas_clicks
 
         # Fitting the Gaussian Process Regressor relative to costs and making a prediction for the current round.
         y = torch.Tensor(self.collected_costs)        # Daily costs previously collected.
         self.gp_costs.fit(x, y)
-        self.empirical_means_costs, self.sigmas_costs, self.lower_bounds_costs, self.upper_bounds_costs = self.gp_costs.predict(torch.Tensor(self.arms))
+        self.empirical_means_costs, self.sigmas_costs, self.lower_bounds_costs, self.upper_bounds_costs = self.gp_costs.predict(torch.Tensor(self.get_arms()))
         self.sigmas_costs = np.sqrt(self.sigmas_costs)
         self.sigmas_costs = np.maximum(self.sigmas_costs, 1e-2)
         '''
         for arm in range(self.n_arms):
             self.confidence_costs[arm] = np.sqrt((2 * np.log(self.t) / self.times_arms_played[arm])) if self.times_arms_played[arm] > 0 else 10
         self.confidence_costs = self.confidence_costs * self.sigmas_costs'''
-        self.confidence_costs = np.sqrt(10) * self.sigmas_costs
+        self.confidence_costs = np.sqrt(100) * self.sigmas_costs
 
     def pull_arm_GPs(self, prob_margin) -> int:
         """
@@ -99,7 +99,7 @@ class GPUCB_Learner(Learner):
         # reward[1] = n_clicks sampled from the environment
         # reward[2] = costs sampled from the environment
         super().update_observations(pulled_arm, reward[0])
-        self.pulled_bids.append(self.arms[pulled_arm])
+        self.pulled_bids.append(self.get_arms()[pulled_arm])
 
         # Save the clicks and comulative costs for the pulled bid
         self.collected_clicks = np.append(self.collected_clicks, reward[1])
@@ -117,3 +117,12 @@ class GPUCB_Learner(Learner):
         self.t += 1
         self.update_observations(pulled_arm, reward)
         self.update_model()
+
+    def get_confidence_bounds(self):
+        """
+        Returns the upper confidence bound for all the arms
+
+        Returns:
+            upper confidence bound for all the arms
+        """
+        return self.empirical_means_clicks + self.confidence_clicks, self.empirical_means_costs - self.confidence_costs

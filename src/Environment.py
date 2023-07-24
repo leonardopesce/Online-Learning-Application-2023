@@ -174,6 +174,7 @@ class Environment:
 
         n_clicks = fun(self.bids[bid_idx], *self.bids_to_clicks[category])
         cum_daily_costs = fun(self.bids[bid_idx], *self.bids_to_cum_costs[category])
+
         return n_clicks * conversion_prob * (self.prices[category][price_idx] - self.other_costs) - cum_daily_costs
 
     def get_conversion_times_margin(self, category, price_idx, conversion_probability=None):

@@ -20,12 +20,12 @@ arms_values = {'C1': np.array([500, 550, 600, 650, 700]),
 probabilities = {'C1': np.array([0.05, 0.05, 0.2, 0.1, 0.05]),
                  'C2': np.array([0.05, 0.05, 0.1, 0.2, 0.1]),
                  'C3': np.array([0.1, 0.3, 0.2, 0.05, 0.05])}
-bids_to_clicks = {'C1': np.array([100, 2,0]),
-                  'C2': np.array([90, 2,0]),
-                  'C3': np.array([80, 3,0])}
-bids_to_cum_costs = {'C1': np.array([20, 0.5,0]),
-                     'C2': np.array([18, 0.4,0]),
-                     'C3': np.array([16, 0.45,0])}
+bids_to_clicks = {'C1': np.array([100, 2]),
+                  'C2': np.array([90, 2]),
+                  'C3': np.array([80, 3])}
+bids_to_cum_costs = {'C1': np.array([20, 0.5]),
+                     'C2': np.array([18, 0.4]),
+                     'C3': np.array([16, 0.45])}
 other_costs = 200
 
 # Bids setup
@@ -75,12 +75,12 @@ for e in tqdm(range(0, n_experiments)):
 
         # GP Thompson Sampling
         pulled_arm = gpts_learner.pull_arm_GPs(prob_margin)
-        n_clicks, costs = env.round_advertising(pulled_arm, category)
+        n_clicks, costs = env.round_advertising(category, pulled_arm)
         reward_gpts = env.get_reward(category=category, price_idx=price_idx, n_clicks=n_clicks, cum_daily_costs=costs)
 
         # GP UCB
         pulled_arm = gpucb_learner.pull_arm_GPs(prob_margin)
-        n_clicks, costs = env.round_advertising(pulled_arm, category)
+        n_clicks, costs = env.round_advertising(category, pulled_arm)
         reward_gpucb = env.get_reward(category=category, price_idx=price_idx, n_clicks=n_clicks, cum_daily_costs=costs)
         
         # Here we update the internal state of the learner passing it the reward,

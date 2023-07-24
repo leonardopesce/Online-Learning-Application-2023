@@ -22,23 +22,23 @@ category = 'C1'
 # Setting the environment parameters
 n_prices = 5
 prices = {'C1': np.array([500, 550, 600, 650, 700]),
-          'C2': np.array([500, 550, 600, 650, 700]),
-          'C3': np.array([500, 550, 600, 650, 700])}
-probabilities = {'C1': np.array([0.03, 0.04, 0.05, 0.03, 0.01]),
+               'C2': np.array([500, 550, 600, 650, 700]),
+               'C3': np.array([500, 550, 600, 650, 700])}
+probabilities = {'C1': np.array([0.05, 0.05, 0.2, 0.1, 0.05]),
                  'C2': np.array([0.05, 0.05, 0.1, 0.2, 0.1]),
                  'C3': np.array([0.1, 0.3, 0.2, 0.05, 0.05])}
-bids_to_clicks = {'C1': np.array([100, 2, 0.0]),
-                  'C2': np.array([2, 2, 0.5]),
-                  'C3': np.array([3, 3, 0.5])}
-bids_to_cum_costs = {'C1': np.array([20, 0.5, 0.0]),
-                     'C2': np.array([2, 2, 0.5]),
-                     'C3': np.array([3, 3, 0.5])}
-other_costs = 400
+bids_to_clicks = {'C1': np.array([100, 2]),
+                  'C2': np.array([90, 2]),
+                  'C3': np.array([80, 3])}
+bids_to_cum_costs = {'C1': np.array([20, 0.5]),
+                     'C2': np.array([18, 0.4]),
+                     'C3': np.array([16, 0.45])}
+other_costs = 200
 
 # Bids setup
 n_bids = 100
 min_bid = 0.5
-max_bid = 20.0
+max_bid = 15.0
 bids = np.linspace(min_bid, max_bid, n_bids)
 sigma = 2
 
@@ -47,7 +47,7 @@ T = 365
 
 # Since the reward functions are stochastic to better visualize the results and remove the noise
 # we have to perform a sufficiently large number experiments
-n_experiments = 50
+n_experiments = 5
 
 
 
@@ -121,10 +121,18 @@ for e in tqdm(range(0, n_experiments)):
     gpts_pulled_bids_per_experiment.append(ts_learner.GPTS_advertising.pulled_bids)
 
 # Print occurrences of best arm in TS
+print('Best price found in the experiments by TS')
+print('The format is price: number of experiments in which it is the most played price')
 print(Counter(ts_best_price))
+print('Best bid found in the experiments by TS')
+print('The format is bid: number of experiments in which it is the most bid price')
 print(Counter(ts_best_bid))
 # Print occurrences of best arm in UCB1
+print('Best price found in the experiments by UCB')
+print('The format is price: number of experiments in which it is the most played price')
 print(Counter(ucb_best_price))
+print('Best bid found in the experiments by UCB')
+print('The format is bid: number of experiments in which it is the most bid price')
 print(Counter(ucb_best_bid))
 
 # Plot the results, comparison TS-UCB

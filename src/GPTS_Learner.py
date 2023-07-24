@@ -145,3 +145,23 @@ class GPTS_Learner(Learner):
         plt.fill_between(self.arms, self.lower_bounds_costs, self.upper_bounds_costs, alpha=0.2, color='b')
         plt.legend()
         plt.show()
+
+    def sample_clicks(self):
+        """
+        Sample from a normal distribution with mean and standard deviation estimated by the GP of the number of clicks
+
+        :return: Estimate number of clicks for all the bids
+        :rtype: float
+        """
+
+        return np.random.normal(self.means_clicks, self.sigmas_clicks)
+
+    def sample_costs(self):
+        """
+        Sample from a normal distribution with mean and standard deviation estimated by the GP of the costs of the clicks
+
+        :return: Estimate costs of the clicks for all the bids
+        :rtype: float
+        """
+
+        return np.random.normal(self.means_costs, self.sigmas_costs)
