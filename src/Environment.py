@@ -356,16 +356,15 @@ class Environment:
         Plots the reward with respect to the bid given the price index to use in the computation
 
         :param tuple categories: Categories for which the plot has to be done
+        :param bool plot_aggregate_model: If True the reward for the aggregate model of all the classes is plotted
 
         :return: Axes of the plot
         :rtype: plt.Axes
         """
 
-        #aggregate_model = None
+        aggregate_model = np.zeros((len(self.bids), self.n_prices))
 
-        for category in categories:
-            _, axes = plt.subplots(subplot_kw={'projection': '3d'})
-
+        for category in self.bids_to_clicks:
             x = self.bids
             y = self.prices[category]
             xx, yy = np.meshgrid(x, y)
@@ -376,22 +375,49 @@ class Environment:
 
             z = n_clicks[:, None] * conv_prob[None, :] * (self.prices[category] - self.other_costs) - cum_costs[:, None]
 
-            axes.plot_surface(xx, yy, z.T, cmap='viridis')
+            if plot_aggregate_model:
+                aggregate_model += z
 
-            argmax_x = np.argmax(z) // self.n_prices
-            argmax_y = np.argmax(z) % self.n_prices
-            argmax_z = np.max(z)
+            if category in categories:
+                _, axes = plt.subplots(subplot_kw={'projection': '3d'})
+                axes.plot_surface(xx, yy, z.T, cmap='viridis')
 
-            print(f'For the category {category} the maximum is in (bid, price) = ({self.bids[argmax_x]}, {self.prices[category][argmax_y]}), with a value of {argmax_z}')
+                argmax_x = np.argmax(z) // self.n_prices
+                argmax_y = np.argmax(z) % self.n_prices
+                argmax_z = np.max(z)
+
+                print(f'For the category {category} the maximum is in (bid, price) = ({self.bids[argmax_x]}, {self.prices[category][argmax_y]}), with a value of {argmax_z}')
+                axes.scatter(self.bids[argmax_x], self.prices[category][argmax_y], argmax_z, color='black', s=20, label=f'Max of {category}')
+                axes.set_title(f'Reward given price and bid for the user category {category}')
+                axes.set_xlabel('Value of the bid')
+                axes.set_ylabel('Value of the price')
+                axes.set_zlabel('Reward')
+
+                plt.tight_layout()
+                plt.show()
+
+        if plot_aggregate_model:
+            _, axes = plt.subplots(subplot_kw={'projection': '3d'})
+
+            x = self.bids
+            y = self.prices[category]
+            xx, yy = np.meshgrid(x, y)
+
+            axes.plot_surface(xx, yy, aggregate_model.T, cmap='viridis')
+
+            argmax_x = np.argmax(aggregate_model) // self.n_prices
+            argmax_y = np.argmax(aggregate_model) % self.n_prices
+            argmax_z = np.max(aggregate_model)
+
+            print(f'For the aggregate model the maximum is in (bid, price) = ({self.bids[argmax_x]}, {self.prices["C1"][argmax_y]}), with a value of {argmax_z}')
             axes.scatter(self.bids[argmax_x], self.prices[category][argmax_y], argmax_z, color='black', s=20, label=f'Max of {category}')
-            axes.set_title(f'Reward given price and bid for the user category {category}')
+            axes.set_title(f'Reward given price and bid using the aggregate model')
             axes.set_xlabel('Value of the bid')
             axes.set_ylabel('Value of the price')
             axes.set_zlabel('Reward')
 
             plt.tight_layout()
             plt.show()
-        #if aggregate_model:
 
 def test():
     # TESTING
@@ -416,7 +442,7 @@ def test():
     env.plot_whole_advertising_model()
     #env.plot_whole_pricing_model()
     #env.plot_rewards_given_price_idx()
-    env.plot_rewards(categories=['C1'])
+    env.plot_rewards(categories=['C1'], plot_aggregate_model=True)
 
 
 test()
