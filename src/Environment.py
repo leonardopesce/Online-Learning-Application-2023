@@ -166,7 +166,7 @@ class Environment:
         :return: Reward
         :rtype: float
         """
-        conversion_prob = self.probabilities[category][price_idx] if conversion_prob is None else conversion_prob
+        #conversion_prob = self.probabilities[category][price_idx] if conversion_prob is None else conversion_prob
 
         return n_clicks * conversion_prob * (self.prices[category][price_idx] - self.other_costs) - cum_daily_costs
 
