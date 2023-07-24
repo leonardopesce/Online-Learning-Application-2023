@@ -139,7 +139,7 @@ class Environment:
 
         return fun(self.bids[bid_idx], *self.bids_to_cum_costs[category])
 
-    def get_reward(self, category, price_idx, conversion_prob, n_clicks, cum_daily_costs):
+    def get_reward(self, category, price_idx, n_clicks, cum_daily_costs, conversion_prob=None):
         """
         Computes the reward defined as the number of daily clicks multiplied by the conversion probability multiplied by
         the margin minus the cumulative daily costs due to the advertising
@@ -153,6 +153,7 @@ class Environment:
         :return: Reward
         :rtype: float
         """
+        conversion_prob = self.probabilities[category][price_idx] if conversion_prob is None else conversion_prob
 
         return n_clicks * conversion_prob * (self.prices[category][price_idx] - self.other_costs) - cum_daily_costs
 
