@@ -43,7 +43,8 @@ phases_duration = [121, 121, 123]
 # Time horizon of the experiment
 T = 365
 assert np.sum(phases_duration) == T
-window_size = int(T ** 0.5)
+#window_size = int(T ** 0.5)
+window_size = 50
 
 # Since the reward functions are stochastic to better visualize the results and remove the noise
 # we have to perform a sufficiently large number experiments
@@ -83,7 +84,7 @@ for e in tqdm(range(0, n_experiments)):
         best_bid_idx = clairvoyant.maximize_reward_from_bid(category, ucb_learner.get_conv_prob(pulled_arm) * (
                     env_ucb.prices[category][pulled_arm] - env_ucb.other_costs))[0]
         n_clicks = env_ucb.get_n_clicks(category, best_bid_idx)
-        bernoulli_realizations = env_ucb.round_pricing(pulled_arm, int(np.floor(n_clicks)))
+        bernoulli_realizations = env_ucb.round_pricing(pulled_arm, n_clicks=int(np.floor(n_clicks)))
         reward = env_ucb.get_reward_from_price(category, pulled_arm, np.mean(bernoulli_realizations), best_bid_idx)
         ucb_learner.update(pulled_arm, reward, bernoulli_realizations)
 
@@ -92,7 +93,7 @@ for e in tqdm(range(0, n_experiments)):
         best_bid_idx = clairvoyant.maximize_reward_from_bid(category, swucb_learner.get_conv_prob(pulled_arm) * (
                 env_swucb.prices[category][pulled_arm] - env_swucb.other_costs))[0]
         n_clicks = env_swucb.get_n_clicks(category, best_bid_idx)
-        bernoulli_realizations = env_swucb.round_pricing(pulled_arm, int(np.floor(n_clicks)))
+        bernoulli_realizations = env_swucb.round_pricing(pulled_arm, n_clicks=int(np.floor(n_clicks)))
         reward = env_swucb.get_reward_from_price(category, pulled_arm, np.mean(bernoulli_realizations), best_bid_idx)
         swucb_learner.update(pulled_arm, reward, bernoulli_realizations)
 

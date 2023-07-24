@@ -20,8 +20,8 @@ class UCBLearner(Learner):
         """
 
         super().__init__(arms_values)
-        self.successes_per_arm = np.zeros(self.n_arms)
-        self.total_observations_per_arm = np.zeros(self.n_arms)
+        self.successes_per_arm = [[] for _ in range(self.n_arms)]
+        self.total_observations_per_arm = [[] for _ in range(self.n_arms)]
         self.empirical_means = np.zeros(self.n_arms)
         self.confidence = np.array([np.inf] * self.n_arms)
 
@@ -51,11 +51,11 @@ class UCBLearner(Learner):
 
         self.t += 1
         self.update_observations(pulled_arm, reward)
-        self.successes_per_arm[pulled_arm] += np.sum(bernoulli_realization)
-        self.total_observations_per_arm[pulled_arm] += len(bernoulli_realization)
+        self.successes_per_arm[pulled_arm].append(np.sum(bernoulli_realization))
+        self.total_observations_per_arm[pulled_arm].append(len(bernoulli_realization))
         self.empirical_means[pulled_arm] = (self.empirical_means[pulled_arm] * (self.times_arms_played[pulled_arm] - 1) + reward) / self.times_arms_played[pulled_arm]
         for arm in range(self.n_arms):
-            self.confidence[arm] = 1000 * np.sqrt((2 * np.log(self.t) / self.times_arms_played[arm])) if self.times_arms_played[arm] > 0 else np.inf
+            self.confidence[arm] = 100 * np.sqrt((2 * np.log(self.t) / self.times_arms_played[arm])) if self.times_arms_played[arm] > 0 else np.inf
         # con 200 UCB better than TS, with 500 TS is better. At the moment we use 1000 since the maximum expected reward is around 900
         # we wrote in our notebook to put as constant the max value possible. Maybe we could assume that is data is known from previous market analysis
         # TODO choose the constant
@@ -70,8 +70,8 @@ class UCBLearner(Learner):
         :rtype: float
         """
 
-        return self.successes_per_arm[pulled_arm] / self.total_observations_per_arm[pulled_arm] if self.total_observations_per_arm[pulled_arm] else 1
-        #TODO maybe in else put 1 to be optimistic in the case we don't have data
+        # In else put 1 to be more optimistic in the case we don't have data
+        return np.sum(self.successes_per_arm[pulled_arm]) / np.sum(self.total_observations_per_arm[pulled_arm]) if np.sum(self.total_observations_per_arm[pulled_arm]) > 0 else 1
 
     def get_upper_confidence_bounds(self):
         """
