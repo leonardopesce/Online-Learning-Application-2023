@@ -1,8 +1,8 @@
-import numpy as np
+# change detector block, receives rewards from environment and sends detections to the learner
 
 class CUSUM:
     def __init__(self, M, eps, h):
-        self.M = M
+        self.M = M  # first M valid samples are used to compute the reference point
         self.eps = eps
         self.h = h
         self.t = 0
@@ -14,7 +14,7 @@ class CUSUM:
         # return 1 if changes are detected, otherwise 0
         self.t += 1
         if self.t <= self.M:
-            self.reference += sample / self.M 
+            self.reference = (self.reference * (self.t - 1) + sample) / self.t
             return 0
         else:
             s_plus = (sample - self .reference) - self.eps
@@ -23,7 +23,7 @@ class CUSUM:
             self.g_minus = max(0, self.g_minus + s_minus)
             return self.g_plus > self.h or self.g_minus > self.h
 
-    def reset (self):
+    def reset(self):
         # reset all important variables in case of a detection
         self.t = 0
         self.g_minus = 0
