@@ -139,7 +139,7 @@ class Environment:
 
         return fun(self.bids[bid_idx], *self.bids_to_cum_costs[category])
 
-    def get_reward(self, category, price_idx, n_clicks, cum_daily_costs, conversion_prob=None):
+    def get_reward(self, category, price_idx, conversion_prob, n_clicks, cum_daily_costs):
         """
         Computes the reward defined as the number of daily clicks multiplied by the conversion probability multiplied by
         the margin minus the cumulative daily costs due to the advertising
