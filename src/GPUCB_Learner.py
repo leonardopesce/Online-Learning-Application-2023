@@ -1,12 +1,10 @@
 from Learner import *
 import numpy as np
 import matplotlib.pyplot as plt
-
 import torch
 
 from gpytorch.kernels import RBFKernel, ScaleKernel
 from gpytorch.likelihoods import GaussianLikelihood
-
 from Learner import Learner
 from GPs import BaseGaussianProcess
 
@@ -27,7 +25,6 @@ class GPUCB_Learner(Learner):
         self.empirical_means_costs = np.zeros(self.n_arms)
         self.confidence_costs = np.array([np.inf] * self.n_arms)
 
-        self.arms = arms_values
         self.sigmas_clicks = np.ones(self.n_arms) * 10
         self.lower_bounds_clicks = np.zeros(self.n_arms)
         self.upper_bounds_clicks = np.zeros(self.n_arms)
@@ -49,11 +46,11 @@ class GPUCB_Learner(Learner):
     def update_model(self) -> None:
         """Updates the means and standard deviations of the Gaussian distributions of the clicks and costs curves fitting a Gaussian process model."""
         x = torch.Tensor(self.pulled_bids)            # Bids previously pulled.
-        y = torch.Tensor(self.collected_clicks)       # Clicks previously collected.
 
         # Fitting the Gaussian Process Regressor relative to clicks and making a prediction for the current round.
+        y = torch.Tensor(self.collected_clicks)       # Clicks previously collected.
         self.gp_clicks.fit(x, y)
-        self.empirical_means_clicks, self.sigmas_clicks, self.lower_bounds_clicks, self.upper_bounds_clicks = self.gp_clicks.predict(torch.Tensor(self.arms))
+        self.empirical_means_clicks, self.sigmas_clicks, self.lower_bounds_clicks, self.upper_bounds_clicks = self.gp_clicks.predict(torch.Tensor(self.arms_values))
         self.sigmas_clicks = np.sqrt(self.sigmas_clicks)
         self.sigmas_clicks = np.maximum(self.sigmas_clicks, 1e-2)
         '''
@@ -74,7 +71,7 @@ class GPUCB_Learner(Learner):
         self.confidence_costs = self.confidence_costs * self.sigmas_costs'''
         self.confidence_costs = np.sqrt(10) * self.sigmas_costs
 
-    def pull_arm_GPs(self, prob_margin):
+    def pull_arm_GPs(self, prob_margin) -> int:
         """
         Chooses the arm to play based on the UCB1 algorithm, therefore choosing the arm with higher upper
         confidence bound, which is the mean of the reward of the arm plus the confidence interval
@@ -91,12 +88,11 @@ class GPUCB_Learner(Learner):
         return idx
 
     def update_observations(self, pulled_arm : int, reward) -> None:
-        """Update the reward, number of clicks and cumulative costs after having pulled the selected arm.
+        """
+        Update the reward, number of clicks and cumulative costs after having pulled the selected arm
 
-        Args:
-        -----
-            :param int pulled_arm: index of the pulled bid.
-            :param tuple reward: tuple of the form (reward, n_clicks, costs) sampled from the environment.
+        :param int pulled_arm: index of the pulled bid
+        :param tuple reward: tuple of the form (reward, n_clicks, costs) sampled from the environment
         """
         # Here reward is a tuple:
         # reward[0] = reward of the environment
@@ -115,10 +111,9 @@ class GPUCB_Learner(Learner):
         pulled arm in the environment
 
         :param int pulled_arm: Arm pulled in the current time step
-        :param float reward: Reward collected in the current time step playing the pulled arm
+        :param tuple reward: tuple of the form (reward, n_clicks, costs) sampled from the environment
         """
 
         self.t += 1
         self.update_observations(pulled_arm, reward)
         self.update_model()
-

@@ -113,10 +113,9 @@ def plot_adv_curves():
     #Plot Clicks' curve
     plt.figure(0)
     plt.title('Clicks GP')
-    #plt.scatter(gpts_pulled_bids_per_experiment, np.mean(np.array(gpts_clicks_per_experiment), axis=0), color='r', label='prova mike')
     #Plot GP-TS
-    #plt.plot(bids, np.mean(np.array(gpts_mean_clicks_per_experiment), axis=0), color='r', label='GP-TS')
-    #plt.fill_between(bids, np.mean(np.array(gpts_lower_bounds_clicks_per_experiment), axis=0), np.mean(np.array(gpts_upper_bounds_clicks_per_experiment), axis=0), alpha=0.2, color='r')
+    plt.plot(bids, np.mean(np.array(gpts_mean_clicks_per_experiment), axis=0), color='r', label='GP-TS')
+    plt.fill_between(bids, np.mean(np.array(gpts_lower_bounds_clicks_per_experiment), axis=0), np.mean(np.array(gpts_upper_bounds_clicks_per_experiment), axis=0), alpha=0.2, color='r')
     #Plot GP-UCB
     plt.plot(bids, np.mean(np.array(gpucb_mean_clicks_per_experiment), axis=0), color='b', label='GP-UCB')
     plt.fill_between(bids, np.mean(np.array(gpucb_lower_bounds_clicks_per_experiment), axis=0), np.mean(np.array(gpucb_upper_bounds_clicks_per_experiment), axis=0), alpha=0.2, color='b')
@@ -127,8 +126,8 @@ def plot_adv_curves():
     plt.figure(1)
     plt.title('Costs GP')
     #Plot GP-TS
-    #plt.plot(bids, np.mean(np.array(gpts_mean_cum_costs_per_experiment), axis=0), color='r', label='GP-TS')
-    #plt.fill_between(bids, np.mean(np.array(gpts_lower_bounds_costs_per_experiment), axis=0), np.mean(np.array(gpts_upper_bounds_costs_per_experiment), axis=0), alpha=0.2, color='r')
+    plt.plot(bids, np.mean(np.array(gpts_mean_cum_costs_per_experiment), axis=0), color='r', label='GP-TS')
+    plt.fill_between(bids, np.mean(np.array(gpts_lower_bounds_costs_per_experiment), axis=0), np.mean(np.array(gpts_upper_bounds_costs_per_experiment), axis=0), alpha=0.2, color='r')
     #Plot GP-UCB
     plt.plot(bids, np.mean(np.array(gpucb_mean_cum_costs_per_experiment), axis=0), color='b', label='GP-UCB')
     plt.fill_between(bids, np.mean(np.array(gpucb_lower_bounds_costs_per_experiment), axis=0), np.mean(np.array(gpucb_upper_bounds_costs_per_experiment), axis=0), alpha=0.2, color='b')
@@ -195,5 +194,3 @@ plot_instantaneous_regret()
 plot_cumulative_regret()
 plot_instantaneous_reward()
 plot_cumulative_reward()
-
-# TODO capire se ha senso plottare i punti delle curve
