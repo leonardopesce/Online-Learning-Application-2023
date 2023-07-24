@@ -432,7 +432,7 @@ def test():
     bids_to_clicks = {'C1': np.array([100, 2]),
                       'C2': np.array([90, 2]),
                       'C3': np.array([80, 3])}
-    bids_to_cum_costs = {'C1': np.array([1000, 0.05]),
+    bids_to_cum_costs = {'C1': np.array([1000, 0.07]),
                          'C2': np.array([800, 0.05]),
                          'C3': np.array([800, 0.04])}
     other_costs = 400
