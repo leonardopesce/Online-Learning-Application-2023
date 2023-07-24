@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-
+from mpl_toolkits.mplot3d import Axes3D
 
 def fun(x, scale, slope):
     """
@@ -113,6 +113,19 @@ class Environment:
 
         return bernoulli_realizations, clicks_given_bid, cost_given_bid
 
+    # TODO probabilmente sarebbe meglio rendere environment uno per classe e creare un environment con multiple contexts
+    def round_all_categories_merged(self, price_idx, bid_idx):
+        categories = self.probabilities.keys()
+        bernoulli_realizations_all_categories = np.array([])
+        clicks_given_bid_all_categories = 0
+        cost_given_bid_all_categories = 0
+        for category in categories:
+            bernoulli_realizations, clicks_given_bid, cost_given_bid = self.round(category, price_idx, bid_idx)
+            bernoulli_realizations_all_categories = np.append(bernoulli_realizations_all_categories, bernoulli_realizations)
+            clicks_given_bid_all_categories += clicks_given_bid
+            cost_given_bid_all_categories += cost_given_bid
+
+        return bernoulli_realizations_all_categories, clicks_given_bid_all_categories, cost_given_bid_all_categories
     def get_n_clicks(self, category, bid_idx):
         """
         Returns the number of clicks given the bid and class of the user
@@ -293,7 +306,7 @@ class Environment:
         Plots the function that models the number of clicks given the bid and the function that models the cumulative
         daily click cost given the bid, for all the classes of users
 
-        :param xlim: Max value for the x-axis
+        :param float xlim: Max value for the x-axis
         :param dict mapping: Mapping between classes of users and colors to use for the plot
 
         :return: Axes of the plot
@@ -309,6 +322,76 @@ class Environment:
 
         return axes
 
+    def plot_rewards_given_price_idx(self, price_idx, xlim=15, mapping={'C1': 'r', 'C2': 'b', 'C3': 'g'}):
+        """
+        Plots the reward with respect to the bid given the price index to use in the computation
+
+        :param int price_idx: Index of the price to use in the computation
+        :param float xlim: Max value for the x-axis
+        :param dict mapping: Mapping between classes of users and colors to use for the plot
+
+        :return: Axes of the plot
+        :rtype: plt.Axes
+        """
+
+        _, axes = plt.subplots(1, 1)
+
+        x = np.linspace(0, xlim, 100)
+        for category in self.bids_to_clicks.keys():
+            y = fun(x, *self.bids_to_clicks[category]) * self.probabilities[category][price_idx] * (self.prices[category][price_idx] - self.other_costs) - fun(x, *self.bids_to_cum_costs[category])
+            axes.plot(x, y, color=mapping[category], label=category)
+            axes.axvline(x[np.argmax(y)], color=mapping[category], label=f'Max of {category}')
+            axes.set_title(f'Reward given the bid, price = {self.prices[category][price_idx]}')
+            axes.set_xlabel('Value of the bid')
+            axes.set_ylabel('Reward')
+            axes.legend()
+
+        plt.tight_layout()
+        plt.show()
+
+        return axes
+
+    def plot_rewards(self, categories=('C1', 'C2', 'C3'), plot_aggregate_model=False):
+        """
+        Plots the reward with respect to the bid given the price index to use in the computation
+
+        :param tuple categories: Categories for which the plot has to be done
+
+        :return: Axes of the plot
+        :rtype: plt.Axes
+        """
+
+        #aggregate_model = None
+
+        for category in categories:
+            _, axes = plt.subplots(subplot_kw={'projection': '3d'})
+
+            x = self.bids
+            y = self.prices[category]
+            xx, yy = np.meshgrid(x, y)
+
+            n_clicks = fun(x, *self.bids_to_clicks[category])
+            cum_costs = fun(x, *self.bids_to_cum_costs[category])
+            conv_prob = self.probabilities[category]
+
+            z = n_clicks[:, None] * conv_prob[None, :] * (self.prices[category] - self.other_costs) - cum_costs[:, None]
+
+            axes.plot_surface(xx, yy, z.T, cmap='viridis')
+
+            argmax_x = np.argmax(z) // self.n_prices
+            argmax_y = np.argmax(z) % self.n_prices
+            argmax_z = np.max(z)
+
+            print(f'For the category {category} the maximum is in (bid, price) = ({self.bids[argmax_x]}, {self.prices[category][argmax_y]}), with a value of {argmax_z}')
+            axes.scatter(self.bids[argmax_x], self.prices[category][argmax_y], argmax_z, color='black', s=20, label=f'Max of {category}')
+            axes.set_title(f'Reward given price and bid for the user category {category}')
+            axes.set_xlabel('Value of the bid')
+            axes.set_ylabel('Value of the price')
+            axes.set_zlabel('Reward')
+
+            plt.tight_layout()
+            plt.show()
+        #if aggregate_model:
 
 def test():
     # TESTING
@@ -319,19 +402,21 @@ def test():
               'C3': np.array([500, 550, 600, 650, 700])}
     probabilities = {'C1': np.array([0.05, 0.05, 0.2, 0.1, 0.05]),
                      'C2': np.array([0.05, 0.05, 0.1, 0.2, 0.1]),
-                     'C3': np.array([0.1, 0.3, 0.2, 0.05, 0.05])}
+                     'C3': np.array([0.1, 0.2, 0.25, 0.05, 0.05])}
     bids_to_clicks = {'C1': np.array([100, 2]),
                       'C2': np.array([90, 2]),
                       'C3': np.array([80, 3])}
-    bids_to_cum_costs = {'C1': np.array([20, 0.5]),
-                         'C2': np.array([18, 0.4]),
-                         'C3': np.array([16, 0.45])}
-    other_costs = 200
+    bids_to_cum_costs = {'C1': np.array([1000, 0.05]),
+                         'C2': np.array([800, 0.05]),
+                         'C3': np.array([800, 0.04])}
+    other_costs = 400
 
     env = Environment(n_prices, prices, probabilities, bids_to_clicks, bids_to_cum_costs, other_costs)
-    env.plot_advertising_model('C1', color='r', axes=None)
+    #env.plot_advertising_model('C1', color='r', axes=None)
     env.plot_whole_advertising_model()
-    env.plot_whole_pricing_model()
+    #env.plot_whole_pricing_model()
+    #env.plot_rewards_given_price_idx()
+    env.plot_rewards(categories=['C1'])
 
 
-#test()
+test()

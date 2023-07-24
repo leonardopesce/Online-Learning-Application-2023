@@ -9,15 +9,31 @@ from collections import Counter
 import numpy as np
 
 """
-Simulation for the step 3: Learning for joint pricing and advertising
-Consider the case in which all the users belong to class C1, and no information about the advertising and pricing curves
-is known beforehand. Apply the GP-UCB and GP-TS algorithms when using GPs to model the two advertising curves, reporting
-the plots of the average (over a sufficiently large number of runs) value and standard deviation of the cumulative 
-regret, cumulative reward, instantaneous regret, and instantaneous reward.
+Consider the case in which there are three classes of users (C1, C2, and C3), 
+and no information about the advertising and pricing curves is known beforehand. 
+
+Consider two scenarios. 
+In the first one, the structure of the contexts is known beforehand. 
+Apply the GP-UCB and GP-TS algorithms when using GPs to model the two advertising curves, 
+reporting the plots with the average (over a sufficiently large number of runs) value and standard deviation 
+of the cumulative regret, cumulative reward, instantaneous regret, and instantaneous reward. 
+
+In the second scenario, the structure of the contexts is not known beforehand and needs to be learnt from data. 
+Important remark: the learner does not know how many contexts there are, 
+while it can only observe the features and data associated with the features. 
+Apply the GP-UCB and GP-TS algorithms when using GPs to model the two advertising curves paired with 
+a context generation algorithm, reporting the plots with the average (over a sufficiently large number of runs) 
+value and standard deviation of the cumulative regret, cumulative reward, instantaneous regret, 
+and instantaneous reward. Apply the context generation algorithms every two weeks of the simulation. 
+Compare the performance of the two algorithms --- the one used in the first scenario with 
+the one used in the second scenario. Furthermore, in the second scenario, 
+run the GP-UCB and GP-TS algorithms without context generation, and therefore forcing the context to be only one 
+for the entire time horizon, and compare their performance with the performance of the previous algorithms used 
+for the second scenario.
 """
 
-# Considered category is C1
-category = 'C1'
+# Defining the 3 categories
+categories = ['C1', 'C2', 'C3']
 
 # Setting the environment parameters
 n_prices = 5
@@ -47,21 +63,26 @@ T = 365
 
 # Since the reward functions are stochastic to better visualize the results and remove the noise
 # we have to perform a sufficiently large number experiments
-n_experiments = 50
+n_experiments = 30
 
-# To evaluate which are the most played prices and bids
+# To evaluate which are the most played prices and bids by the TS learner
 ts_best_price = []
 ts_best_bid = []
+# To evaluate which are the most played prices and bids by the UCB learner
 ucb_best_price = []
 ucb_best_bid = []
 
 # Define the environment
 env = Environment(n_prices, prices, probabilities, bids_to_clicks, bids_to_cum_costs, other_costs)
 # Define the clairvoyant
-clairvoyant = Clairvoyant(env)
-# Optimize the problem
-best_price_idx, best_price, best_bid_idx, best_bid, best_reward = clairvoyant.maximize_reward(category)
-
+clairvoyant = {category: Clairvoyant(env) for category in categories}
+# Optimize the problem TODO massimizzare l'aggregate model
+#best_price_idx, best_price, best_bid_idx, best_bid, best_reward = clairvoyant.maximize_reward(category)
+# Optimizing the problem for all the classes separately
+best_price_idx, best_price, best_bid_idx, best_bid, best_reward = {cl: [] for cl in categories}, {cl: [] for cl in categories}, {cl: [] for cl in categories}, {cl: [] for cl in categories}, {cl: [] for cl in categories}
+for category in categories:
+    best_price_idx[category], best_price[category], best_bid_idx[category], best_bid[category], best_reward[category] = clairvoyant[category].maximize_reward(category)
+best_reward = np.sum(np.array([best_reward[category] for category in categories]))
 # Store the rewards for each experiment for the learners
 ts_reward_per_experiment = []
 ucb_reward_per_experiment = []
@@ -78,24 +99,27 @@ gpts_pulled_bids_per_experiment = []
 # Each iteration simulates the learner-environment interaction
 for e in tqdm(range(0, n_experiments)):
     # Define the learners
-    # TS learner
-    ts_learner = TSLearnerPricingAdvertising(env.prices[category], env.bids)
-    # UCB learner
-    ucb_learner = UCBLearnerPricingAdvertising(env.prices[category], env.bids)
+    # TS learners
+    # TODO prices uguali per tutti??? qua altrimenti che priceses scelgo, per ora scelgo quelli della classe 1
+    ts_learner = TSLearnerPricingAdvertising(env.prices['C1'], env.bids)
+    # UCB learners
+    ucb_learner = UCBLearnerPricingAdvertising(env.prices['C1'], env.bids)
 
     # Iterate over the number of rounds
     for t in range(0, T):
         # Simulate the interaction learner-environment
         # TS Learner
         price_idx, bid_idx = ts_learner.pull_arm(env.other_costs)
-        bernoulli_realizations, n_clicks, cum_daily_cost = env.round(category, price_idx, bid_idx)
-        reward = env.get_reward(category, price_idx, np.mean(bernoulli_realizations), n_clicks, cum_daily_cost)
+        # Simulating the environment with 3 classes unknown to the learner
+        bernoulli_realizations, n_clicks, cum_daily_cost = env.round_all_categories_merged(price_idx, bid_idx)
+        reward = env.get_reward('C1', price_idx, np.mean(bernoulli_realizations), n_clicks, cum_daily_cost)
         ts_learner.update(price_idx, bernoulli_realizations, bid_idx, n_clicks, cum_daily_cost, reward)
 
         # UCB Learner
         price_idx, bid_idx = ucb_learner.pull_arm(env.other_costs)
-        bernoulli_realizations, n_clicks, cum_daily_cost = env.round(category, price_idx, bid_idx)
-        reward = env.get_reward(category, price_idx, np.mean(bernoulli_realizations), n_clicks, cum_daily_cost)
+        # Simulating the environment with 3 classes unknown to the learner
+        bernoulli_realizations, n_clicks, cum_daily_cost = env.round_all_categories_merged(price_idx, bid_idx)
+        reward = env.get_reward('C1', price_idx, np.mean(bernoulli_realizations), n_clicks, cum_daily_cost)
         ucb_learner.update(price_idx, bernoulli_realizations, bid_idx, n_clicks, cum_daily_cost, reward)
 
     # Store the most played prices and bids by TS
