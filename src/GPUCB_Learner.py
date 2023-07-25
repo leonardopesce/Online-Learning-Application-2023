@@ -18,7 +18,7 @@ class GPUCB_Learner(Learner):
     confidence: upper Confidence interval
     """
 
-    def __init__(self, arms_values):
+    def __init__(self, arms_values, confidence_level=0.95):
         super().__init__(arms_values)
         self.empirical_means_clicks = np.zeros(self.n_arms)
         self.confidence_clicks = np.array([np.inf] * self.n_arms)
@@ -34,6 +34,8 @@ class GPUCB_Learner(Learner):
         self.pulled_bids = []
         self.collected_clicks = np.array([])
         self.collected_costs = np.array([])
+        self.confidence_level = confidence_level
+        self.delta = 1 - confidence_level
 
         kernel_clicks = ScaleKernel(RBFKernel())
         kernel_costs = ScaleKernel(RBFKernel())
@@ -53,12 +55,9 @@ class GPUCB_Learner(Learner):
         self.empirical_means_clicks, self.sigmas_clicks, self.lower_bounds_clicks, self.upper_bounds_clicks = self.gp_clicks.predict(torch.Tensor(self.arms_values))
         self.sigmas_clicks = np.sqrt(self.sigmas_clicks)
         self.sigmas_clicks = np.maximum(self.sigmas_clicks, 1e-2)
-        '''
-        for arm in range(self.n_arms):
-            self.confidence_clicks[arm] = np.sqrt((2 * np.log(self.t) / self.times_arms_played[arm])) if self.times_arms_played[arm] > 0 else 50
-        self.confidence_clicks = self.confidence_clicks * self.sigmas_clicks'''
-        prova = self.n_arms * (self.t ** 2) * (np.pi ** 2) / (6 * 0.9)
-        self.confidence_clicks = 2 * np.log(prova) * self.sigmas_clicks
+        
+        beta = 2 * np.log((self.n_arms * (self.t ** 2) * (np.pi ** 2)) / (6 * self.delta))
+        self.confidence_clicks = np.sqrt(beta) * self.sigmas_clicks
 
         # Fitting the Gaussian Process Regressor relative to costs and making a prediction for the current round.
         y = torch.Tensor(self.collected_costs)        # Daily costs previously collected.
@@ -66,11 +65,8 @@ class GPUCB_Learner(Learner):
         self.empirical_means_costs, self.sigmas_costs, self.lower_bounds_costs, self.upper_bounds_costs = self.gp_costs.predict(torch.Tensor(self.get_arms()))
         self.sigmas_costs = np.sqrt(self.sigmas_costs)
         self.sigmas_costs = np.maximum(self.sigmas_costs, 1e-2)
-        '''
-        for arm in range(self.n_arms):
-            self.confidence_costs[arm] = np.sqrt((2 * np.log(self.t) / self.times_arms_played[arm])) if self.times_arms_played[arm] > 0 else 10
-        self.confidence_costs = self.confidence_costs * self.sigmas_costs'''
-        self.confidence_costs = 2 * np.log(prova) * self.sigmas_costs
+        
+        self.confidence_costs = np.sqrt(beta) * self.sigmas_costs
 
     def pull_arm_GPs(self, prob_margin) -> int:
         """
