@@ -19,7 +19,7 @@ def fun(x, scale, slope):
 
 class Environment:
     """
-    The Environment class defines the advertising and pricing environment usin, for each class, the models of:
+    The Environment class defines the advertising and pricing environment using, for each class, the models of:
     - the average dependence between the number of clicks and the bid;
     - the average cumulative daily click cost for the bid;
     - the conversion rate for 5 different prices.
