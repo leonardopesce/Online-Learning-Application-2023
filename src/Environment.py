@@ -425,7 +425,7 @@ class Environment:
                 
                 # Plotly version
                 if plotly_show:
-                    fig.add_trace(go.Surface(x=xx, y=yy, z=z.T, name=category), row=1, col=1)
+                    fig.add_trace(go.Surface(x=xx, y=yy, z=z.T, name=category, colorbar=dict(len=0.5, x=0.5)), row=1, col=1)
                     fig.add_trace(go.Scatter3d(x=[self.bids[argmax_x]], y=[self.prices[category][argmax_y]], z=[argmax_z], mode='markers', marker=dict(color='black', size=5), name=f'Max of {category}'), row=1, col=1)
                     fig.update_layout(title_text=f'Reward given price and bid for the user category {category}')
                     fig.update_xaxes(title_text="Value of the bid")
@@ -460,7 +460,7 @@ class Environment:
 
             # Plotly version
             if plotly_show:
-                fig.add_trace(go.Surface(x=xx, y=yy, z=aggregate_model.T, name='Aggregate model'), row=1, col=2)
+                fig.add_trace(go.Surface(x=xx, y=yy, z=aggregate_model.T, name='Aggregate model', colorbar=dict(len=0.5, x=1.0)), row=1, col=2)
                 fig.add_trace(go.Scatter3d(x=[self.bids[argmax_x]], y=[self.prices["C1"][argmax_y]], z=[argmax_z], mode='markers', marker=dict(color='black', size=5), name=f'Max of aggregate model'), row=1, col=2)
                 fig.update_layout(title_text=f'Reward given price and bid using the aggregate model')
                 fig.update_xaxes(title_text="Value of the bid")
