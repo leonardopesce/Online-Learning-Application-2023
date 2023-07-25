@@ -271,7 +271,7 @@ class Environment:
         """
 
         if axes is None:
-            _, axes = plt.subplots(1, 2)
+            _, axes = plt.subplots(1, 3)
 
         #x = np.linspace(0, self.bids_to_clicks[category][2], 100)
         #y = np.zeros((100,))
@@ -295,6 +295,16 @@ class Environment:
         axes[1].set_ylabel('Cumulative cost of the clicks')
         axes[1].legend()
 
+        x = np.linspace(0, xlim, 100)
+        y = fun(x, *self.bids_to_clicks[category]) * x - fun(x, *self.bids_to_cum_costs[category])
+        if any(y < 0):
+            print(f'For the category {category} some bids do not respect the consistency check (Number of clicks times bid > cumulative daily cost)')
+        axes[2].plot(x, y, color=color, label=category)
+        axes[2].set_title('Number of clicks times bid minus daily cost (Consistency check)')
+        axes[2].set_xlabel('Value of the bid')
+        axes[2].set_ylabel('Number of clicks times bid minus daily cost')
+        axes[2].legend()
+
         if show:
             plt.tight_layout()
             plt.show()
@@ -313,7 +323,7 @@ class Environment:
         :rtype: plt.Axes
         """
 
-        _, axes = plt.subplots(1, 2)
+        _, axes = plt.subplots(1, 3, figsize=(18,6))
         for category in self.bids_to_clicks.keys():
             axes = self.plot_advertising_model(category, xlim=xlim, color=mapping[category], axes=axes, show=False)
 
@@ -432,16 +442,16 @@ def test():
     bids_to_clicks = {'C1': np.array([100, 2]),
                       'C2': np.array([90, 2]),
                       'C3': np.array([80, 3])}
-    bids_to_cum_costs = {'C1': np.array([1000, 0.07]),
-                         'C2': np.array([800, 0.05]),
-                         'C3': np.array([800, 0.04])}
+    bids_to_cum_costs = {'C1': np.array([400, 0.035]),
+                         'C2': np.array([200, 0.07]),
+                         'C3': np.array([300, 0.04])}
     other_costs = 400
 
     env = Environment(n_prices, prices, probabilities, bids_to_clicks, bids_to_cum_costs, other_costs)
     #env.plot_advertising_model('C1', color='r', axes=None)
     env.plot_whole_advertising_model()
     #env.plot_whole_pricing_model()
-    #env.plot_rewards_given_price_idx()
+    env.plot_rewards_given_price_idx(2)
     env.plot_rewards(categories=['C1'], plot_aggregate_model=True)
 
 
