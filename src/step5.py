@@ -70,7 +70,7 @@ for phase, phase_len in enumerate(phases_duration):
 
 # Each iteration simulates the learner-environment interaction
 for e in tqdm(range(0, n_experiments)):
-    # Define the environment and le     arners
+    # Define the environment and learners
 
     # UCB1
     env_ucb = NonStationaryEnvironment(n_prices, prices, probabilities, bids_to_clicks, bids_to_cum_costs, other_costs, phases_duration)
@@ -120,7 +120,7 @@ for e in tqdm(range(0, n_experiments)):
 
 #TODO make functions to plot
 
-# Plot the results, comparison TS-UCB
+# Plot the results, comparison UCB, SW-UCB, CUSUM-UCB
 _, axes = plt.subplots(2, 2, figsize=(20, 20))
 axes = axes.flatten()
 regret_ucb_mean = np.mean(best_rewards - ucb_reward_per_experiment, axis=0)
