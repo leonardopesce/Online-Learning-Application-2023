@@ -47,7 +47,7 @@ T = 365
 
 # Since the reward functions are stochastic to better visualize the results and remove the noise
 # we have to perform a sufficiently large number experiments
-n_experiments = 50
+n_experiments = 10
 
 # To evaluate which are the most played prices and bids
 ts_best_price = []
@@ -62,18 +62,27 @@ clairvoyant = Clairvoyant(env)
 # Optimize the problem
 best_price_idx, best_price, best_bid_idx, best_bid, best_reward = clairvoyant.maximize_reward(category)
 
-# Store the rewards for each experiment for the learners
+# Store the rewards for each experiment for the TS learner
 ts_reward_per_experiment = []
-ucb_reward_per_experiment = []
+ts_clicks_per_experiment = []
+ts_mean_clicks_per_experiment = []
+ts_lower_bounds_clicks_per_experiment = []
+ts_upper_bounds_clicks_per_experiment = []
+ts_cum_costs_per_experiment = []
+ts_mean_cum_costs_per_experiment = []
+ts_lower_bounds_costs_per_experiment = []
+ts_upper_bounds_costs_per_experiment = []
 
-# Store some features for each experiment for the learners
-gpts_clicks_per_experiment = []
-gpts_mean_clicks_per_experiment = []
-gpts_sigmas_clicks_per_experiment = []
-gpts_cum_costs_per_experiment = []
-gpts_mean_cum_costs_per_experiment = []
-gpts_sigmas_cum_costs_per_experiment = []
-gpts_pulled_bids_per_experiment = []
+# Store some features for each experiment for the UCB1 learners
+ucb_reward_per_experiment = []
+ucb_clicks_per_experiment = []
+ucb_mean_clicks_per_experiment = []
+ucb_lower_bounds_clicks_per_experiment = []
+ucb_upper_bounds_clicks_per_experiment = []
+ucb_cum_costs_per_experiment = []
+ucb_mean_cum_costs_per_experiment = []
+ucb_lower_bounds_costs_per_experiment = []
+ucb_upper_bounds_costs_per_experiment = []
 
 # Each iteration simulates the learner-environment interaction
 for e in tqdm(range(0, n_experiments)):
@@ -110,28 +119,43 @@ for e in tqdm(range(0, n_experiments)):
     ts_reward_per_experiment.append(ts_learner.TS_pricing.collected_rewards)
     ucb_reward_per_experiment.append(ucb_learner.UCB_pricing.collected_rewards)
 
-    gpts_clicks_per_experiment.append(ts_learner.GPTS_advertising.collected_clicks)
-    gpts_mean_clicks_per_experiment.append(ts_learner.GPTS_advertising.means_clicks)
-    gpts_sigmas_clicks_per_experiment.append(ts_learner.GPTS_advertising.sigmas_clicks)
-    gpts_cum_costs_per_experiment.append(ts_learner.GPTS_advertising.collected_costs)
-    gpts_mean_cum_costs_per_experiment.append(ts_learner.GPTS_advertising.means_costs)
-    gpts_sigmas_cum_costs_per_experiment.append(ts_learner.GPTS_advertising.sigmas_costs)
-    gpts_pulled_bids_per_experiment.append(ts_learner.GPTS_advertising.pulled_bids)
+    ts_clicks_per_experiment.append(ts_learner.GPTS_advertising.collected_clicks)
+    ts_mean_clicks_per_experiment.append(ts_learner.GPTS_advertising.means_clicks)
+    ts_lower_bounds_clicks_per_experiment.append(ts_learner.GPTS_advertising.lower_bounds_clicks)
+    ts_upper_bounds_clicks_per_experiment.append(ts_learner.GPTS_advertising.upper_bounds_clicks)
+    ts_cum_costs_per_experiment.append(ts_learner.GPTS_advertising.collected_costs)
+    ts_mean_cum_costs_per_experiment.append(ts_learner.GPTS_advertising.means_costs)
+    ts_lower_bounds_costs_per_experiment.append(ts_learner.GPTS_advertising.lower_bounds_costs)
+    ts_upper_bounds_costs_per_experiment.append(ts_learner.GPTS_advertising.upper_bounds_costs)
+
+    ucb_clicks_per_experiment.append(ucb_learner.GPUCB_advertising.collected_clicks)
+    ucb_mean_clicks_per_experiment.append(ucb_learner.GPUCB_advertising.empirical_means_clicks)
+    ucb_lower_bounds_clicks_per_experiment.append(ucb_learner.GPUCB_advertising.lower_bounds_clicks)
+    ucb_upper_bounds_clicks_per_experiment.append(ucb_learner.GPUCB_advertising.upper_bounds_clicks)
+    ucb_cum_costs_per_experiment.append(ucb_learner.GPUCB_advertising.collected_costs)
+    ucb_mean_cum_costs_per_experiment.append(ucb_learner.GPUCB_advertising.empirical_means_costs)
+    ucb_lower_bounds_costs_per_experiment.append(ucb_learner.GPUCB_advertising.lower_bounds_costs)
+    ucb_upper_bounds_costs_per_experiment.append(ucb_learner.GPUCB_advertising.upper_bounds_costs)
+
+
+def iterate_over_counter(counter, reference_array):
+    for key, value in counter.items():
+        print(f"{reference_array[key]}, index {key}, is the best in {value} experiments")
 
 # Print occurrences of best arm in TS
 print('Best price found in the experiments by TS')
 print('The format is price: number of experiments in which it is the most played price')
-print(Counter(ts_best_price))
+iterate_over_counter(Counter(ts_best_price), env.prices[category])
 print('Best bid found in the experiments by TS')
 print('The format is bid: number of experiments in which it is the most bid price')
-print(Counter(ts_best_bid))
+iterate_over_counter(Counter(ts_best_bid), env.bids)
 # Print occurrences of best arm in UCB1
 print('Best price found in the experiments by UCB')
 print('The format is price: number of experiments in which it is the most played price')
-print(Counter(ucb_best_price))
+iterate_over_counter(Counter(ucb_best_price), env.prices[category])
 print('Best bid found in the experiments by UCB')
 print('The format is bid: number of experiments in which it is the most bid price')
-print(Counter(ucb_best_bid))
+iterate_over_counter(Counter(ucb_best_bid), env.bids)
 
 # Plot the results, comparison TS-UCB
 _, axes = plt.subplots(2, 2, figsize=(20, 20))
@@ -257,4 +281,33 @@ axes[3].legend(["UCB mean", "UCB std", "Clairvoyant"])
 axes[3].set_xlabel("t")
 axes[3].set_ylabel("Cumulative reward")
 
+plt.show()
+
+# Plot Clicks' curve
+plt.figure(0)
+plt.title('Clicks GP')
+# Plot GP-TS
+plt.plot(bids, np.mean(np.array(ts_mean_clicks_per_experiment), axis=0), color='r', label='GP-TS')
+plt.fill_between(bids, np.mean(np.array(ts_lower_bounds_clicks_per_experiment), axis=0),
+                 np.mean(np.array(ts_upper_bounds_clicks_per_experiment), axis=0), alpha=0.2, color='r')
+# Plot GP-UCB
+plt.plot(bids, np.mean(np.array(ucb_mean_clicks_per_experiment), axis=0), color='b', label='GP-UCB')
+plt.fill_between(bids, np.mean(np.array(ucb_lower_bounds_clicks_per_experiment), axis=0),
+                 np.mean(np.array(ucb_upper_bounds_clicks_per_experiment), axis=0), alpha=0.2, color='b')
+plt.legend()
+plt.show()
+
+# Plot Costs' curve
+plt.figure(1)
+plt.title('Costs GP')
+# Plot GP-TS
+plt.plot(bids, np.mean(np.array(ts_mean_cum_costs_per_experiment), axis=0), color='r', label='GP-TS')
+plt.fill_between(bids, np.mean(np.array(ts_lower_bounds_costs_per_experiment), axis=0),
+                 np.mean(np.array(ts_upper_bounds_costs_per_experiment), axis=0), alpha=0.2, color='r')
+# Plot GP-UCB
+plt.plot(bids, np.mean(np.array(ucb_mean_cum_costs_per_experiment), axis=0), color='b', label='GP-UCB')
+plt.fill_between(bids, np.mean(np.array(ucb_lower_bounds_costs_per_experiment), axis=0),
+                 np.mean(np.array(ucb_upper_bounds_costs_per_experiment), axis=0), alpha=0.2, color='b')
+
+plt.legend()
 plt.show()
