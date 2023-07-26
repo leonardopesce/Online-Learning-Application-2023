@@ -1,12 +1,13 @@
 import numpy as np
 
+from PricingAdvertisingLearner import PricingAdvertisingLearner
 from GPUCB_Learner import GPUCB_Learner
 from UCB import UCBLearner
 
 # TODO This learner maximize the reward given prices and bids in a joint way
 
 
-class UCBLearnerPricingAdvertising:
+class UCBLearnerPricingAdvertising(PricingAdvertisingLearner):
     """
     Learner that applies the Upper Confidence Bound 1(UCB1) algorithm to the problem of advertising and pricing
 

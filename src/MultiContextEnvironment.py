@@ -23,7 +23,7 @@ class MultiContextEnvironment(Environment):
         other_costs: Cost of the product
     """
 
-    def __init__(self, n_prices, prices, probabilities, bids_to_clicks, bids_to_cum_costs, other_costs, categories, feature_names, feature_values, feature_values_to_categories, categories_to_feature_values):
+    def __init__(self, n_prices, prices, probabilities, bids_to_clicks, bids_to_cum_costs, other_costs, categories, feature_names, feature_values, feature_values_to_categories, probability_feature_values_in_categories):
         """
         The
         """
@@ -34,11 +34,13 @@ class MultiContextEnvironment(Environment):
         self.feature_name = feature_names
         self.feature_values = feature_values
         self.feature_values_to_categories = feature_values_to_categories
-        self.categories_to_feature_values = categories_to_feature_values
+        self.probability_feature_values_in_categories = probability_feature_values_in_categories
 
-    def round(self, price_idx, bid_idx, user_features):
+    def round(self, price_idx, bid_idx, user_features_set):
+        # price_idx, bid_idx = learner.pull_arms()
+        # bernoulli_realizations, clicks_given_bid, cost_given_bid = environment.round(price_idx, bid_idx, learner.get_context_features() (che potrebbe tornare set((0,0), (0,1))))
         """
-        :param set tuple user_features: Tuple containing the features of the
+        :param set tuple user_features_set: Tuple containing the features of the
         """
 
         # TODO ATTENZIONE DA VEDERE: dobbiamo analizzare bene questo fatto: data la nostra implementazione, se giocassimo
@@ -49,11 +51,25 @@ class MultiContextEnvironment(Environment):
         # TODO To check: ha senso tornare il numero di click e il cost aggregato su tutte le tuple di user_features o no?
         # TODO Secondo noi ha più senso separare anche nell'advertiseing sulla base delle features (come stiamo facendo in questo metodo)
 
-        categories_to_extract = self.feature_values_to_categories[user_features]
+        features_list = []
+        bernoulli_realizations_list = []
+        clicks_given_bid_list = []
+        cost_given_bid_list = []
 
-        for category in categories_to_extract:
+        for user_features in user_features_set:
+            category = self.feature_values_to_categories[user_features]
+            probability_of_features = self.probability_feature_values_in_categories[category][user_features]
+
             bernoulli_realizations, clicks_given_bid, cost_given_bid = super.round(category, price_idx, bid_idx)
 
+            features_list.append(user_features)
+            clicks_given_features = probability_of_features * clicks_given_bid
+            clicks_given_bid_list.append(clicks_given_features)
+            cost_given_features = probability_of_features * cost_given_bid
+            cost_given_bid_list.append(cost_given_features)
+            bernoulli_realizations_list.append(np.random.choice(bernoulli_realizations, clicks_given_features))
+
+        return features_list, bernoulli_realizations_list, clicks_given_bid_list, cost_given_bid_list
 
 
 
@@ -78,6 +94,6 @@ feature_names = ['age', 'sex']
 feature_values = {'age': [0, 1], 'sex': [0, 1]}
 # age: 0 -> young, 1 -> old; sex: 0 -> woman, 1 -> man
 feature_values_to_categories = {(0, 0): 'C3', (0, 1): 'C1', (1, 0): 'C3', (1, 1): 'C2'}
-categories_to_feature_values = {'C1': {(0, 1): 1}, 'C2': {(1, 1): 1},'C3': {(0, 0): 0.5, (1, 0): 0.5}}
+probability_feature_values_in_categories = {'C1': {(0, 1): 1}, 'C2': {(1, 1): 1}, 'C3': {(0, 0): 0.5, (1, 0): 0.5}}
 
-env = MultiContextEnvironment(n_prices, prices, probabilities, bids_to_clicks, bids_to_cum_costs, other_costs, categories, feature_names, feature_values, feature_values_to_categories, categories_to_feature_values)
+env = MultiContextEnvironment(n_prices, prices, probabilities, bids_to_clicks, bids_to_cum_costs, other_costs, categories, feature_names, feature_values, feature_values_to_categories, probability_feature_values_in_categories)

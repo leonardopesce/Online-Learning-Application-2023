@@ -1,12 +1,13 @@
 import numpy as np
 
+from PricingAdvertisingLearner import PricingAdvertisingLearner
 from GPTS_Learner import GPTS_Learner
 from TSReward import TSRewardLearner
 
 # TODO This learner maximize the reward given prices and bids in a joint way. Do we what this?
 
 
-class TSLearnerPricingAdvertising:
+class TSLearnerPricingAdvertising(PricingAdvertisingLearner):
     """
     Learner that applies the Thompson Sampling(TS) algorithm to the problem of advertising and pricing
 
@@ -28,8 +29,8 @@ class TSLearnerPricingAdvertising:
 
     def pull_arm(self, other_costs):
         """
-        Chooses the price to play based on the TS algorithm, therefore it samples the Beta distribution and the Gaussian
-        processes of the advertising problem and then it chooses the price and the bid that maximize the reward
+        Chooses the price and bid to play based on the TS algorithm, therefore it samples the Beta distribution and the
+        Gaussian processes of the advertising problem and then it chooses the price and the bid that maximize the reward
 
         :param float other_costs: Know costs of the product, used to compute the margin
 
