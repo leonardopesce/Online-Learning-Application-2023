@@ -32,11 +32,14 @@ class ContextGeneratorLearner:
         """
 
         # The Learner starts considering a single context with all the possible users inside
+        self.prices = prices
+        self.bids = bids
         self.context_learners = [ContextLearner(self.create_user_feature_tuples(feature_names, feature_values), LearnerFactory().get_learner(learner_type, prices, bids))]
         self.feature_to_observation = {feature_tuple: [] for feature_tuple in self.create_user_feature_tuples(feature_names, feature_values)}
         self.feature_names = feature_names
         self.feature_values = feature_values
         self.time_between_context_generation = time_between_context_generation
+        self.learner_type = learner_type
 
     def create_user_feature_tuples(self, feature_names, feature_values):
         """
@@ -85,6 +88,61 @@ class ContextGeneratorLearner:
         probability_split_0_y = (num_samples_split_0_y / tot_num_samples) - lower_bound(0.05, num_samples_split_0_y)
         probability_split_1_x = (num_samples_split_1_x / tot_num_samples) - lower_bound(0.05, num_samples_split_1_x)
         probability_split_1_y = (num_samples_split_1_y / tot_num_samples) - lower_bound(0.05, num_samples_split_1_y)
+
+        lower_bound_reward_0 = probability_split_0_x * reward_split_0_x + probability_split_0_y * reward_split_0_y
+        lower_bound_reward_1 = probability_split_1_x * reward_split_1_x + probability_split_1_y * reward_split_1_y
+
+        split_0 = -1
+        if lower_bound_reward_0 > aggregate_reward and lower_bound_reward_0 > lower_bound_reward_1:
+            split_0 = 0
+            split_1 = 1
+        elif lower_bound_reward_1 > aggregate_reward:
+            split_0 = 1
+            split_1 = 0
+
+        if split_0 != -1:
+            num_samples_split_branch_1_x = sum(obj[3] for obj in (self.feature_to_observation.get(key) for key in self.feature_to_observation.keys() if key[split_0] == 0 and key[split_0] == 0))
+            num_samples_split_branch_1_y = sum(obj[3] for obj in (self.feature_to_observation.get(key) for key in self.feature_to_observation.keys() if key[split_0] == 0 and key[split_0] == 1))
+            tot_num_samples = sum(obj[3] for obj in (self.feature_to_observation.get(key) for key in self.feature_to_observation.keys() if key[split_0] == 0))
+
+            reward_split_branch_1_x = np.mean(obj[-1] for obj in (self.feature_to_observation.get(key) for key in self.feature_to_observation.keys() if key[split_0] == 0 and key[split_0] == 0)) - lower_bound(0.05, num_samples_split_branch_1_x)
+            reward_split_branch_1_y = np.mean(obj[-1] for obj in (self.feature_to_observation.get(key) for key in self.feature_to_observation.keys() if key[split_0] == 0 and key[split_0] == 1)) - lower_bound(0.05, num_samples_split_branch_1_y)
+
+            # Calculating the probabilities of the contexts TODO: hanno senso i lower bound sulle probabilità? (non credo)
+            probability_split_0_x = (num_samples_split_0_x / tot_num_samples) - lower_bound(0.05, num_samples_split_0_x)
+            probability_split_0_y = (num_samples_split_0_y / tot_num_samples) - lower_bound(0.05, num_samples_split_0_y)
+            probability_split_1_x = (num_samples_split_1_x / tot_num_samples) - lower_bound(0.05, num_samples_split_1_x)
+            probability_split_1_y = (num_samples_split_1_y / tot_num_samples) - lower_bound(0.05, num_samples_split_1_y)
+
+            lower_bound_reward_0 = probability_split_0_x * reward_split_0_x + probability_split_0_y * reward_split_0_y
+            lower_bound_reward_1 = probability_split_1_x * reward_split_1_x + probability_split_1_y * reward_split_1_y
+
+            split_x = -1
+            if lower_bound_reward_0 > aggregate_reward and lower_bound_reward_0 > lower_bound_reward_1:
+                split_x = 0
+            elif lower_bound_reward_1 > aggregate_reward:
+                split_x = 1
+        defined_contexts = set()
+
+        # Redefining the learners to use in the next steps of the learning procedure using the new contexts
+        # Defining the list of the new context learners (learners + contexts)
+        new_learners = []
+        # Iterating on the new contexts
+        for context in defined_contexts:
+            # Defining a new learner
+            new_learner = LearnerFactory().get_learner(self.learner_type, self.prices, self.bids)
+            # Iterating on the tuples of features of the user in the context
+            for feature_tuple in context:
+                # Iterating on the observation regarding the user with the chosen values of features
+                for element in self.feature_to_observation(feature_tuple):
+                    # Updating the new learner using the past observation of the users in the context it has to consider
+                    new_learner.update(element[0], element[1], element[2], element[3], element[4], element[5])
+
+            # Appending a new context learner to the set of the new learner to use in future time steps
+            new_learners.append(ContextLearner(context, new_learner))
+
+        # Setting the new learners into the context generator learner
+        self.context_learners = new_learners
 
     def pull_arm(self, other_costs):
         """
