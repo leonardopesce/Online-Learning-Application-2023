@@ -63,7 +63,7 @@ T = 365
 
 # Since the reward functions are stochastic to better visualize the results and remove the noise
 # we have to perform a sufficiently large number experiments
-n_experiments = 30
+n_experiments = 10
 
 # To evaluate which are the most played prices and bids by the TS learner
 ts_best_price = []
@@ -75,14 +75,14 @@ ucb_best_bid = []
 # Define the environment
 env = Environment(n_prices, prices, probabilities, bids_to_clicks, bids_to_cum_costs, other_costs)
 # Define the clairvoyant
-clairvoyant = {category: Clairvoyant(env) for category in categories}
-# Optimize the problem TODO massimizzare l'aggregate model
-#best_price_idx, best_price, best_bid_idx, best_bid, best_reward = clairvoyant.maximize_reward(category)
+clairvoyant = Clairvoyant(env)
+# Optimize the problem
+best_price_idx, best_price, best_bid_idx, best_bid, best_reward = clairvoyant.maximize_aggregate_model_reward()
 # Optimizing the problem for all the classes separately
-best_price_idx, best_price, best_bid_idx, best_bid, best_reward = {cl: [] for cl in categories}, {cl: [] for cl in categories}, {cl: [] for cl in categories}, {cl: [] for cl in categories}, {cl: [] for cl in categories}
-for category in categories:
-    best_price_idx[category], best_price[category], best_bid_idx[category], best_bid[category], best_reward[category] = clairvoyant[category].maximize_reward(category)
-best_reward = np.sum(np.array([best_reward[category] for category in categories]))
+#best_price_idx, best_price, best_bid_idx, best_bid, best_reward = {cl: [] for cl in categories}, {cl: [] for cl in categories}, {cl: [] for cl in categories}, {cl: [] for cl in categories}, {cl: [] for cl in categories}
+#for category in categories:
+#    best_price_idx[category], best_price[category], best_bid_idx[category], best_bid[category], best_reward[category] = clairvoyant[category].maximize_reward(category)
+#best_reward = np.sum(np.array([best_reward[category] for category in categories]))
 # Store the rewards for each experiment for the learners
 ts_reward_per_experiment = []
 ucb_reward_per_experiment = []

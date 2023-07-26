@@ -1,5 +1,7 @@
 from PricingAdvertisingLearner import PricingAdvertisingLearner
 import itertools
+
+
 class ContextGeneratorLearner:
 
     """
@@ -7,7 +9,7 @@ class ContextGeneratorLearner:
     context generation algorithm
 
     Attributes:
-        context: List containing the contexts the learner is using in the current time step
+        contexts: List containing the contexts the learner is using in the current time step
         learners: List containing a learner for each context that is applied to the relative context in the context list
         feature_name: List containing the name of the features used to index the feature_values parameter
         feature_values: Dictionary containing the mapping between the features and the values the features
@@ -24,10 +26,11 @@ class ContextGeneratorLearner:
         can assume, the format is {feature_name: [value0, value1, value2, ...]}
         :param int time_between_context_generation: Number of
         """
+
         # The Learner starts considering a single context with all the possible users inside
-        self.context = list(self.create_user_feature_tuples(feature_names, feature_values))
+        self.contexts = list(self.create_user_feature_tuples(feature_names, feature_values))
         self.learners = list(PricingAdvertisingLearner(prices, bids))
-        self.feature_to_observation = {feature_tuple: [] for feature_tuple in self.context}
+        self.feature_to_observation = {feature_tuple: [] for feature_tuple in self.contexts}
         self.feature_name = feature_names
         self.feature_values = feature_values
         self.time_between_context_generation = time_between_context_generation
@@ -72,13 +75,13 @@ class ContextGeneratorLearner:
         """
         pulled = []
         for idx in range(len(self.learners)):
-            context_of_the_learner = self.context[idx]
+            context_of_the_learner = self.contexts[idx]
             price_to_pull, bid_to_pull = self.learners[idx].pull_arm(other_costs)
             pulled.append([context_of_the_learner, price_to_pull, bid_to_pull])
 
         return pulled
 
-    def update(self, features_list, pulled_price_list, bernoulli_realizations_list, pulled_bid_list, clicks_given_bid_list, c, rewards):
+    def update(self, features_list, pulled_price_list, bernoulli_realizations_list, pulled_bid_list, clicks_given_bid_list, cost_given_bid_list, rewards):
         """
         Updating the parameters of the learners based on the observations obtained by playing the chosen price and bid
         in the environment

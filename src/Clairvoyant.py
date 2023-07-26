@@ -82,6 +82,33 @@ class Clairvoyant:
 
         return best_price_idx, best_price, best_bid_idx, best_bid, reward
 
+    def maximize_aggregate_model_reward(self):
+        prices = self.environment.prices['C1']
+        bids = self.environment.bids
+        other_costs = self.environment.other_costs
+
+        aggregate_rewards = np.zeros((len(prices), len(bids)))
+        for category in self.environment.bids_to_clicks:
+            # Defining the conversion probability
+            conversion_prob = self.environment.probabilities[category]
+            # Computing the product between the conversion probabilities and the margins
+            conversion_times_margin = conversion_prob * (prices - other_costs)
+
+            # Computing the number o clicks and the cost given the bid
+            n_clicks = fun(bids, *self.environment.bids_to_clicks[category])
+            cum_daily_costs = fun(bids, *self.environment.bids_to_cum_costs[category])
+
+            # Computing the reward got for each price and bid it is possible to pull.
+            aggregate_rewards += n_clicks[None, :] * conversion_times_margin[:, None] - cum_daily_costs[None, :]
+
+        # Pulling the bid that maximizes the reward
+        flat_index_maximum = np.argmax(aggregate_rewards)
+        num_prices, num_bids = aggregate_rewards.shape
+        best_price_idx = flat_index_maximum // num_bids
+        best_bid_idx = flat_index_maximum % num_bids
+
+        return best_price_idx, prices[best_price_idx], best_bid_idx, bids[best_bid_idx], aggregate_rewards[best_price_idx, best_bid_idx]
+
     def check(self, category):
         # To check whether all the rewards are positive
         values = [[] for _ in range(5)]
