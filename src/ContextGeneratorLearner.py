@@ -150,7 +150,7 @@ class ContextGeneratorLearner:
 
         :param float other_costs: Know costs of the product, used to compute the margin
 
-        :return: Index of the price to pull, index of the bid to pull
+        :return: Context of the Learner, Index of the price to pull, index of the bid to pull
         :rtype: tuple
         """
         pulled = []
