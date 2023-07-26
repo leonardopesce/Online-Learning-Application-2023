@@ -1,5 +1,9 @@
-from PricingAdvertisingLearner import PricingAdvertisingLearner
 import itertools
+import numpy as np
+
+from PricingAdvertisingLearner import PricingAdvertisingLearner
+from ContextLearner import ContextLearner
+from LearnerFactory import LearnerFactory
 
 
 class ContextGeneratorLearner:
@@ -15,7 +19,7 @@ class ContextGeneratorLearner:
         feature_values: Dictionary containing the mapping between the features and the values the features
         can assume, the format is {feature_name: [value0, value1, value2, ...]}
     """
-    def __init__(self, prices, bids, feature_names, feature_values, time_between_context_generation):
+    def __init__(self, prices, bids, feature_names, feature_values, time_between_context_generation, learner_type):
         """
         Initialize the multi-context learner
 
@@ -28,10 +32,9 @@ class ContextGeneratorLearner:
         """
 
         # The Learner starts considering a single context with all the possible users inside
-        self.contexts = list(self.create_user_feature_tuples(feature_names, feature_values))
-        self.learners = list(PricingAdvertisingLearner(prices, bids))
-        self.feature_to_observation = {feature_tuple: [] for feature_tuple in self.contexts}
-        self.feature_name = feature_names
+        self.context_learners = [ContextLearner(self.create_user_feature_tuples(feature_names, feature_values), LearnerFactory().get_learner(learner_type, prices, bids))]
+        self.feature_to_observation = {feature_tuple: [] for feature_tuple in self.create_user_feature_tuples(feature_names, feature_values)}
+        self.feature_names = feature_names
         self.feature_values = feature_values
         self.time_between_context_generation = time_between_context_generation
 
@@ -62,7 +65,26 @@ class ContextGeneratorLearner:
         """
 
         # TODO probabilmente è necessario prendere tutte le osservazioni e ridistribuirle nei learners
+        # Saving the reward of the aggregate model. It will be used to compare the reward of the new context.
+        lower_bound = lambda delta, Z : np.sqrt((-np.log(delta)) / (2 * Z))
 
+        num_samples_split_0_x = sum(obj[3] for obj in (self.feature_to_observation.get(key) for key in self.feature_to_observation.keys() if key[0] == 0))
+        num_samples_split_0_y = sum(obj[3] for obj in (self.feature_to_observation.get(key) for key in self.feature_to_observation.keys() if key[0] == 1))
+        num_samples_split_1_x = sum(obj[3] for obj in (self.feature_to_observation.get(key) for key in self.feature_to_observation.keys() if key[1] == 0))
+        num_samples_split_1_y = sum(obj[3] for obj in (self.feature_to_observation.get(key) for key in self.feature_to_observation.keys() if key[1] == 1))
+        tot_num_samples = sum(obj[3] for obj in (self.feature_to_observation.get(key) for key in self.feature_to_observation.keys()))
+
+        aggregate_reward = np.mean(obj[-1] for obj in (self.feature_to_observation.get(key) for key in self.feature_to_observation.keys())) - lower_bound(0.05, tot_num_samples)
+        reward_split_0_x = np.mean(obj[-1] for obj in (self.feature_to_observation.get(key) for key in self.feature_to_observation.keys() if key[0] == 0)) - lower_bound(0.05, num_samples_split_0_x)
+        reward_split_0_y = np.mean(obj[-1] for obj in (self.feature_to_observation.get(key) for key in self.feature_to_observation.keys() if key[0] == 1)) - lower_bound(0.05, num_samples_split_0_y)
+        reward_split_1_x = np.mean(obj[-1] for obj in (self.feature_to_observation.get(key) for key in self.feature_to_observation.keys() if key[1] == 0)) - lower_bound(0.05, num_samples_split_1_x)
+        reward_split_1_y = np.mean(obj[-1] for obj in (self.feature_to_observation.get(key) for key in self.feature_to_observation.keys() if key[1] == 1)) - lower_bound(0.05, num_samples_split_1_y)
+
+        # Calculating the probabilities of the contexts TODO: hanno senso i lower bound sulle probabilità? (non credo)
+        probability_split_0_x = (num_samples_split_0_x / tot_num_samples) - lower_bound(0.05, num_samples_split_0_x)
+        probability_split_0_y = (num_samples_split_0_y / tot_num_samples) - lower_bound(0.05, num_samples_split_0_y)
+        probability_split_1_x = (num_samples_split_1_x / tot_num_samples) - lower_bound(0.05, num_samples_split_1_x)
+        probability_split_1_y = (num_samples_split_1_y / tot_num_samples) - lower_bound(0.05, num_samples_split_1_y)
 
     def pull_arm(self, other_costs):
         """
@@ -74,9 +96,9 @@ class ContextGeneratorLearner:
         :rtype: tuple
         """
         pulled = []
-        for idx in range(len(self.learners)):
-            context_of_the_learner = self.contexts[idx]
-            price_to_pull, bid_to_pull = self.learners[idx].pull_arm(other_costs)
+        for learner in self.context_learners:
+            context_of_the_learner = learner.get_context()
+            price_to_pull, bid_to_pull = learner.get_learner().pull_arm(other_costs)
             pulled.append([context_of_the_learner, price_to_pull, bid_to_pull])
 
         return pulled
@@ -98,6 +120,6 @@ class ContextGeneratorLearner:
         :param list rewards: Rewards collected by each learner in the current time step playing the pulled arms
         """
 
-        for idx in range(len(self.learners)):
-            self.learners[idx].update(pulled_price_list[idx], bernoulli_realizations_list[idx], pulled_bid_list[idx], clicks_given_bid_list[idx], cost_given_bid_list[idx], rewards[idx])
+        for idx, learner in enumerate(self.context_learners):
+            learner.get_learner().update(pulled_price_list[idx], bernoulli_realizations_list[idx], pulled_bid_list[idx], clicks_given_bid_list[idx], cost_given_bid_list[idx], rewards[idx])
             self.feature_to_observation[features_list[idx]].append([pulled_price_list[idx], bernoulli_realizations_list[idx], pulled_bid_list[idx], clicks_given_bid_list[idx], cost_given_bid_list[idx], rewards[idx]])

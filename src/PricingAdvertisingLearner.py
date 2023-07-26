@@ -1,5 +1,3 @@
-
-
 class PricingAdvertisingLearner:
     """
     Learner that applies a multi-armed bandit algorithm to the problem of advertising and pricing
