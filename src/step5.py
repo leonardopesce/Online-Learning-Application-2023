@@ -1,9 +1,11 @@
+import numpy as np
 from tqdm import tqdm
 from Clairvoyant import *
 from UCB import *
 from NonStationaryEnvironment import *
 from SWUCB import SWUCBLearner
 from CUSUMUCBLearner import CUSUMUCBLearner
+from Plots import Plots
 
 """
 Simulation for the step 5: dealing with non-stationary environments with two abrupt changes 
@@ -49,7 +51,7 @@ window_size = 50
 
 # Since the reward functions are stochastic to better visualize the results and remove the noise
 # we have to perform a sufficiently large number experiments
-n_experiments = 200
+n_experiments = 10
 
 # Store the rewards for each experiment for the learners
 ucb_reward_per_experiment = []
@@ -118,11 +120,6 @@ for e in tqdm(range(0, n_experiments)):
     swucb_reward_per_experiment.append(swucb_learner.collected_rewards)
     cusum_ucb_reward_per_experiment.append(cusum_ucb_learner.collected_rewards)
 
-#TODO make functions to plot
-
-# Plot the results, comparison TS-UCB
-_, axes = plt.subplots(2, 2, figsize=(20, 20))
-axes = axes.flatten()
 regret_ucb_mean = np.mean(best_rewards - ucb_reward_per_experiment, axis=0)
 regret_ucb_std = np.std(best_rewards - ucb_reward_per_experiment, axis=0)
 regret_swucb_mean = np.mean(best_rewards - swucb_reward_per_experiment, axis=0)
@@ -148,146 +145,19 @@ cumulative_reward_swucb_std = np.std(np.cumsum(swucb_reward_per_experiment, axis
 cumulative_reward_cusum_ucb_mean = np.mean(np.cumsum(cusum_ucb_reward_per_experiment, axis=1), axis=0)
 cumulative_reward_cusum_ucb_std = np.std(np.cumsum(cusum_ucb_reward_per_experiment, axis=1), axis=0)
 
-axes[0].set_title('Instantaneous regret plot')
-axes[0].plot(regret_swucb_mean, 'r')
-axes[0].plot(regret_ucb_mean, 'g')
-axes[0].plot(regret_cusum_ucb_mean, 'y')
-axes[0].axhline(y=0, color='b', linestyle='--')
-axes[0].legend(["SWUCB", "UCB", "CUSUM_UCB"])
-axes[0].set_xlabel("t")
-axes[0].set_ylabel("Instantaneous regret")
-
-axes[1].set_title('Instantaneous reward plot')
-axes[1].plot(reward_swucb_mean, 'r')
-axes[1].plot(reward_ucb_mean, 'g')
-axes[1].plot(reward_cusum_ucb_mean, 'y')
-axes[1].plot(best_rewards, 'b')
-axes[1].legend(["SWUCB", "UCB", "CUSUM_UCB", "Clairvoyant"])
-axes[1].set_xlabel("t")
-axes[1].set_ylabel("Instantaneous reward")
-
-axes[2].set_title('Cumulative regret plot')
-axes[2].plot(cumulative_regret_swucb_mean, 'r')
-axes[2].plot(cumulative_regret_ucb_mean, 'g')
-axes[2].plot(cumulative_regret_cusum_ucb_mean, 'y')
-axes[2].legend(["SWUCB", "UCB", "CUSUM_UCB"])
-axes[2].set_xlabel("t")
-axes[2].set_ylabel("Cumulative regret")
-
-axes[3].set_title('Cumulative reward plot')
-axes[3].plot(cumulative_reward_swucb_mean, 'r')
-axes[3].plot(cumulative_reward_ucb_mean, 'g')
-axes[3].plot(cumulative_reward_cusum_ucb_mean, 'y')
-axes[3].plot(np.cumsum(best_rewards), 'b')
-axes[3].legend(["SWUCB", "UCB", "CUSUM_UCB", "Clairvoyant"])
-axes[3].set_xlabel("t")
-axes[3].set_ylabel("Cumulative reward")
-plt.show()
-
-# Plot the results for UCB with std
-_, axes = plt.subplots(2, 2, figsize=(20, 20))
-axes = axes.flatten()
-
-axes[0].set_title('Instantaneous regret plot for UCB')
-axes[0].plot(regret_ucb_mean, 'g')
-axes[0].fill_between(range(0, T), regret_ucb_mean - regret_ucb_std, regret_ucb_mean + regret_ucb_std, color='g', alpha=0.4)
-axes[0].axhline(y=0, color='b', linestyle='--')
-axes[0].legend(["UCB mean", "UCB std"])
-axes[0].set_xlabel("t")
-axes[0].set_ylabel("Instantaneous regret")
-
-axes[1].set_title('Instantaneous reward plot for UCB')
-axes[1].plot(reward_ucb_mean, 'g')
-axes[1].fill_between(range(0, T), reward_ucb_mean - reward_ucb_std, reward_ucb_mean + reward_ucb_std, color='g', alpha=0.4)
-axes[1].plot(best_rewards, 'b')
-axes[1].legend(["UCB mean", "UCB std", "Clairvoyant"])
-axes[1].set_xlabel("t")
-axes[1].set_ylabel("Instantaneous reward")
-
-axes[2].set_title('Cumulative regret plot for UCB')
-axes[2].plot(cumulative_regret_ucb_mean, 'g')
-axes[2].fill_between(range(0, T), cumulative_regret_ucb_mean - cumulative_regret_ucb_std, cumulative_regret_ucb_mean + cumulative_regret_ucb_std, color='g', alpha=0.4)
-axes[2].legend(["UCB mean", "UCB std"])
-axes[2].set_xlabel("t")
-axes[2].set_ylabel("Cumulative regret")
-
-axes[3].set_title('Cumulative reward plot for UCB')
-axes[3].plot(cumulative_reward_ucb_mean, 'g')
-axes[3].fill_between(range(0, T), cumulative_reward_ucb_mean - cumulative_reward_ucb_std, cumulative_reward_ucb_mean + cumulative_reward_ucb_std, color='g', alpha=0.4)
-axes[3].plot(np.cumsum(best_rewards), 'b')
-axes[3].legend(["UCB mean", "UCB std", "Clairvoyant"])
-axes[3].set_xlabel("t")
-axes[3].set_ylabel("Cumulative reward")
-plt.show()
-
-# Plot the results for SW-UCB with std
-_, axes = plt.subplots(2, 2, figsize=(20, 20))
-axes = axes.flatten()
-
-axes[0].set_title('Instantaneous regret plot for SWUCB')
-axes[0].plot(regret_swucb_mean, 'r')
-axes[0].fill_between(range(0, T), regret_swucb_mean - regret_swucb_std, regret_swucb_mean + regret_swucb_std, color='r', alpha=0.4)
-axes[0].axhline(y=0, color='b', linestyle='--')
-axes[0].legend(["SWUCB mean", "SWUCB std"])
-axes[0].set_xlabel("t")
-axes[0].set_ylabel("Instantaneous regret")
-
-axes[1].set_title('Instantaneous reward plot for SWUCB')
-axes[1].plot(reward_swucb_mean, 'r')
-axes[1].fill_between(range(0, T), reward_swucb_mean - reward_swucb_std, reward_swucb_mean + reward_swucb_std, color='r', alpha=0.4)
-axes[1].plot(best_rewards, 'b')
-axes[1].legend(["SWUCB mean", "SWUCB std", "Clairvoyant"])
-axes[1].set_xlabel("t")
-axes[1].set_ylabel("Instantaneous reward")
-
-axes[2].set_title('Cumulative regret plot for SWUCB')
-axes[2].plot(cumulative_regret_swucb_mean, 'r')
-axes[2].fill_between(range(0, T), cumulative_regret_swucb_mean - cumulative_regret_swucb_std, cumulative_regret_swucb_mean + cumulative_regret_swucb_std, color='r', alpha=0.4)
-axes[2].legend(["SWUCB mean", "SWUCB std"])
-axes[2].set_xlabel("t")
-axes[2].set_ylabel("Cumulative regret")
-
-axes[3].set_title('Cumulative reward plot for SWUCB')
-axes[3].plot(cumulative_reward_swucb_mean, 'r')
-axes[3].fill_between(range(0, T), cumulative_reward_swucb_mean - cumulative_reward_swucb_std, cumulative_reward_swucb_mean + cumulative_reward_swucb_std, color='r', alpha=0.4)
-axes[3].plot(np.cumsum(best_rewards), 'b')
-axes[3].legend(["SWUCB mean", "SWUCB std", "Clairvoyant"])
-axes[3].set_xlabel("t")
-axes[3].set_ylabel("Cumulative reward")
-plt.show()
-
-# Plot the results for CUSUM-UCB with std
-_, axes = plt.subplots(2, 2, figsize=(20, 20))
-axes = axes.flatten()
-
-axes[0].set_title('Instantaneous regret plot for CUSUM_UCB')
-axes[0].plot(regret_cusum_ucb_mean, 'y')
-axes[0].fill_between(range(0, T), regret_cusum_ucb_mean - regret_cusum_ucb_std, regret_cusum_ucb_mean + regret_cusum_ucb_std, color='y', alpha=0.4)
-axes[0].axhline(y=0, color='b', linestyle='--')
-axes[0].legend(["CUSUM_UCB mean", "CUSUM_UCB std"])
-axes[0].set_xlabel("t")
-axes[0].set_ylabel("Instantaneous regret")
-
-axes[1].set_title('Instantaneous reward plot for CUSUM_UCB')
-axes[1].plot(reward_cusum_ucb_mean, 'y')
-axes[1].fill_between(range(0, T), reward_cusum_ucb_mean - reward_cusum_ucb_std, reward_cusum_ucb_mean + reward_cusum_ucb_std, color='y', alpha=0.4)
-axes[1].plot(best_rewards, 'b')
-axes[1].legend(["CUSUM_UCB mean", "CUSUM_UCB std", "Clairvoyant"])
-axes[1].set_xlabel("t")
-axes[1].set_ylabel("Instantaneous reward")
-
-axes[2].set_title('Cumulative regret plot for CUSUM_UCB')
-axes[2].plot(cumulative_regret_cusum_ucb_mean, 'y')
-axes[2].fill_between(range(0, T), cumulative_regret_cusum_ucb_mean - cumulative_regret_cusum_ucb_std, cumulative_regret_cusum_ucb_mean + cumulative_regret_cusum_ucb_std, color='y', alpha=0.4)
-axes[2].legend(["CUSUM_UCB mean", "CUSUM_UCB std"])
-axes[2].set_xlabel("t")
-axes[2].set_ylabel("Cumulative regret")
-
-axes[3].set_title('Cumulative reward plot for CUSUM_UCB')
-axes[3].plot(cumulative_reward_cusum_ucb_mean, 'y')
-axes[3].fill_between(range(0, T), cumulative_reward_cusum_ucb_mean - cumulative_reward_cusum_ucb_std, cumulative_reward_cusum_ucb_mean + cumulative_reward_cusum_ucb_std, color='y', alpha=0.4)
-axes[3].plot(np.cumsum(best_rewards), 'b')
-axes[3].legend(["CUSUM_UCB mean", "CUSUM_UCB std", "Clairvoyant"])
-axes[3].set_xlabel("t")
-axes[3].set_ylabel("Cumulative reward")
-plt.show()
+plots = Plots()
+plots.plot_all_algorithms(regret_means=[regret_ucb_mean, regret_swucb_mean, regret_cusum_ucb_mean],
+                          cum_regret_means=[cumulative_regret_ucb_mean, cumulative_regret_swucb_mean, cumulative_regret_cusum_ucb_mean],
+                          reward_means=[reward_ucb_mean, reward_swucb_mean, reward_cusum_ucb_mean],
+                          cum_reward_means=[cumulative_reward_ucb_mean, cumulative_reward_swucb_mean, cumulative_regret_cusum_ucb_mean],
+                          best_reward=best_rewards, legend=['UCB', 'SW-UCB', 'CUSUM-UCB'])
+plots.plot_single_algorithms(regret_means=[regret_ucb_mean, regret_swucb_mean, regret_cusum_ucb_mean],
+                             regret_stds=[regret_ucb_std, regret_swucb_std, regret_swucb_std],
+                             cum_regret_means=[cumulative_regret_ucb_mean, cumulative_regret_swucb_mean, cumulative_regret_cusum_ucb_mean],
+                             cum_regret_stds=[cumulative_regret_ucb_std, cumulative_regret_swucb_std, cumulative_regret_cusum_ucb_std],
+                             reward_means=[reward_ucb_mean, reward_swucb_mean, reward_cusum_ucb_mean],
+                             reward_stds=[reward_ucb_std, reward_swucb_std, reward_cusum_ucb_std],
+                             cum_reward_means=[cumulative_reward_ucb_mean, cumulative_reward_swucb_mean, cumulative_regret_cusum_ucb_mean],
+                             cum_reward_stds=[cumulative_reward_ucb_std, cumulative_reward_swucb_std, cumulative_reward_cusum_ucb_std],
+                             best_reward=best_rewards,
+                             legend=['UCB', 'SW-UCB', 'CUSUM-UCB'], x_range=np.arange(0, T, 1))
