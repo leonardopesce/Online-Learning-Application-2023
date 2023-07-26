@@ -14,11 +14,28 @@ class GPUCB_Learner(Learner):
     Learner that applies the Upper Confidence Bound 1(UCB1) algorithm
 
     :param np.ndarray arms_values: Values associated to the arms
-    empirical_means: Empirical means
-    confidence: upper Confidence interval
+    :param np.ndarray empirical_means_clicks: Empirical means of the clicks
+    :param np.ndarray confidence_clicks: Confidence intervals of the clicks
+    :param np.ndarray empirical_means_costs: Empirical means of the costs
+    :param np.ndarray confidence_costs: Confidence intervals of the costs
+    :param np.ndarray sigmas_clicks: Standard deviations of the clicks
+    :param np.ndarray lower_bounds_clicks: Lower bounds of the clicks
+    :param np.ndarray upper_bounds_clicks: Upper bounds of the clicks
+    :param np.ndarray sigmas_costs: Standard deviations of the costs
+    :param np.ndarray lower_bounds_costs: Lower bounds of the costs
+    :param np.ndarray upper_bounds_costs: Upper bounds of the costs
+    :param list pulled_bids: List of the pulled bids values
+    :param np.ndarray collected_clicks: Array of the collected clicks values
+    :param np.ndarray collected_costs: Array of the collected costs values
+    :param confidence_level: Confidence level of the algorithm regret bounds, defaults to 0.95
+    :type confidence_level: float, optional
+    :param delta: Delta value of the algorithm regret bounds. The bounds hold in high probability (1 - delta), defaults to 0.05
+    :type delta: float, optional
+    :param BaseGaussianProcess gp_clicks: Gaussian Process Regressor for the clicks
+    :param BaseGaussianProcess gp_costs: Gaussian Process Regressor for the costs
     """
 
-    def __init__(self, arms_values):
+    def __init__(self, arms_values, confidence_level=0.95):
         super().__init__(arms_values)
         self.empirical_means_clicks = np.zeros(self.n_arms)
         self.confidence_clicks = np.array([np.inf] * self.n_arms)
@@ -34,6 +51,8 @@ class GPUCB_Learner(Learner):
         self.pulled_bids = []
         self.collected_clicks = np.array([])
         self.collected_costs = np.array([])
+        self.confidence_level = confidence_level
+        self.delta = 1 - confidence_level
 
         kernel_clicks = ScaleKernel(RBFKernel())
         kernel_costs = ScaleKernel(RBFKernel())
@@ -53,12 +72,9 @@ class GPUCB_Learner(Learner):
         self.empirical_means_clicks, self.sigmas_clicks, self.lower_bounds_clicks, self.upper_bounds_clicks = self.gp_clicks.predict(torch.Tensor(self.arms_values))
         self.sigmas_clicks = np.sqrt(self.sigmas_clicks)
         self.sigmas_clicks = np.maximum(self.sigmas_clicks, 1e-2)
-        '''
-        for arm in range(self.n_arms):
-            self.confidence_clicks[arm] = np.sqrt((2 * np.log(self.t) / self.times_arms_played[arm])) if self.times_arms_played[arm] > 0 else 50
-        self.confidence_clicks = self.confidence_clicks * self.sigmas_clicks'''
-        prova = self.n_arms * (self.t ** 2) * (np.pi ** 2) / (6 * 0.9)
-        self.confidence_clicks = 2 * np.log(prova) * self.sigmas_clicks
+        
+        beta = 2 * np.log((self.n_arms * (self.t ** 2) * (np.pi ** 2)) / (6 * self.delta)) # https://arxiv.org/pdf/0912.3995.pdf
+        self.confidence_clicks = np.sqrt(beta) * self.sigmas_clicks
 
         # Fitting the Gaussian Process Regressor relative to costs and making a prediction for the current round.
         y = torch.Tensor(self.collected_costs)        # Daily costs previously collected.
@@ -66,17 +82,15 @@ class GPUCB_Learner(Learner):
         self.empirical_means_costs, self.sigmas_costs, self.lower_bounds_costs, self.upper_bounds_costs = self.gp_costs.predict(torch.Tensor(self.get_arms()))
         self.sigmas_costs = np.sqrt(self.sigmas_costs)
         self.sigmas_costs = np.maximum(self.sigmas_costs, 1e-2)
-        '''
-        for arm in range(self.n_arms):
-            self.confidence_costs[arm] = np.sqrt((2 * np.log(self.t) / self.times_arms_played[arm])) if self.times_arms_played[arm] > 0 else 10
-        self.confidence_costs = self.confidence_costs * self.sigmas_costs'''
-        self.confidence_costs = 2 * np.log(prova) * self.sigmas_costs
+        
+        self.confidence_costs = np.sqrt(beta) * self.sigmas_costs
 
-    def pull_arm_GPs(self, prob_margin) -> int:
+    def pull_arm_GPs(self, prob_margin : float) -> int:
         """
         Chooses the arm to play based on the UCB1 algorithm, therefore choosing the arm with higher upper
         confidence bound, which is the mean of the reward of the arm plus the confidence interval
-
+        
+        :param float prob_margin: conversion_rate * (price - other_costs)
         :return: Index of the arm to pull
         :rtype: int
         """

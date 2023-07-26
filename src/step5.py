@@ -51,7 +51,7 @@ window_size = 50
 
 # Since the reward functions are stochastic to better visualize the results and remove the noise
 # we have to perform a sufficiently large number experiments
-n_experiments = 10
+n_experiments = 200
 
 # Store the rewards for each experiment for the learners
 ucb_reward_per_experiment = []
@@ -72,7 +72,7 @@ for phase, phase_len in enumerate(phases_duration):
 
 # Each iteration simulates the learner-environment interaction
 for e in tqdm(range(0, n_experiments)):
-    # Define the environment and le     arners
+    # Define the environment and learners
 
     # UCB1
     env_ucb = NonStationaryEnvironment(n_prices, prices, probabilities, bids_to_clicks, bids_to_cum_costs, other_costs, phases_duration)

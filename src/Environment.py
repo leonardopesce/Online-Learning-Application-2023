@@ -1,6 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
-
+from mpl_toolkits.mplot3d import Axes3D
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 
 def fun(x, scale, slope):
     """
@@ -19,7 +21,7 @@ def fun(x, scale, slope):
 
 class Environment:
     """
-    The Environment class defines the advertising and pricing environment usin, for each class, the models of:
+    The Environment class defines the advertising and pricing environment using, for each class, the models of:
     - the average dependence between the number of clicks and the bid;
     - the average cumulative daily click cost for the bid;
     - the conversion rate for 5 different prices.
@@ -112,6 +114,20 @@ class Environment:
         bernoulli_realizations = self.round_pricing(category, price_idx, n_clicks=int(np.floor(clicks_given_bid)))
 
         return bernoulli_realizations, clicks_given_bid, cost_given_bid
+
+    # TODO probabilmente sarebbe meglio rendere environment uno per classe e creare un environment con multiple contexts
+    def round_all_categories_merged(self, price_idx, bid_idx):
+        categories = self.probabilities.keys()
+        bernoulli_realizations_all_categories = np.array([])
+        clicks_given_bid_all_categories = 0
+        cost_given_bid_all_categories = 0
+        for category in categories:
+            bernoulli_realizations, clicks_given_bid, cost_given_bid = self.round(category, price_idx, bid_idx)
+            bernoulli_realizations_all_categories = np.append(bernoulli_realizations_all_categories, bernoulli_realizations)
+            clicks_given_bid_all_categories += clicks_given_bid
+            cost_given_bid_all_categories += cost_given_bid
+
+        return bernoulli_realizations_all_categories, clicks_given_bid_all_categories, cost_given_bid_all_categories
 
     def get_n_clicks(self, category, bid_idx):
         """
@@ -258,7 +274,7 @@ class Environment:
         """
 
         if axes is None:
-            _, axes = plt.subplots(1, 2)
+            _, axes = plt.subplots(1, 3)
 
         #x = np.linspace(0, self.bids_to_clicks[category][2], 100)
         #y = np.zeros((100,))
@@ -282,6 +298,16 @@ class Environment:
         axes[1].set_ylabel('Cumulative cost of the clicks')
         axes[1].legend()
 
+        x = np.linspace(0, xlim, 100)
+        y = fun(x, *self.bids_to_clicks[category]) * x - fun(x, *self.bids_to_cum_costs[category])
+        if any(y < 0):
+            print(f'For the category {category} some bids do not respect the consistency check (Number of clicks times bid > cumulative daily cost)')
+        axes[2].plot(x, y, color=color, label=category)
+        axes[2].set_title('Number of clicks times bid minus daily cost (Consistency check)')
+        axes[2].set_xlabel('Value of the bid')
+        axes[2].set_ylabel('Number of clicks times bid minus daily cost')
+        axes[2].legend()
+
         if show:
             plt.tight_layout()
             plt.show()
@@ -293,14 +319,14 @@ class Environment:
         Plots the function that models the number of clicks given the bid and the function that models the cumulative
         daily click cost given the bid, for all the classes of users
 
-        :param xlim: Max value for the x-axis
+        :param float xlim: Max value for the x-axis
         :param dict mapping: Mapping between classes of users and colors to use for the plot
 
         :return: Axes of the plot
         :rtype: plt.Axes
         """
 
-        _, axes = plt.subplots(1, 2)
+        _, axes = plt.subplots(1, 3, figsize=(18,6))
         for category in self.bids_to_clicks.keys():
             axes = self.plot_advertising_model(category, xlim=xlim, color=mapping[category], axes=axes, show=False)
 
@@ -309,6 +335,152 @@ class Environment:
 
         return axes
 
+    def plot_rewards_given_price_idx(self, price_idx, xlim=15, mapping={'C1': 'red', 'C2': 'blue', 'C3': 'green'}, plotly_show = False):
+        """
+        Plots the reward with respect to the bid given the price index to use in the computation
+
+        :param int price_idx: Index of the price to use in the computation
+        :param float xlim: Max value for the x-axis
+        :param dict mapping: Mapping between classes of users and colors to use for the plot
+
+        :return: Axes of the plot
+        :rtype: plt.Axes
+        """
+        # Plotly init
+        if plotly_show:
+            fig = make_subplots(rows=1, cols=1)
+
+        # Matplotlib init
+        _, axes = plt.subplots(1, 1)
+
+        x = np.linspace(0, xlim, 100)
+        for category in self.bids_to_clicks.keys():
+            y = fun(x, *self.bids_to_clicks[category]) * self.probabilities[category][price_idx] * (self.prices[category][price_idx] - self.other_costs) - fun(x, *self.bids_to_cum_costs[category])
+            
+            # Plotly version
+            if plotly_show:
+                fig.add_trace(go.Scatter(x=x, y=y, name=category, line=dict(color=mapping[category])))
+                fig.add_vline(x=x[np.argmax(y)], line_width=3, line_dash="dash", line_color=mapping[category], annotation_text=f'Max of {category}', annotation_position="top left")
+                fig.update_xaxes(title_text="Value of the bid")
+                fig.update_yaxes(title_text="Reward")
+                fig.update_layout(title_text=f'Reward given the bid, price = {self.prices[category][price_idx]}')
+            
+            # Matplotlib version
+            axes.plot(x, y, color=mapping[category], label=category)
+            axes.axvline(x[np.argmax(y)], color=mapping[category], label=f'Max of {category}')
+            axes.set_title(f'Reward given the bid, price = {self.prices[category][price_idx]}')
+            axes.set_xlabel('Value of the bid')
+            axes.set_ylabel('Reward')
+            axes.legend()
+
+        # Plotly show
+        if plotly_show:
+            fig.show()
+
+        # Matplotlib show
+        plt.tight_layout()
+        plt.show()
+
+        return axes
+
+    def plot_rewards(self, categories=('C1', 'C2', 'C3'), plot_aggregate_model=False, plotly_show = False):
+        """
+        Plots the reward with respect to the bid given the price index to use in the computation
+
+        :param tuple categories: Categories for which the plot has to be done
+        :param bool plot_aggregate_model: If True the reward for the aggregate model of all the classes is plotted
+
+        :return: Axes of the plot
+        :rtype: plt.Axes
+        """
+
+        aggregate_model = np.zeros((len(self.bids), self.n_prices))
+
+        if plotly_show:
+            fig = make_subplots(rows=1, cols=2, specs=[[{'type': 'surface'}, {'type': 'surface'}]])
+
+        for category in self.bids_to_clicks:
+            x = self.bids
+            y = self.prices[category]
+            xx, yy = np.meshgrid(x, y)
+
+            n_clicks = fun(x, *self.bids_to_clicks[category])
+            cum_costs = fun(x, *self.bids_to_cum_costs[category])
+            conv_prob = self.probabilities[category]
+
+            z = n_clicks[:, None] * conv_prob[None, :] * (self.prices[category] - self.other_costs) - cum_costs[:, None]
+
+            if plot_aggregate_model:
+                aggregate_model += z
+
+            if category in categories:
+                _, axes = plt.subplots(subplot_kw={'projection': '3d'})
+                axes.plot_surface(xx, yy, z.T, cmap='viridis')
+
+                argmax_x = np.argmax(z) // self.n_prices
+                argmax_y = np.argmax(z) % self.n_prices
+                argmax_z = np.max(z)
+
+                print(f'For the category {category} the maximum is in (bid, price) = ({self.bids[argmax_x]}, {self.prices[category][argmax_y]}), with a value of {argmax_z}')
+                
+                # Plotly version
+                if plotly_show:
+                    fig.add_trace(go.Surface(x=xx, y=yy, z=z.T, name=category, colorbar=dict(len=0.5, x=0.5)), row=1, col=1)
+                    fig.add_trace(go.Scatter3d(x=[self.bids[argmax_x]], y=[self.prices[category][argmax_y]], z=[argmax_z], mode='markers', marker=dict(color='black', size=5), name=f'Max of {category}'), row=1, col=1)
+                    fig.update_layout(title_text=f'Reward given price and bid for the user category {category}')
+                    fig.update_xaxes(title_text="Value of the bid")
+                    fig.update_yaxes(title_text="Value of the price")
+                    # Update the title of z axis
+                    fig.update_layout(scene1=dict(xaxis_title='Value of the bid', yaxis_title='Value of the price', zaxis_title='Reward'))
+                
+                # Matplotlib version
+                axes.scatter(self.bids[argmax_x], self.prices[category][argmax_y], argmax_z, color='black', s=20, label=f'Max of {category}')
+                axes.set_title(f'Reward given price and bid for the user category {category}')
+                axes.set_xlabel('Value of the bid')
+                axes.set_ylabel('Value of the price')
+                axes.set_zlabel('Reward')
+
+                plt.tight_layout()
+                plt.show()
+
+        if plot_aggregate_model:
+            _, axes = plt.subplots(subplot_kw={'projection': '3d'})
+
+            x = self.bids
+            y = self.prices[category]
+            xx, yy = np.meshgrid(x, y)
+
+            axes.plot_surface(xx, yy, aggregate_model.T, cmap='viridis')
+
+            argmax_x = np.argmax(aggregate_model) // self.n_prices
+            argmax_y = np.argmax(aggregate_model) % self.n_prices
+            argmax_z = np.max(aggregate_model)
+
+            print(f'For the aggregate model the maximum is in (bid, price) = ({self.bids[argmax_x]}, {self.prices["C1"][argmax_y]}), with a value of {argmax_z}')
+
+            # Plotly version
+            if plotly_show:
+                fig.add_trace(go.Surface(x=xx, y=yy, z=aggregate_model.T, name='Aggregate model', colorbar=dict(len=0.5, x=1.0)), row=1, col=2)
+                fig.add_trace(go.Scatter3d(x=[self.bids[argmax_x]], y=[self.prices["C1"][argmax_y]], z=[argmax_z], mode='markers', marker=dict(color='black', size=5), name=f'Max of aggregate model'), row=1, col=2)
+                fig.update_layout(title_text=f'Reward given price and bid using the aggregate model')
+                fig.update_xaxes(title_text="Value of the bid")
+                fig.update_yaxes(title_text="Value of the price")
+                # Update the title of z axis
+                fig.update_layout(scene2=dict(xaxis_title='Value of the bid', yaxis_title='Value of the price', zaxis_title='Reward'))
+
+            axes.scatter(self.bids[argmax_x], self.prices[category][argmax_y], argmax_z, color='black', s=20, label=f'Max of {category}')
+            axes.set_title(f'Reward given price and bid using the aggregate model')
+            axes.set_xlabel('Value of the bid')
+            axes.set_ylabel('Value of the price')
+            axes.set_zlabel('Reward')
+
+            # Plotly show
+            if plotly_show:
+                fig.show()
+            
+            # Matplotlib show
+            plt.tight_layout()
+            plt.show()
 
 def test():
     # TESTING
@@ -319,19 +491,21 @@ def test():
               'C3': np.array([500, 550, 600, 650, 700])}
     probabilities = {'C1': np.array([0.05, 0.05, 0.2, 0.1, 0.05]),
                      'C2': np.array([0.05, 0.05, 0.1, 0.2, 0.1]),
-                     'C3': np.array([0.1, 0.3, 0.2, 0.05, 0.05])}
+                     'C3': np.array([0.1, 0.2, 0.25, 0.05, 0.05])}
     bids_to_clicks = {'C1': np.array([100, 2]),
                       'C2': np.array([90, 2]),
                       'C3': np.array([80, 3])}
-    bids_to_cum_costs = {'C1': np.array([20, 0.5]),
-                         'C2': np.array([18, 0.4]),
-                         'C3': np.array([16, 0.45])}
-    other_costs = 200
+    bids_to_cum_costs = {'C1': np.array([400, 0.035]),
+                         'C2': np.array([200, 0.07]),
+                         'C3': np.array([300, 0.04])}
+    other_costs = 400
 
     env = Environment(n_prices, prices, probabilities, bids_to_clicks, bids_to_cum_costs, other_costs)
-    env.plot_advertising_model('C1', color='r', axes=None)
+    #env.plot_advertising_model('C1', color='r', axes=None)
     env.plot_whole_advertising_model()
-    env.plot_whole_pricing_model()
+    #env.plot_whole_pricing_model()
+    env.plot_rewards_given_price_idx(2, plotly_show = True)
+    env.plot_rewards(categories=['C1'], plot_aggregate_model=True, plotly_show=True)
 
 
-#test()
+test()
