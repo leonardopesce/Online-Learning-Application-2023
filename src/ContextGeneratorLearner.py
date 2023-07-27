@@ -32,6 +32,7 @@ class ContextGeneratorLearner:
         """
 
         # The Learner starts considering a single context with all the possible users inside
+        self.t = 0
         self.prices = prices
         self.bids = bids
         self.context_learners = [ContextLearner(self.create_user_feature_tuples(feature_names, feature_values), LearnerFactory().get_learner(learner_type, prices, bids))]
@@ -159,18 +160,18 @@ class ContextGeneratorLearner:
                 # If we firstly split on the first feature, it follows this grouping ((0,0), (0,1), ((1,0), (1,1)))
                 # Otherwise if we firstly split on the second feature, it follows this grouping ((0,0), (1,0), ((0,1), (1,1)))
                 if split_0 == 0:
-                    defined_contexts = set((0,0), (0,1), ((1,0), (1,1)))
+                    defined_contexts = set(((0,0),), ((0,1),), ((1,0), (1,1)))
                 else:
-                    defined_contexts = set((0,0), (1,0), ((0,1), (1,1)))
+                    defined_contexts = set(((0,0),), ((1,0),), ((0,1), (1,1)))
             elif reward_left_aggr_right_discr > aggregate_reward_first_split and reward_left_aggr_right_discr >= reward_full_discrimination:
                 # If we firstly split on the first feature, it follows this grouping (((0,0), (0,1)), (1,0), (1,1))
                 # Otherwise if we firstly split on the second feature, it follows this grouping (((0,0), (1,0)), (0,1), (1,1))
                 if split_0 == 0:
-                    defined_contexts = set(((0,0), (0,1)), (1,0), (1,1))
+                    defined_contexts = set(((0,0), (0,1)), ((1,0),), ((1,1),))
                 else:
-                    defined_contexts = set(((0,0), (1,0)), (0,1), (1,1))
+                    defined_contexts = set(((0,0), (1,0)), ((0,1),), ((1,1),))
             elif reward_full_discrimination > aggregate_reward_first_split:
-                defined_contexts = set((0,0), (0,1), (1,0), (1,1))
+                defined_contexts = set(((0,0),), ((0,1),), ((1,0),), ((1,1),))
 
         # Redefining the learners to use in the next steps of the learning procedure using the new contexts
         # Defining the list of the new context learners (learners + contexts)
@@ -182,10 +183,10 @@ class ContextGeneratorLearner:
             # Iterating on the tuples of features of the user in the context
             for feature_tuple in context:
                 # Iterating on the observation regarding the user with the chosen values of features
-                for element in self.feature_to_observation(feature_tuple):
+                for element in self.feature_to_observation.get(feature_tuple):
                     # Updating the new learner using the past observation of the users in the context it has to consider
                     new_learner.update(element[0], element[1], element[2], element[3], element[4], element[5])
-
+            new_learner.t = self.t #TODO: check if this is correct, i.e. if it is needed to set the new learner time to the current timestep.
             # Appending a new context learner to the set of the new learner to use in future time steps
             new_learners.append(ContextLearner(context, new_learner))
 
@@ -225,7 +226,7 @@ class ContextGeneratorLearner:
         each learner
         :param list rewards: Rewards collected by each learner in the current time step playing the pulled arms
         """
-
+        self.t += 1
         for idx, learner in enumerate(self.context_learners):
             learner.get_learner().update(pulled_price_list[idx], bernoulli_realizations_list[idx], pulled_bid_list[idx], clicks_given_bid_list[idx], cost_given_bid_list[idx], rewards[idx])
             self.feature_to_observation[features_list[idx]].append([pulled_price_list[idx], bernoulli_realizations_list[idx], pulled_bid_list[idx], clicks_given_bid_list[idx], cost_given_bid_list[idx], rewards[idx]])
