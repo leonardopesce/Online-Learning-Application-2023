@@ -32,9 +32,8 @@ for the entire time horizon, and compare their performance with the performance 
 for the second scenario.
 """
 
-# Considered category is C1
-category = 'C1'
-classes = ['C1', 'C2', 'C3']
+# Considered categories
+categories = ['C1', 'C2', 'C3']
 
 # Setting the environment parameters
 n_prices = 5
@@ -69,231 +68,231 @@ n_experiments = 20
 
 
 # To evaluate which are the most played prices and bids
-ts_best_price = {cl: [] for cl in classes}
-ts_best_bid = {cl: [] for cl in classes}
-ucb_best_price = {cl: [] for cl in classes}
-ucb_best_bid = {cl: [] for cl in classes}
+ts_best_price = {category: [] for category in categories}
+ts_best_bid = {category: [] for category in categories}
+ucb_best_price = {category: [] for category in categories}
+ucb_best_bid = {category: [] for category in categories}
 
 
 # Define the environment
 env = Environment(n_prices, prices, probabilities, bids_to_clicks, bids_to_cum_costs, other_costs)
 # Define the clairvoyant
-clairvoyant = {cl: Clairvoyant(env) for cl in classes}
+clairvoyant = {category: Clairvoyant(env) for category in categories}
 # Optimize the problem
-best_price_idx, best_price, best_bid_idx, best_bid, best_reward = {cl: [] for cl in classes}, {cl: [] for cl in classes}, {cl: [] for cl in classes}, {cl: [] for cl in classes}, {cl: [] for cl in classes}
-for cl in classes:
-    best_price_idx[cl], best_price[cl], best_bid_idx[cl], best_bid[cl], best_reward[cl] = clairvoyant[cl].maximize_reward(cl)
+best_price_idx, best_price, best_bid_idx, best_bid, best_reward = {category: [] for category in categories}, {category: [] for category in categories}, {category: [] for category in categories}, {category: [] for category in categories}, {category: [] for category in categories}
+for category in categories:
+    best_price_idx[category], best_price[category], best_bid_idx[category], best_bid[category], best_reward[category] = clairvoyant[category].maximize_reward(category)
 
 # Store the rewards for each experiment for the learners
-ts_reward_per_experiment = {cl: [] for cl in classes}
-ucb_reward_per_experiment = {cl: [] for cl in classes}
+ts_reward_per_experiment = {category: [] for category in categories}
+ucb_reward_per_experiment = {category: [] for category in categories}
 
 # Store some features for each experiment for the learners
-gpts_clicks_per_experiment = {cl: [] for cl in classes}
-gpts_mean_clicks_per_experiment = {cl: [] for cl in classes}
-gpts_sigmas_clicks_per_experiment = {cl: [] for cl in classes}
-gpts_cum_costs_per_experiment = {cl: [] for cl in classes}
-gpts_mean_cum_costs_per_experiment = {cl: [] for cl in classes}
-gpts_sigmas_cum_costs_per_experiment = {cl: [] for cl in classes}
-gpts_pulled_bids_per_experiment = {cl: [] for cl in classes}
+gpts_clicks_per_experiment = {category: [] for category in categories}
+gpts_mean_clicks_per_experiment = {category: [] for category in categories}
+gpts_sigmas_clicks_per_experiment = {category: [] for category in categories}
+gpts_cum_costs_per_experiment = {category: [] for category in categories}
+gpts_mean_cum_costs_per_experiment = {category: [] for category in categories}
+gpts_sigmas_cum_costs_per_experiment = {category: [] for category in categories}
+gpts_pulled_bids_per_experiment = {category: [] for category in categories}
 
 # Each iteration simulates the learner-environment interaction
 for e in tqdm(range(0, n_experiments)):
     # Define the learners
     # TS learners
-    ts_learner = {cl: TSLearnerPricingAdvertising(env.prices[cl], env.bids) for cl in classes}
+    ts_learner = {category: TSLearnerPricingAdvertising(env.prices[category], env.bids) for category in categories}
     # UCB learners
-    ucb_learner = {cl: UCBLearnerPricingAdvertising(env.prices[cl], env.bids) for cl in classes}
+    ucb_learner = {category: UCBLearnerPricingAdvertising(env.prices[category], env.bids) for category in categories}
 
     # Iterate over the number of rounds
     for t in range(0, T):
         # Simulate the interaction learner-environment
-        for cl in classes:
+        for category in categories:
             # TS Learner
-            price_idx, bid_idx = ts_learner[cl].pull_arm(env.other_costs)
-            # this may simulate that all the users are of the same class
-            bernoulli_realizations, n_clicks, cum_daily_cost = env.round(cl, price_idx, bid_idx)
-            reward = env.get_reward(cl, price_idx, np.mean(bernoulli_realizations), n_clicks, cum_daily_cost)
-            ts_learner[cl].update(price_idx, bernoulli_realizations, bid_idx, n_clicks, cum_daily_cost, reward)
+            price_idx, bid_idx = ts_learner[category].pull_arm(env.other_costs)
+            # this may simulate that all the users are of the same categoryass
+            bernoulli_realizations, n_clicks, cum_daily_cost = env.round(category, price_idx, bid_idx)
+            reward = env.get_reward(category, price_idx, np.mean(bernoulli_realizations), n_clicks, cum_daily_cost)
+            ts_learner[category].update(price_idx, bernoulli_realizations, bid_idx, n_clicks, cum_daily_cost, reward)
 
             # UCB Learner
-            price_idx, bid_idx = ucb_learner[cl].pull_arm(env.other_costs)
-            bernoulli_realizations, n_clicks, cum_daily_cost = env.round(cl, price_idx, bid_idx)
-            reward = env.get_reward(cl, price_idx, np.mean(bernoulli_realizations), n_clicks, cum_daily_cost)
-            ucb_learner[cl].update(price_idx, bernoulli_realizations, bid_idx, n_clicks, cum_daily_cost, reward)
+            price_idx, bid_idx = ucb_learner[category].pull_arm(env.other_costs)
+            bernoulli_realizations, n_clicks, cum_daily_cost = env.round(category, price_idx, bid_idx)
+            reward = env.get_reward(category, price_idx, np.mean(bernoulli_realizations), n_clicks, cum_daily_cost)
+            ucb_learner[category].update(price_idx, bernoulli_realizations, bid_idx, n_clicks, cum_daily_cost, reward)
 
-    for cl in classes:
+    for category in categories:
         # Store the most played prices and bids by TS
-        ts_best_price[cl].append(Counter(ts_learner[cl].get_pulled_prices()).most_common(1)[0][0])
-        ts_best_bid[cl].append(Counter(ts_learner[cl].get_pulled_bids()).most_common(1)[0][0])
+        ts_best_price[category].append(Counter(ts_learner[category].get_pulled_prices()).most_common(1)[0][0])
+        ts_best_bid[category].append(Counter(ts_learner[category].get_pulled_bids()).most_common(1)[0][0])
 
         # Store the most played prices and bids by UCB1
-        ucb_best_price[cl].append(Counter(ucb_learner[cl].get_pulled_prices()).most_common(1)[0][0])
-        ucb_best_bid[cl].append(Counter(ucb_learner[cl].get_pulled_bids()).most_common(1)[0][0])
+        ucb_best_price[category].append(Counter(ucb_learner[category].get_pulled_prices()).most_common(1)[0][0])
+        ucb_best_bid[category].append(Counter(ucb_learner[category].get_pulled_bids()).most_common(1)[0][0])
 
         # Store the values of the collected rewards of the learners
-        ts_reward_per_experiment[cl].append(ts_learner[cl].TS_pricing.collected_rewards)
-        ucb_reward_per_experiment[cl].append(ucb_learner[cl].UCB_pricing.collected_rewards)
+        ts_reward_per_experiment[category].append(ts_learner[category].TS_pricing.collected_rewards)
+        ucb_reward_per_experiment[category].append(ucb_learner[category].UCB_pricing.collected_rewards)
 
-        gpts_clicks_per_experiment[cl].append(ts_learner[cl].GPTS_advertising.collected_clicks)
-        gpts_mean_clicks_per_experiment[cl].append(ts_learner[cl].GPTS_advertising.means_clicks)
-        gpts_sigmas_clicks_per_experiment[cl].append(ts_learner[cl].GPTS_advertising.sigmas_clicks)
-        gpts_cum_costs_per_experiment[cl].append(ts_learner[cl].GPTS_advertising.collected_costs)
-        gpts_mean_cum_costs_per_experiment[cl].append(ts_learner[cl].GPTS_advertising.means_costs)
-        gpts_sigmas_cum_costs_per_experiment[cl].append(ts_learner[cl].GPTS_advertising.sigmas_costs)
-        gpts_pulled_bids_per_experiment[cl].append(ts_learner[cl].GPTS_advertising.pulled_bids)
+        gpts_clicks_per_experiment[category].append(ts_learner[category].GPTS_advertising.collected_clicks)
+        gpts_mean_clicks_per_experiment[category].append(ts_learner[category].GPTS_advertising.means_clicks)
+        gpts_sigmas_clicks_per_experiment[category].append(ts_learner[category].GPTS_advertising.sigmas_clicks)
+        gpts_cum_costs_per_experiment[category].append(ts_learner[category].GPTS_advertising.collected_costs)
+        gpts_mean_cum_costs_per_experiment[category].append(ts_learner[category].GPTS_advertising.means_costs)
+        gpts_sigmas_cum_costs_per_experiment[category].append(ts_learner[category].GPTS_advertising.sigmas_costs)
+        gpts_pulled_bids_per_experiment[category].append(ts_learner[category].GPTS_advertising.pulled_bids)
 
-for cl in classes:
-    print(f'Class {cl}:')
+for category in categories:
+    print(f'Category {category}:')
     # Print occurrences of best arm in TS
-    print(Counter(ts_best_price[cl]))
-    print(Counter(ts_best_bid[cl]))
+    print(Counter(ts_best_price[category]))
+    print(Counter(ts_best_bid[category]))
     # Print occurrences of best arm in UCB1
-    print(Counter(ucb_best_price[cl]))
-    print(Counter(ucb_best_bid[cl]))
+    print(Counter(ucb_best_price[category]))
+    print(Counter(ucb_best_bid[category]))
 
 #plot data
-best_rewards = {cl: [] for cl in classes}
-regret_ts_mean = {cl: [] for cl in classes}
-regret_ts_std = {cl: [] for cl in classes}
-regret_ucb_mean = {cl: [] for cl in classes}
-regret_ucb_std = {cl: [] for cl in classes}
-cumulative_regret_ts_mean = {cl: [] for cl in classes}
-cumulative_regret_ts_std = {cl: [] for cl in classes}
-cumulative_regret_ucb_mean = {cl: [] for cl in classes}
-cumulative_regret_ucb_std = {cl: [] for cl in classes}
-reward_ts_mean = {cl: [] for cl in classes}
-reward_ts_std = {cl: [] for cl in classes}
-reward_ucb_mean = {cl: [] for cl in classes}
-reward_ucb_std = {cl: [] for cl in classes}
-cumulative_reward_ts_mean = {cl: [] for cl in classes}
-cumulative_reward_ts_std = {cl: [] for cl in classes}
-cumulative_reward_ucb_mean = {cl: [] for cl in classes}
-cumulative_reward_ucb_std = {cl: [] for cl in classes}
-for cl in classes:
-    best_rewards[cl] = np.ones((T,)) * best_reward[cl]
-    regret_ts_mean[cl] = np.mean(best_reward[cl] - ts_reward_per_experiment[cl], axis=0)
-    regret_ts_std[cl] = np.std(best_reward[cl] - ts_reward_per_experiment[cl], axis=0)
-    regret_ucb_mean[cl] = np.mean(best_reward[cl] - ucb_reward_per_experiment[cl], axis=0)
-    regret_ucb_std[cl] = np.std(best_reward[cl] - ucb_reward_per_experiment[cl], axis=0)
-    cumulative_regret_ts_mean[cl] = np.mean(np.cumsum(best_reward[cl] - ts_reward_per_experiment[cl], axis=1), axis=0)
-    cumulative_regret_ts_std[cl] = np.std(np.cumsum(best_reward[cl] - ts_reward_per_experiment[cl], axis=1), axis=0)
-    cumulative_regret_ucb_mean[cl] = np.mean(np.cumsum(best_reward[cl] - ucb_reward_per_experiment[cl], axis=1), axis=0)
-    cumulative_regret_ucb_std[cl] = np.std(np.cumsum(best_reward[cl] - ucb_reward_per_experiment[cl], axis=1), axis=0)
-    reward_ts_mean[cl] = np.mean(ts_reward_per_experiment[cl], axis=0)
-    reward_ts_std[cl] = np.std(ts_reward_per_experiment[cl], axis=0)
-    reward_ucb_mean[cl] = np.mean(ucb_reward_per_experiment[cl], axis=0)
-    reward_ucb_std[cl] = np.std(ucb_reward_per_experiment[cl], axis=0)
-    cumulative_reward_ts_mean[cl] = np.mean(np.cumsum(ts_reward_per_experiment[cl], axis=1), axis=0)
-    cumulative_reward_ts_std[cl] = np.std(np.cumsum(ts_reward_per_experiment[cl], axis=1), axis=0)
-    cumulative_reward_ucb_mean[cl] = np.mean(np.cumsum(ucb_reward_per_experiment[cl], axis=1), axis=0)
-    cumulative_reward_ucb_std[cl] = np.std(np.cumsum(ucb_reward_per_experiment[cl], axis=1), axis=0)
+best_rewards = {category: [] for category in categories}
+regret_ts_mean = {category: [] for category in categories}
+regret_ts_std = {category: [] for category in categories}
+regret_ucb_mean = {category: [] for category in categories}
+regret_ucb_std = {category: [] for category in categories}
+cumulative_regret_ts_mean = {category: [] for category in categories}
+cumulative_regret_ts_std = {category: [] for category in categories}
+cumulative_regret_ucb_mean = {category: [] for category in categories}
+cumulative_regret_ucb_std = {category: [] for category in categories}
+reward_ts_mean = {category: [] for category in categories}
+reward_ts_std = {category: [] for category in categories}
+reward_ucb_mean = {category: [] for category in categories}
+reward_ucb_std = {category: [] for category in categories}
+cumulative_reward_ts_mean = {category: [] for category in categories}
+cumulative_reward_ts_std = {category: [] for category in categories}
+cumulative_reward_ucb_mean = {category: [] for category in categories}
+cumulative_reward_ucb_std = {category: [] for category in categories}
+for category in categories:
+    best_rewards[category] = np.ones((T,)) * best_reward[category]
+    regret_ts_mean[category] = np.mean(best_reward[category] - ts_reward_per_experiment[category], axis=0)
+    regret_ts_std[category] = np.std(best_reward[category] - ts_reward_per_experiment[category], axis=0)
+    regret_ucb_mean[category] = np.mean(best_reward[category] - ucb_reward_per_experiment[category], axis=0)
+    regret_ucb_std[category] = np.std(best_reward[category] - ucb_reward_per_experiment[category], axis=0)
+    cumulative_regret_ts_mean[category] = np.mean(np.cumsum(best_reward[category] - ts_reward_per_experiment[category], axis=1), axis=0)
+    cumulative_regret_ts_std[category] = np.std(np.cumsum(best_reward[category] - ts_reward_per_experiment[category], axis=1), axis=0)
+    cumulative_regret_ucb_mean[category] = np.mean(np.cumsum(best_reward[category] - ucb_reward_per_experiment[category], axis=1), axis=0)
+    cumulative_regret_ucb_std[category] = np.std(np.cumsum(best_reward[category] - ucb_reward_per_experiment[category], axis=1), axis=0)
+    reward_ts_mean[category] = np.mean(ts_reward_per_experiment[category], axis=0)
+    reward_ts_std[category] = np.std(ts_reward_per_experiment[category], axis=0)
+    reward_ucb_mean[category] = np.mean(ucb_reward_per_experiment[category], axis=0)
+    reward_ucb_std[category] = np.std(ucb_reward_per_experiment[category], axis=0)
+    cumulative_reward_ts_mean[category] = np.mean(np.cumsum(ts_reward_per_experiment[category], axis=1), axis=0)
+    cumulative_reward_ts_std[category] = np.std(np.cumsum(ts_reward_per_experiment[category], axis=1), axis=0)
+    cumulative_reward_ucb_mean[category] = np.mean(np.cumsum(ucb_reward_per_experiment[category], axis=1), axis=0)
+    cumulative_reward_ucb_std[category] = np.std(np.cumsum(ucb_reward_per_experiment[category], axis=1), axis=0)
 
 # Plot the results, comparison TS-UCB
-for cl in classes:
+for category in categories:
     _, axes = plt.subplots(2, 2, figsize=(20, 20))
     axes = axes.flatten()
-    axes[0].set_title(f'Instantaneous regret plot {cl}')
-    axes[0].plot(regret_ts_mean[cl], 'r')
-    axes[0].plot(regret_ucb_mean[cl], 'g')
+    axes[0].set_title(f'Instantaneous regret plot {category}')
+    axes[0].plot(regret_ts_mean[category], 'r')
+    axes[0].plot(regret_ucb_mean[category], 'g')
     axes[0].axhline(y=0, color='b', linestyle='--')
     axes[0].legend(["TS", "UCB"])
     axes[0].set_xlabel("t")
     axes[0].set_ylabel("Instantaneous regret")
 
-    axes[1].set_title(f'Instantaneous reward plot {cl}')
-    axes[1].plot(reward_ts_mean[cl], 'r')
-    axes[1].plot(reward_ucb_mean[cl], 'g')
-    axes[1].plot(best_rewards[cl], 'b')
+    axes[1].set_title(f'Instantaneous reward plot {category}')
+    axes[1].plot(reward_ts_mean[category], 'r')
+    axes[1].plot(reward_ucb_mean[category], 'g')
+    axes[1].plot(best_rewards[category], 'b')
     axes[1].legend(["TS", "UCB", "Clairvoyant"])
     axes[1].set_xlabel("t")
     axes[1].set_ylabel("Instantaneous reward")
 
-    axes[2].set_title(f'Cumulative regret plot {cl}')
-    axes[2].plot(cumulative_regret_ts_mean[cl], 'r')
-    axes[2].plot(cumulative_regret_ucb_mean[cl], 'g')
+    axes[2].set_title(f'Cumulative regret plot {category}')
+    axes[2].plot(cumulative_regret_ts_mean[category], 'r')
+    axes[2].plot(cumulative_regret_ucb_mean[category], 'g')
     axes[2].legend(["TS", "UCB"])
     axes[2].set_xlabel("t")
     axes[2].set_ylabel("Cumulative regret")
 
-    axes[3].set_title(f'Cumulative reward plot {cl}')
-    axes[3].plot(cumulative_reward_ts_mean[cl], 'r')
-    axes[3].plot(cumulative_reward_ucb_mean[cl], 'g')
-    axes[3].plot(np.cumsum(best_rewards[cl]), 'b')
+    axes[3].set_title(f'Cumulative reward plot {category}')
+    axes[3].plot(cumulative_reward_ts_mean[category], 'r')
+    axes[3].plot(cumulative_reward_ucb_mean[category], 'g')
+    axes[3].plot(np.cumsum(best_rewards[category]), 'b')
     axes[3].legend(["TS", "UCB", "Clairvoyant"])
     axes[3].set_xlabel("t")
     axes[3].set_ylabel("Cumulative reward")
     plt.show()
 
 # Plot the results for TS with std
-for cl in classes:
+for category in categories:
     _, axes = plt.subplots(2, 2, figsize=(20, 20))
     axes = axes.flatten()
 
-    axes[0].set_title(f'Instantaneous regret plot for TS {cl}')
-    axes[0].plot(regret_ts_mean[cl], 'r')
-    axes[0].fill_between(range(0, T), regret_ts_mean[cl] - regret_ts_std[cl], regret_ts_mean[cl] + regret_ts_std[cl], color='r', alpha=0.4)
+    axes[0].set_title(f'Instantaneous regret plot for TS {category}')
+    axes[0].plot(regret_ts_mean[category], 'r')
+    axes[0].fill_between(range(0, T), regret_ts_mean[category] - regret_ts_std[category], regret_ts_mean[category] + regret_ts_std[category], color='r', alpha=0.4)
     axes[0].axhline(y=0, color='b', linestyle='--')
     axes[0].legend(["TS mean", "TS std"])
     axes[0].set_xlabel("t")
     axes[0].set_ylabel("Instantaneous regret")
 
-    axes[1].set_title(f'Instantaneous reward plot for TS {cl}')
-    axes[1].plot(reward_ts_mean[cl], 'r')
-    axes[1].fill_between(range(0, T), reward_ts_mean[cl] - reward_ts_std[cl], reward_ts_mean[cl] + reward_ts_std[cl], color='r', alpha=0.4)
-    axes[1].plot(best_rewards[cl], 'b')
+    axes[1].set_title(f'Instantaneous reward plot for TS {category}')
+    axes[1].plot(reward_ts_mean[category], 'r')
+    axes[1].fill_between(range(0, T), reward_ts_mean[category] - reward_ts_std[category], reward_ts_mean[category] + reward_ts_std[category], color='r', alpha=0.4)
+    axes[1].plot(best_rewards[category], 'b')
     axes[1].legend(["TS mean", "TS std", "Clairvoyant"])
     axes[1].set_xlabel("t")
     axes[1].set_ylabel("Instantaneous reward")
 
-    axes[2].set_title(f'Cumulative regret plot for TS {cl}')
-    axes[2].plot(cumulative_regret_ts_mean[cl], 'r')
-    axes[2].fill_between(range(0, T), cumulative_regret_ts_mean[cl] - cumulative_regret_ts_std[cl], cumulative_regret_ts_mean[cl] + cumulative_regret_ts_std[cl], color='r', alpha=0.4)
+    axes[2].set_title(f'Cumulative regret plot for TS {category}')
+    axes[2].plot(cumulative_regret_ts_mean[category], 'r')
+    axes[2].fill_between(range(0, T), cumulative_regret_ts_mean[category] - cumulative_regret_ts_std[category], cumulative_regret_ts_mean[category] + cumulative_regret_ts_std[category], color='r', alpha=0.4)
     axes[2].legend(["TS mean", "TS std"])
     axes[2].set_xlabel("t")
     axes[2].set_ylabel("Cumulative regret")
 
-    axes[3].set_title(f'Cumulative reward plot for TS {cl}')
-    axes[3].plot(cumulative_reward_ts_mean[cl], 'r')
-    axes[3].fill_between(range(0, T), cumulative_reward_ts_mean[cl] - cumulative_reward_ts_std[cl], cumulative_reward_ts_mean[cl] + cumulative_reward_ts_std[cl], color='r', alpha=0.4)
-    axes[3].plot(np.cumsum(best_rewards[cl]), 'b')
+    axes[3].set_title(f'Cumulative reward plot for TS {category}')
+    axes[3].plot(cumulative_reward_ts_mean[category], 'r')
+    axes[3].fill_between(range(0, T), cumulative_reward_ts_mean[category] - cumulative_reward_ts_std[category], cumulative_reward_ts_mean[category] + cumulative_reward_ts_std[category], color='r', alpha=0.4)
+    axes[3].plot(np.cumsum(best_rewards[category]), 'b')
     axes[3].legend(["TS mean", "TS std", "Clairvoyant"])
     axes[3].set_xlabel("t")
     axes[3].set_ylabel("Cumulative reward")
     plt.show()
 
 # Plot the results for UCB with std
-for cl in classes:
+for category in categories:
     _, axes = plt.subplots(2, 2, figsize=(20, 20))
     axes = axes.flatten()
 
-    axes[0].set_title(f'Instantaneous regret plot for UCB {cl}')
-    axes[0].plot(regret_ucb_mean[cl], 'g')
-    axes[0].fill_between(range(0, T), regret_ucb_mean[cl] - regret_ucb_std[cl], regret_ucb_mean[cl] + regret_ucb_std[cl], color='g', alpha=0.4)
+    axes[0].set_title(f'Instantaneous regret plot for UCB {category}')
+    axes[0].plot(regret_ucb_mean[category], 'g')
+    axes[0].fill_between(range(0, T), regret_ucb_mean[category] - regret_ucb_std[category], regret_ucb_mean[category] + regret_ucb_std[category], color='g', alpha=0.4)
     axes[0].axhline(y=0, color='b', linestyle='--')
     axes[0].legend(["UCB mean", "UCB std"])
     axes[0].set_xlabel("t")
     axes[0].set_ylabel("Instantaneous regret")
 
-    axes[1].set_title(f'Instantaneous reward plot for UCB {cl}')
-    axes[1].plot(reward_ucb_mean[cl], 'g')
-    axes[1].fill_between(range(0, T), reward_ucb_mean[cl] - reward_ucb_std[cl], reward_ucb_mean[cl] + reward_ucb_std[cl], color='g', alpha=0.4)
-    axes[1].plot(best_rewards[cl], 'b')
+    axes[1].set_title(f'Instantaneous reward plot for UCB {category}')
+    axes[1].plot(reward_ucb_mean[category], 'g')
+    axes[1].fill_between(range(0, T), reward_ucb_mean[category] - reward_ucb_std[category], reward_ucb_mean[category] + reward_ucb_std[category], color='g', alpha=0.4)
+    axes[1].plot(best_rewards[category], 'b')
     axes[1].legend(["UCB mean", "UCB std", "Clairvoyant"])
     axes[1].set_xlabel("t")
     axes[1].set_ylabel("Instantaneous reward")
 
-    axes[2].set_title(f'Cumulative regret plot for UCB {cl}')
-    axes[2].plot(cumulative_regret_ucb_mean[cl], 'g')
-    axes[2].fill_between(range(0, T), cumulative_regret_ucb_mean[cl] - cumulative_regret_ucb_std[cl], cumulative_regret_ucb_mean[cl] + cumulative_regret_ucb_std[cl], color='g', alpha=0.4)
+    axes[2].set_title(f'Cumulative regret plot for UCB {category}')
+    axes[2].plot(cumulative_regret_ucb_mean[category], 'g')
+    axes[2].fill_between(range(0, T), cumulative_regret_ucb_mean[category] - cumulative_regret_ucb_std[category], cumulative_regret_ucb_mean[category] + cumulative_regret_ucb_std[category], color='g', alpha=0.4)
     axes[2].legend(["UCB mean", "UCB std"])
     axes[2].set_xlabel("t")
     axes[2].set_ylabel("Cumulative regret")
 
-    axes[3].set_title(f'Cumulative reward plot for UCB {cl}')
-    axes[3].plot(cumulative_reward_ucb_mean[cl], 'g')
-    axes[3].fill_between(range(0, T), cumulative_reward_ucb_mean[cl] - cumulative_reward_ucb_std[cl], cumulative_reward_ucb_mean[cl] + cumulative_reward_ucb_std[cl], color='g', alpha=0.4)
-    axes[3].plot(np.cumsum(best_rewards[cl]), 'b')
+    axes[3].set_title(f'Cumulative reward plot for UCB {category}')
+    axes[3].plot(cumulative_reward_ucb_mean[category], 'g')
+    axes[3].fill_between(range(0, T), cumulative_reward_ucb_mean[category] - cumulative_reward_ucb_std[category], cumulative_reward_ucb_mean[category] + cumulative_reward_ucb_std[category], color='g', alpha=0.4)
+    axes[3].plot(np.cumsum(best_rewards[category]), 'b')
     axes[3].legend(["UCB mean", "UCB std", "Clairvoyant"])
     axes[3].set_xlabel("t")
     axes[3].set_ylabel("Cumulative reward")
