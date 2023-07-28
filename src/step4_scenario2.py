@@ -68,11 +68,11 @@ bids = np.linspace(min_bid, max_bid, n_bids)
 sigma = 2
 
 # Time horizon of the experiment
-T = 365
+T = 50
 
 # Since the reward functions are stochastic to better visualize the results and remove the noise
 # we have to perform a sufficiently large number experiments
-n_experiments = 20
+n_experiments = 2
 time_between_context_generation = 14
 
 
@@ -109,9 +109,9 @@ gpts_pulled_bids_per_experiment = 0
 for e in tqdm(range(0, n_experiments)):
     # Define the learners
     ts_context_learner = ContextGeneratorLearner(env.prices, env.bids, env.feature_name, env.feature_values,
-                                                 time_between_context_generation, "ts")
+                                                 time_between_context_generation, "TS")
     ucb_context_learner = ContextGeneratorLearner(env.prices, env.bids, env.feature_name, env.feature_values,
-                                                  time_between_context_generation, "ucb")
+                                                  time_between_context_generation, "UCB")
     context_learners_type = [ts_context_learner, ucb_context_learner]
 
     # Iterate over the number of rounds

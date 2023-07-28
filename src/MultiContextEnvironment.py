@@ -28,7 +28,7 @@ class MultiContextEnvironment(Environment):
         The
         """
 
-        super(n_prices, prices, probabilities, bids_to_clicks, bids_to_cum_costs, other_costs)
+        super().__init__(n_prices, prices, probabilities, bids_to_clicks, bids_to_cum_costs, other_costs)
 
         self.categories = categories
         self.feature_name = feature_names
