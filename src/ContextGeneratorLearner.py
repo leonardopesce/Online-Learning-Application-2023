@@ -4,6 +4,7 @@ import numpy as np
 from PricingAdvertisingLearner import PricingAdvertisingLearner
 from ContextLearner import ContextLearner
 from LearnerFactory import LearnerFactory
+from ContextTree.ContextTree import ContextTree
 
 
 class ContextGeneratorLearner:
@@ -197,7 +198,7 @@ class ContextGeneratorLearner:
         self.context_learners = new_learners
 
     def update_context1(self):
-        context_tree = ContextTree(self.feature_names, self.feature_values, self.feature_to_observation, 0.99)
+        context_tree = ContextTree(self.prices, self.bids, self.feature_names, self.feature_values, self.feature_to_observation, 0.99)
         new_contexts = context_tree.get_context_structure()
         print(new_contexts)
         # Redefining the learners to use in the next steps of the learning procedure using the new contexts

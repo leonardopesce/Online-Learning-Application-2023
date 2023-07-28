@@ -4,7 +4,9 @@ import torch
 from gpytorch.kernels import RBFKernel, ScaleKernel
 from gpytorch.likelihoods import GaussianLikelihood
 
-from ..GPs import BaseGaussianProcess
+from src.GPs import BaseGaussianProcess
+
+
 
 def lower_bound(confidence, num_samples):
     """
@@ -84,13 +86,14 @@ class ContextNode:
 
         price_obs = np.array([observation[0] for key in self.feature_to_observation.keys() for observation in self.feature_to_observation.get(key)])
         bids_obs = np.array([observation[2] for key in self.feature_to_observation.keys() for observation in self.feature_to_observation.get(key)])
-        x = torch.Tensor(np.block([price_obs, bids_obs]))
 
-        y = torch.Tensor(observation[-1] for key in self.feature_to_observation.keys() for observation in self.feature_to_observation.get(key))
+        x = torch.Tensor(np.block([price_obs[:, None], bids_obs[:, None]]))
+
+        y = torch.Tensor([observation[-1] for key in self.feature_to_observation.keys() for observation in self.feature_to_observation.get(key)])
 
         self.gp_reward.fit(x, y)
-
-        x = torch.Tensor(np.block([self.prices, self.bids]))
+        
+        x = torch.Tensor(np.block([self.prices[:, None], self.bids[:, None]]))
         means_rewards, sigmas_rewards, lower_bounds_rewards, upper_bounds_rewards = self.gp_reward.predict(x)
 
         num_samples = sum(observation[3] for key in self.feature_to_observation.keys() for observation in self.feature_to_observation.get(key))

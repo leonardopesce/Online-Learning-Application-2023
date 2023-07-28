@@ -17,7 +17,7 @@ class ContextTree:
         requested
     """
 
-    def __init__(self, feature_names, feature_values, feature_to_observation, confidence):
+    def __init__(self, prices, bids, feature_names, feature_values, feature_to_observation, confidence):
         """
         Initialize the data structure
 
@@ -29,7 +29,7 @@ class ContextTree:
         :param float confidence: Confidence to use in the lower bound used in the context generation algorithm
         """
 
-        self.root = ContextNode(feature_names, feature_values, feature_to_observation, confidence, None)
+        self.root = ContextNode(prices, bids, feature_names, feature_values, feature_to_observation, confidence, None)
         self.feature_names = feature_names
         self.feature_values = feature_values
         self.confidence = confidence
