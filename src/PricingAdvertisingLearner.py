@@ -8,3 +8,6 @@ class PricingAdvertisingLearner:
 
     def update(self, pulled_price, bernoulli_realizations, pulled_bid, n_clicks, costs_adv, reward):
         return
+
+    def get_reward(self):
+        return

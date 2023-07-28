@@ -93,3 +93,6 @@ class TSLearnerPricingAdvertising(PricingAdvertisingLearner):
         """
 
         return self.GPTS_advertising.pulled_arms
+
+    def get_reward(self):
+        return self.TS_pricing.collected_rewards

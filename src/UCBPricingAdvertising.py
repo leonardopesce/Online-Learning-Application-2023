@@ -91,3 +91,6 @@ class UCBLearnerPricingAdvertising(PricingAdvertisingLearner):
         """
 
         return self.GPUCB_advertising.pulled_arms
+
+    def get_reward(self):
+        return self.UCB_pricing.collected_rewards

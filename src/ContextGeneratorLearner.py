@@ -230,3 +230,43 @@ class ContextGeneratorLearner:
         for idx, learner in enumerate(self.context_learners):
             learner.get_learner().update(pulled_price_list[idx], bernoulli_realizations_list[idx], pulled_bid_list[idx], clicks_given_bid_list[idx], cost_given_bid_list[idx], rewards[idx])
             self.feature_to_observation[features_list[idx]].append([pulled_price_list[idx], bernoulli_realizations_list[idx], pulled_bid_list[idx], clicks_given_bid_list[idx], cost_given_bid_list[idx], rewards[idx]])
+
+
+    def get_pulled_prices(self):
+        """
+        Returns the sequence of pulled prices
+
+        :returns: Ordered sequence of pulled prices
+        :rtype: list
+        """
+        pulled_prices = []
+        for learner in self.context_learners:
+            pulled_prices.append(learner.get_learner().get_pulled_prices())
+
+        return pulled_prices
+
+    def get_pulled_bids(self):
+        """
+        Returns the sequence of pulled bids
+
+        :returns: Ordered sequence of pulled bids
+        :rtype: list
+        """
+        pulled_bids = []
+        for learner in self.context_learners:
+            pulled_bids.append(learner.get_learner().get_pulled_bids())
+
+        return pulled_bids
+
+    def get_collective_reward(self):
+        """
+        Returns the collective reward
+
+        :returns: Collective reward
+        :rtype: float
+        """
+        collective_reward = 0
+        for learner in self.context_learners:
+            collective_reward += learner.get_learner().get_reward()
+
+        return collective_reward
