@@ -8,3 +8,11 @@ class ContextLearner:
     
     def get_context(self):
         return self.context
+    
+    @property
+    def t(self):
+        return self.learner.t
+    
+    @t.setter
+    def t(self, value):
+        self.learner.t = value
