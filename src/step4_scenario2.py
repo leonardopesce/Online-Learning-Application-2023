@@ -108,19 +108,19 @@ gpts_pulled_bids_per_experiment = 0
 # Each iteration simulates the learner-environment interaction
 for e in tqdm(range(0, n_experiments)):
     # Define the learners
-    ts_context_learner = ContextGeneratorLearner(env.prices, env.bids, env.feature_name, env.feature_values,
+    ts_context_learner = ContextGeneratorLearner(env.prices['C1'], env.bids, env.feature_name, env.feature_values,
                                                  time_between_context_generation, "TS")
-    ucb_context_learner = ContextGeneratorLearner(env.prices, env.bids, env.feature_name, env.feature_values,
+    ucb_context_learner = ContextGeneratorLearner(env.prices['C1'], env.bids, env.feature_name, env.feature_values,
                                                   time_between_context_generation, "UCB")
     context_learners_type = [ts_context_learner, ucb_context_learner]
 
     # Iterate over the number of rounds
     for t in range(0, T):
-        if t % time_between_context_generation == 0:
+        if t % time_between_context_generation == 0 and t != 0:
             for clt in context_learners_type:
-                clt.update_context()
+                clt.update_context1()
 
-        # Simulate the interaction learner-environment
+        # Iterate over TS and UCB
         for clt in context_learners_type:
             # pull all the arm of the context generator
             context_price_bid_learners = clt.pull_arm(env.other_costs)
@@ -130,13 +130,15 @@ for e in tqdm(range(0, n_experiments)):
 
             # iterate over the generated contexts
             for context, price_idx, bid_idx in context_price_bid_learners:
-                bernoulli_realizations, n_clicks, cum_daily_cost = env.round(price_idx, bid_idx, context)
+                feature_list, bernoulli_realizations, n_clicks, cum_daily_cost = env.round(price_idx, bid_idx, context)
 
                 # TODO: may be still based on category and not on features
-                reward = env.get_reward(context, price_idx, float(np.mean(bernoulli_realizations)), n_clicks, cum_daily_cost)
+                reward = 0
+                for i in range(len(feature_list)):
+                    reward += env.get_reward(feature_list[i], price_idx, float(np.mean(bernoulli_realizations[i])), n_clicks[i], cum_daily_cost[i])
 
                 # prepare data for update of context learner
-                features_list.append(context)
+                features_list.append(feature_list)
                 bernoulli_realizations_list.append(bernoulli_realizations)
                 pulled_price_list.append(price_idx)
                 pulled_bid_list.append(bid_idx)
@@ -150,12 +152,12 @@ for e in tqdm(range(0, n_experiments)):
                        rewards=rewards)
 
     # Store the most played prices and bids by TS
-    ts_best_price.append(Counter(context_learners_type[TS].get_pulled_prices()).most_common(1)[0][0])
-    ts_best_bid.append(Counter(context_learners_type[TS].get_pulled_bids()).most_common(1)[0][0])
+    ts_best_price.append(Counter(context_learners_type[TS].get_pulled_prices()).most_common(1)[0])
+    ts_best_bid.append(Counter(context_learners_type[TS].get_pulled_bids()).most_common(1)[0])
 
     # Store the most played prices and bids by UCB1
-    ucb_best_price.append(Counter(context_learners_type[UCB].get_pulled_prices()).most_common(1)[0][0])
-    ucb_best_bid.append(Counter(context_learners_type[UCB].get_pulled_bids()).most_common(1)[0][0])
+    ucb_best_price.append(Counter(context_learners_type[UCB].get_pulled_prices()).most_common(1)[0])
+    ucb_best_bid.append(Counter(context_learners_type[UCB].get_pulled_bids()).most_common(1)[0])
 
     # Store the values of the collected rewards of the learners
     ts_reward_per_experiment.append(np.array(context_learners_type[TS].get_collective_reward()))

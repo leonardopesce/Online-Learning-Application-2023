@@ -1,4 +1,4 @@
-from ContextNode import *
+from .ContextNode import ContextNode
 
 
 class ContextTree:

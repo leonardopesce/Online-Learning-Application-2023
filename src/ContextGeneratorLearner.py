@@ -4,6 +4,7 @@ import numpy as np
 from PricingAdvertisingLearner import PricingAdvertisingLearner
 from ContextLearner import ContextLearner
 from LearnerFactory import LearnerFactory
+from ContextTree import ContextTree
 
 
 class ContextGeneratorLearner:
@@ -193,6 +194,31 @@ class ContextGeneratorLearner:
         # Setting the new learners into the context generator learner
         self.context_learners = new_learners
 
+    def update_context1(self):
+        context_tree = ContextTree(self.feature_names, self.feature_values, self.feature_to_observation, 0.05)
+        new_contexts = context_tree.get_context_structure()
+
+        # Redefining the learners to use in the next steps of the learning procedure using the new contexts
+        # Defining the list of the new context learners (learners + contexts)
+        new_learners = []
+        # Iterating on the new contexts
+        for context in new_contexts:
+            # Defining a new learner
+            new_learner = LearnerFactory().get_learner(self.learner_type, self.prices, self.bids)
+            # Iterating on the tuples of features of the user in the context
+            for feature_tuple in context:
+                # Iterating on the observation regarding the user with the chosen values of features
+                for element in self.feature_to_observation.get(feature_tuple):
+                    # Updating the new learner using the past observation of the users in the context it has to consider
+                    new_learner.update(element[0], element[1], element[2], element[3], element[4], element[5])
+            new_learner.t = self.t  # TODO: check if this is correct, i.e. if it is needed to set the new learner time to the current timestep.
+            # Appending a new context learner to the set of the new learner to use in future time steps
+            new_learners.append(ContextLearner(context, new_learner))
+
+        # Setting the new learners into the context generator learner
+        self.context_learners = new_learners
+
+
     def pull_arm(self, other_costs):
         """
         Chooses the price to play and the bid for all the learners based on the learning algorithm of the learner
@@ -228,8 +254,11 @@ class ContextGeneratorLearner:
         """
         self.t += 1
         for idx, learner in enumerate(self.context_learners):
-            learner.get_learner().update(pulled_price_list[idx], bernoulli_realizations_list[idx], pulled_bid_list[idx], clicks_given_bid_list[idx], cost_given_bid_list[idx], rewards[idx])
-            self.feature_to_observation[features_list[idx]].append([pulled_price_list[idx], bernoulli_realizations_list[idx], pulled_bid_list[idx], clicks_given_bid_list[idx], cost_given_bid_list[idx], rewards[idx]])
+            learner.get_learner().update(pulled_price_list[idx], np.concatenate(bernoulli_realizations_list[idx], axis=0),
+                                         pulled_bid_list[idx], np.sum(clicks_given_bid_list[idx]),
+                                         np.sum(cost_given_bid_list[idx]), rewards[idx])
+            for i in range(len(features_list[idx])):
+                self.feature_to_observation[features_list[idx][i]].append([pulled_price_list[idx], bernoulli_realizations_list[idx][i], pulled_bid_list[idx], clicks_given_bid_list[idx][i], cost_given_bid_list[idx][i], rewards[idx]])
 
 
     def get_pulled_prices(self):

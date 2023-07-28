@@ -36,6 +36,9 @@ class MultiContextEnvironment(Environment):
         self.feature_values_to_categories = feature_values_to_categories
         self.probability_feature_values_in_categories = probability_feature_values_in_categories
 
+    def get_reward(self, context, price_idx, conversion_prob, n_clicks, cum_daily_costs):
+        return conversion_prob * (self.prices['C1'][price_idx] - self.other_costs) * n_clicks - cum_daily_costs
+
     def round(self, price_idx, bid_idx, user_features_set):
         # price_idx, bid_idx = learner.pull_arms()
         # bernoulli_realizations, clicks_given_bid, cost_given_bid = environment.round(price_idx, bid_idx, learner.get_context_features() (che potrebbe tornare set((0,0), (0,1))))
@@ -60,14 +63,14 @@ class MultiContextEnvironment(Environment):
             category = self.feature_values_to_categories[user_features]
             probability_of_features = self.probability_feature_values_in_categories[category][user_features]
 
-            bernoulli_realizations, clicks_given_bid, cost_given_bid = super.round(category, price_idx, bid_idx)
+            bernoulli_realizations, clicks_given_bid, cost_given_bid = super().round(category, price_idx, bid_idx)
 
             features_list.append(user_features)
             clicks_given_features = probability_of_features * clicks_given_bid
             clicks_given_bid_list.append(clicks_given_features)
             cost_given_features = probability_of_features * cost_given_bid
             cost_given_bid_list.append(cost_given_features)
-            bernoulli_realizations_list.append(np.random.choice(bernoulli_realizations, clicks_given_features))
+            bernoulli_realizations_list.append(np.random.choice(bernoulli_realizations, int(clicks_given_features)))
 
         return features_list, bernoulli_realizations_list, clicks_given_bid_list, cost_given_bid_list
 
