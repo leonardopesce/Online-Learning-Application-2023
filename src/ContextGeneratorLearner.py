@@ -73,17 +73,17 @@ class ContextGeneratorLearner:
         # Saving the reward of the aggregate model. It will be used to compare the reward of the new context.
         lower_bound = lambda delta, Z : np.sqrt((-np.log(delta)) / (2 * Z))
 
-        num_samples_split_0_x = sum(obj[3] for obj in (self.feature_to_observation.get(key) for key in self.feature_to_observation.keys() if key[0] == 0))
-        num_samples_split_0_y = sum(obj[3] for obj in (self.feature_to_observation.get(key) for key in self.feature_to_observation.keys() if key[0] == 1))
-        num_samples_split_1_x = sum(obj[3] for obj in (self.feature_to_observation.get(key) for key in self.feature_to_observation.keys() if key[1] == 0))
-        num_samples_split_1_y = sum(obj[3] for obj in (self.feature_to_observation.get(key) for key in self.feature_to_observation.keys() if key[1] == 1))
-        tot_num_samples = sum(obj[3] for obj in (self.feature_to_observation.get(key) for key in self.feature_to_observation.keys()))
+        num_samples_split_0_x = sum(obj[3] for key in self.feature_to_observation.keys() for obj in self.feature_to_observation.get(key) if key[0] == 0)
+        num_samples_split_0_y = sum(obj[3] for key in self.feature_to_observation.keys() for obj in self.feature_to_observation.get(key) if key[0] == 1)
+        num_samples_split_1_x = sum(obj[3] for key in self.feature_to_observation.keys() for obj in self.feature_to_observation.get(key) if key[1] == 0)
+        num_samples_split_1_y = sum(obj[3] for key in self.feature_to_observation.keys() for obj in self.feature_to_observation.get(key) if key[1] == 1)
+        tot_num_samples = sum(obj[3] for key in self.feature_to_observation.keys() for obj in self.feature_to_observation.get(key))
 
-        aggregate_reward = np.mean(obj[-1] for obj in (self.feature_to_observation.get(key) for key in self.feature_to_observation.keys())) - lower_bound(0.05, tot_num_samples)
-        reward_split_0_x = np.mean(obj[-1] for obj in (self.feature_to_observation.get(key) for key in self.feature_to_observation.keys() if key[0] == 0)) - lower_bound(0.05, num_samples_split_0_x)
-        reward_split_0_y = np.mean(obj[-1] for obj in (self.feature_to_observation.get(key) for key in self.feature_to_observation.keys() if key[0] == 1)) - lower_bound(0.05, num_samples_split_0_y)
-        reward_split_1_x = np.mean(obj[-1] for obj in (self.feature_to_observation.get(key) for key in self.feature_to_observation.keys() if key[1] == 0)) - lower_bound(0.05, num_samples_split_1_x)
-        reward_split_1_y = np.mean(obj[-1] for obj in (self.feature_to_observation.get(key) for key in self.feature_to_observation.keys() if key[1] == 1)) - lower_bound(0.05, num_samples_split_1_y)
+        aggregate_reward = np.mean([obj[-1] for key in self.feature_to_observation.keys() for obj in self.feature_to_observation.get(key)]) - lower_bound(0.05, tot_num_samples)
+        reward_split_0_x = np.mean([obj[-1] for key in self.feature_to_observation.keys() for obj in self.feature_to_observation.get(key) if key[0] == 0]) - lower_bound(0.05, num_samples_split_0_x)
+        reward_split_0_y = np.mean([obj[-1] for key in self.feature_to_observation.keys() for obj in self.feature_to_observation.get(key) if key[0] == 1]) - lower_bound(0.05, num_samples_split_0_y)
+        reward_split_1_x = np.mean([obj[-1] for key in self.feature_to_observation.keys() for obj in self.feature_to_observation.get(key) if key[1] == 0]) - lower_bound(0.05, num_samples_split_1_x)
+        reward_split_1_y = np.mean([obj[-1] for key in self.feature_to_observation.keys() for obj in self.feature_to_observation.get(key) if key[1] == 1]) - lower_bound(0.05, num_samples_split_1_y)
 
         # Calculating the probabilities of the contexts TODO: hanno senso i lower bound sulle probabilità? (non credo)
         probability_split_0_x = (num_samples_split_0_x / tot_num_samples) - lower_bound(0.05, num_samples_split_0_x)
@@ -105,7 +105,7 @@ class ContextGeneratorLearner:
             lower_bound_left_branch = probability_split_0_x * reward_split_0_x
             lower_bound_right_branch = probability_split_0_y * reward_split_0_y
             tot_num_samples_first_split = num_samples_split_0_x + num_samples_split_0_y
-            defined_contexts = set(((0,0), (0,1)), ((1,0), (1,1)))
+            defined_contexts = [((0,0), (0,1)), ((1,0), (1,1))]
         elif lower_bound_reward_1 > aggregate_reward:
             # At this point we decided to discriminate on the second feature, so here we grouped (0,0) and (1,0) together and (0,1) and (1,1) together.
             split_0 = 1 # At level 0 we split on the second feature
@@ -114,26 +114,26 @@ class ContextGeneratorLearner:
             lower_bound_left_branch = probability_split_1_x * reward_split_1_x
             lower_bound_right_branch = probability_split_1_y * reward_split_1_y
             tot_num_samples_first_split = num_samples_split_1_x + num_samples_split_1_y
-            defined_contexts = set(((0,0), (1,0)), ((0,1), (1,1)))
+            defined_contexts = [((0,0), (1,0)), ((0,1), (1,1))]
         else:
             # If the aggregate model is better than the two splits, then we do not split at all.
-            defined_contexts = set(((0, 0), (0, 1), (1, 0), (1, 1)))
+            defined_contexts = [((0, 0), (0, 1), (1, 0), (1, 1))]
            
 
         if split_0 != -1:
             # Now given the split we have to find the best split on the second level.
             # We have to find the best split on the second level for each of the two splits on the first level.
             # It can be either split one of the two contexts, split only one of them or not split at all and keep the division in 2 groups.
-            num_samples_split_branch_1_x = sum(obj[3] for obj in (self.feature_to_observation.get(key) for key in self.feature_to_observation.keys() if key[split_0] == 0 and key[split_1] == 0))
-            num_samples_split_branch_1_y = sum(obj[3] for obj in (self.feature_to_observation.get(key) for key in self.feature_to_observation.keys() if key[split_0] == 0 and key[split_1] == 1))
-            num_samples_split_branch_2_x = sum(obj[3] for obj in (self.feature_to_observation.get(key) for key in self.feature_to_observation.keys() if key[split_0] == 1 and key[split_1] == 0))
-            num_samples_split_branch_2_y = sum(obj[3] for obj in (self.feature_to_observation.get(key) for key in self.feature_to_observation.keys() if key[split_0] == 1 and key[split_1] == 1))
+            num_samples_split_branch_1_x = sum(obj[3] for key in self.feature_to_observation.keys() for obj in self.feature_to_observation.get(key) if key[split_0] == 0 and key[split_1] == 0)
+            num_samples_split_branch_1_y = sum(obj[3] for key in self.feature_to_observation.keys() for obj in self.feature_to_observation.get(key) if key[split_0] == 0 and key[split_1] == 1)
+            num_samples_split_branch_2_x = sum(obj[3] for key in self.feature_to_observation.keys() for obj in self.feature_to_observation.get(key) if key[split_0] == 1 and key[split_1] == 0)
+            num_samples_split_branch_2_y = sum(obj[3] for key in self.feature_to_observation.keys() for obj in self.feature_to_observation.get(key) if key[split_0] == 1 and key[split_1] == 1)
             
             # Now we compute the rewards of the 4 splits.
-            reward_split_branch_1_x = np.mean(obj[-1] for obj in (self.feature_to_observation.get(key) for key in self.feature_to_observation.keys() if key[split_0] == 0 and key[split_1] == 0)) - lower_bound(0.05, num_samples_split_branch_1_x)
-            reward_split_branch_1_y = np.mean(obj[-1] for obj in (self.feature_to_observation.get(key) for key in self.feature_to_observation.keys() if key[split_0] == 0 and key[split_1] == 1)) - lower_bound(0.05, num_samples_split_branch_1_y)
-            reward_split_branch_2_x = np.mean(obj[-1] for obj in (self.feature_to_observation.get(key) for key in self.feature_to_observation.keys() if key[split_0] == 1 and key[split_1] == 0)) - lower_bound(0.05, num_samples_split_branch_2_x)
-            reward_split_branch_2_y = np.mean(obj[-1] for obj in (self.feature_to_observation.get(key) for key in self.feature_to_observation.keys() if key[split_0] == 1 and key[split_1] == 1)) - lower_bound(0.05, num_samples_split_branch_2_y)
+            reward_split_branch_1_x = np.mean([obj[-1] for key in self.feature_to_observation.keys() for obj in self.feature_to_observation.get(key) if key[split_0] == 0 and key[split_1] == 0]) - lower_bound(0.05, num_samples_split_branch_1_x)
+            reward_split_branch_1_y = np.mean([obj[-1] for key in self.feature_to_observation.keys() for obj in self.feature_to_observation.get(key) if key[split_0] == 0 and key[split_1] == 1]) - lower_bound(0.05, num_samples_split_branch_1_y)
+            reward_split_branch_2_x = np.mean([obj[-1] for key in self.feature_to_observation.keys() for obj in self.feature_to_observation.get(key) if key[split_0] == 1 and key[split_1] == 0]) - lower_bound(0.05, num_samples_split_branch_2_x)
+            reward_split_branch_2_y = np.mean([obj[-1] for key in self.feature_to_observation.keys() for obj in self.feature_to_observation.get(key) if key[split_0] == 1 and key[split_1] == 1]) - lower_bound(0.05, num_samples_split_branch_2_y)
 
             # Calculating the probabilities of the contexts TODO: hanno senso i lower bound sulle probabilità? (non credo)
             probability_split_branch_1_x = (num_samples_split_branch_1_x / tot_num_samples_first_split) - lower_bound(0.05, num_samples_split_branch_1_x)
@@ -161,21 +161,23 @@ class ContextGeneratorLearner:
                 # If we firstly split on the first feature, it follows this grouping ((0,0), (0,1), ((1,0), (1,1)))
                 # Otherwise if we firstly split on the second feature, it follows this grouping ((0,0), (1,0), ((0,1), (1,1)))
                 if split_0 == 0:
-                    defined_contexts = set(((0,0),), ((0,1),), ((1,0), (1,1)))
+                    defined_contexts = [((0,0),), ((0,1),), ((1,0), (1,1))]
                 else:
-                    defined_contexts = set(((0,0),), ((1,0),), ((0,1), (1,1)))
+                    defined_contexts = [((0,0),), ((1,0),), ((0,1), (1,1))]
             elif reward_left_aggr_right_discr > aggregate_reward_first_split and reward_left_aggr_right_discr >= reward_full_discrimination:
                 # If we firstly split on the first feature, it follows this grouping (((0,0), (0,1)), (1,0), (1,1))
                 # Otherwise if we firstly split on the second feature, it follows this grouping (((0,0), (1,0)), (0,1), (1,1))
                 if split_0 == 0:
-                    defined_contexts = set(((0,0), (0,1)), ((1,0),), ((1,1),))
+                    defined_contexts = [((0,0), (0,1)), ((1,0),), ((1,1),)]
                 else:
-                    defined_contexts = set(((0,0), (1,0)), ((0,1),), ((1,1),))
+                    defined_contexts = [((0,0), (1,0)), ((0,1),), ((1,1),)]
             elif reward_full_discrimination > aggregate_reward_first_split:
-                defined_contexts = set(((0,0),), ((0,1),), ((1,0),), ((1,1),))
+                print("sono qui porcoddio")
+                defined_contexts = [((0,0),), ((0,1),), ((1,0),), ((1,1),)]
 
         # Redefining the learners to use in the next steps of the learning procedure using the new contexts
         # Defining the list of the new context learners (learners + contexts)
+        print(defined_contexts)
         new_learners = []
         # Iterating on the new contexts
         for context in defined_contexts:
@@ -184,6 +186,7 @@ class ContextGeneratorLearner:
             # Iterating on the tuples of features of the user in the context
             for feature_tuple in context:
                 # Iterating on the observation regarding the user with the chosen values of features
+                # print(context)
                 for element in self.feature_to_observation.get(feature_tuple):
                     # Updating the new learner using the past observation of the users in the context it has to consider
                     new_learner.update(element[0], element[1], element[2], element[3], element[4], element[5])
@@ -195,9 +198,9 @@ class ContextGeneratorLearner:
         self.context_learners = new_learners
 
     def update_context1(self):
-        context_tree = ContextTree(self.feature_names, self.feature_values, self.feature_to_observation, 1.)
+        context_tree = ContextTree(self.feature_names, self.feature_values, self.feature_to_observation, 0.99)
         new_contexts = context_tree.get_context_structure()
-
+        print(new_contexts)
         # Redefining the learners to use in the next steps of the learning procedure using the new contexts
         # Defining the list of the new context learners (learners + contexts)
         new_learners = []

@@ -8,8 +8,8 @@ from UCBPricingAdvertising import UCBLearnerPricingAdvertising
 from collections import Counter
 import numpy as np
 
-from src.MultiContextEnvironment import MultiContextEnvironment
-from src.ContextGeneratorLearner import ContextGeneratorLearner
+from MultiContextEnvironment import MultiContextEnvironment
+from ContextGeneratorLearner import ContextGeneratorLearner
 """
 Consider the case in which there are three classes of users (C1, C2, and C3), 
 and no information about the advertising and pricing curves is known beforehand. 
