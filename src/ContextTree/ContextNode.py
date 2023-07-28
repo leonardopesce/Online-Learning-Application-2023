@@ -4,7 +4,7 @@ import torch
 from gpytorch.kernels import RBFKernel, ScaleKernel
 from gpytorch.likelihoods import GaussianLikelihood
 
-from src.GPs import BaseGaussianProcess
+from GPs import BaseGaussianProcess
 
 
 
@@ -93,11 +93,16 @@ class ContextNode:
 
         self.gp_reward.fit(x, y)
         
-        x = torch.Tensor(np.block([self.prices[:, None], self.bids[:, None]]))
-        means_rewards, sigmas_rewards, lower_bounds_rewards, upper_bounds_rewards = self.gp_reward.predict(x)
+        # Create a vector with 2 columns such that the first column is the price and the second column is the bid.
+        # Create all the possible combinations of price and bid.
+        price_bids = torch.Tensor(np.array(np.meshgrid(self.prices, self.bids)).T.reshape(-1, 2))
+        # print(price_bids, price_bids.shape)
+            
+        # x = torch.Tensor(np.block([self.prices[:, None], self.bids[:, None]]))
+        means_rewards, sigmas_rewards, lower_bounds_rewards, upper_bounds_rewards = self.gp_reward.predict(price_bids)
 
         num_samples = sum(observation[3] for key in self.feature_to_observation.keys() for observation in self.feature_to_observation.get(key))
-        self.aggregate_reward = np.max(self.aggregate_reward - sigmas_rewards) #* lower_bound(self.confidence, num_samples))
+        self.aggregate_reward = np.max(lower_bounds_rewards) # np.max(means_rewards - sigmas_rewards) # * lower_bound(self.confidence, num_samples)
 
     def compute_aggregate_reward(self):
         """
@@ -142,9 +147,7 @@ class ContextNode:
                     # with feature_name and considering to take the samples with value of feature_name equal to the
                     # value feature_value
                     child = ContextNode(self.prices, self.bids, self.feature_names, self.feature_values,
-                                        [observation for key in self.feature_to_observation.keys()
-                                         for observation in self.feature_to_observation.get(key)
-                                         if key[feature_idx] == feature_value], self.confidence, self)
+                                        {key : self.feature_to_observation.get(key) for key in self.feature_to_observation.keys() if key[feature_idx] == feature_value}, self.confidence, self)
 
                     feature_values_to_reward_lower_bound[feature_value] = child.aggregate_reward
                     # feature_values_to_reward_lower_bound[feature_value] = np.mean([observation[-1] for key in self.feature_to_observation.keys() for observation in self.feature_to_observation.get(key) if key[feature_idx] == feature_value]) - lower_bound(self.confidence, feature_values_to_num_samples[feature_value])
