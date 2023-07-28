@@ -193,7 +193,7 @@ class ContextGeneratorLearner:
             # Appending a new context learner to the set of the new learner to use in future time steps
             new_learners.append(ContextLearner(context, new_learner))
 
-        # Setting the new learners into the context generator learner
+        # Setting the new learners into the context generator learner.
         self.context_learners = new_learners
 
     def update_context1(self):
