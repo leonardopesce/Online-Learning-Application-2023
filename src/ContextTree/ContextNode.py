@@ -1,5 +1,10 @@
 import numpy as np
+import torch
 
+from gpytorch.kernels import RBFKernel, ScaleKernel
+from gpytorch.likelihoods import GaussianLikelihood
+
+from ..GPs import BaseGaussianProcess
 
 def lower_bound(confidence, num_samples):
     """
@@ -110,7 +115,6 @@ class ContextNode:
         Splits the node and the observations in new child nodes in the case the condition of the context generation
         algorithm is verified
         """
-
         if not self.expanded and len(self.feature_names) > 0:
             # Finding the attribute with the highest marginal increase
 
