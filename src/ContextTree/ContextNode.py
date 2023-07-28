@@ -2,21 +2,64 @@ import numpy as np
 
 
 def lower_bound(confidence, num_samples):
+    """
+    Computes the lower bound used by the context generation algorithm
+
+    :param float confidence: Confidence to use in the lower bound used in the context generation algorithm
+    :param float num_samples: Number of samples in the context to evaluate
+
+    :return: Lower bound used by the context generation algorithm
+    :rtype: float
+    """
+
     return np.sqrt((-np.log(confidence)) / (2 * num_samples))
 
 
 def remove_element_from_tuple(input_tuple, index):
+    """
+    Removes an element at a specific index from a tuple
+
+    :params tuple input_tuple: Tuple to which an element has to be removed
+    :params int index: Index of the element to remove
+
+    :return: New tuple without the element to be removed
+    :rtype: tuple
+    """
+
     return input_tuple[:index] + input_tuple[index+1:]
 
 
 class ContextNode:
     """
+    Node of the context tree that is used to apply the context generation algorithm
 
     Attributes:
-        feature_names:
-        feature_to_observation: contains only the observation useful for the context in the format
+        feature_names: List containing the name of the features used to index the feature_values parameter
+        feature_values: Dictionary containing the mapping between the features and the values the features
+        can assume, the format is {feature_name: [value0, value1, value2, ...]}
+        feature_to_observation: Dictionary of the observations divided by tuples of features, the format is
+        {tuple_of_features: [observation_list_1, observation_list_2, ...]}
+        confidence: Confidence to use in the lower bound used in the context generation algorithm
+        aggregate_reward: Aggregate reward of the current context without splitting the node
+        father: Father node
+        children: List of child nodes
+        choice: Name of the feature that the context generation algorithm decided to split in the current node, it is
+        None if no context disaggregation is done
+        expanded: True, if the node has been evaluated by the context generation algorithm; False otherwise
     """
+
     def __init__(self, feature_names, feature_values, feature_to_observation, confidence, father):
+        """
+        Initializes the node of the context tree
+        :param list feature_names: List containing the name of the features used to index the feature_values parameter
+        :param dict feature_values: Dictionary containing the mapping between the features and the values the features
+        can assume, the format is {feature_name: [value0, value1, value2, ...]}
+        feature_to_observation: Dictionary of the observations divided by tuples of features, the format is
+        {tuple_of_features: [observation_list_1, observation_list_2, ...]}
+        :param float confidence: Confidence to use in the lower bound used in the context generation algorithm
+        :param ContextNode father: Father node
+        """
+
         self.feature_names = feature_names
         self.feature_values = feature_values
         self.feature_to_observation = feature_to_observation
@@ -29,9 +72,10 @@ class ContextNode:
 
     def compute_aggregate_reward(self):
         """
+        Computes the aggregate reward given the context of the current node
 
-        :return:
-        :rtype:
+        :return: Value of the reward of the current aggregate context
+        :rtype: float
         """
 
         # Computing the total number of observations considered in the node
@@ -41,6 +85,11 @@ class ContextNode:
         return np.mean([observation[-1] for key in self.feature_to_observation.keys() for observation in self.feature_to_observation.get(key)]) - lower_bound(0.05, total_num_samples)
 
     def split(self):
+        """
+        Splits the node and the observations in new child nodes in the case the condition of the context generation
+        algorithm is verified
+        """
+
         if not self.expanded and len(self.feature_names) > 0:
             # Finding the attribute with the highest marginal increase
 
@@ -109,6 +158,13 @@ class ContextNode:
             self.expanded = True
 
     def get_contexts(self):
+        """
+        Computes recursively the context following the structure of the three
+
+        :return: Context of the subtree that starts from the node
+        :rtype: list
+        """
+
         contexts = []
         if len(self.children) != 0:
             for key_child in self.children:
