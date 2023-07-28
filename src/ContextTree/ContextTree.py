@@ -1,3 +1,5 @@
+import itertools
+
 from .ContextNode import ContextNode
 
 
@@ -51,25 +53,36 @@ class ContextTree:
         """
         if self.context_structure is None:
             context_structure = self.root.get_contexts()
-            context_structure_final = set()
+            context_structure_final = []
 
-            for context in context_structure:
-                context_tuple = ()
-                for feature_name in self.feature_names:
-                    context_tuple = context_tuple + tuple([context[feature_name]])
-                context_structure_final.add(context_tuple)
+            if len(context_structure) == 0:
+                # Get the list of values for each feature
+                value_lists = [self.feature_values[feature] for feature in self.feature_names]
+                # Generate all possible combinations using itertools.product
+                all_combinations = list(itertools.product(*value_lists))
+                # Convert each combination to a tuple and add it to a set
+                context_structure_final.append(all_combinations)
+            else:
+                for context in context_structure:
+                    context_tuple = ()
+                    for feature_name in self.feature_names:
+                        context_tuple = context_tuple + tuple([context[feature_name]])
+                    context_structure_final.append([context_tuple])
+
+            self.context_structure = context_structure_final
 
             return context_structure_final
         else:
             return self.context_structure
 
-feature_names = ['age', 'sex']
-feature_values = {'age': [0, 1], 'sex': [0, 1]}
-feature_to_observation = {(0, 0): [[0, 0, 0, 40, 0, 541]],
-                          (0, 1): [[0, 0, 0, 54, 0, 541], [0, 0, 0, 123, 0, 4234], [0, 0, 0, 43, 0, 344]],
-                          (1, 0): [[0, 0, 0, 4, 0, 17], [0, 0, 0, 44, 0, 541], [0, 0, 0, 64, 0, 333], [0, 0, 0, 46, 0, 312]],
-                          (1, 1): [[0, 0, 0, 54, 0, 541]]}
-confidence = 0
-tree = ContextTree(feature_names, feature_values, feature_to_observation, confidence)
-print(tree.get_context_structure())
-print(f'The root splits on {tree.root.choice if tree.root.choice is not None else "nothing"}')
+if __name__ == '__main__':
+    feature_names = ['age', 'sex']
+    feature_values = {'age': [0, 1], 'sex': [0, 1]}
+    feature_to_observation = {(0, 0): [[0, 0, 0, 40, 0, 541]],
+                              (0, 1): [[0, 0, 0, 54, 0, 541], [0, 0, 0, 123, 0, 4234], [0, 0, 0, 43, 0, 344]],
+                              (1, 0): [[0, 0, 0, 4, 0, 17], [0, 0, 0, 44, 0, 541], [0, 0, 0, 64, 0, 333], [0, 0, 0, 46, 0, 312]],
+                              (1, 1): [[0, 0, 0, 54, 0, 541]]}
+    confidence = 0
+    tree = ContextTree(feature_names, feature_values, feature_to_observation, confidence)
+    print(tree.get_context_structure())
+    print(f'The root splits on {tree.root.choice if tree.root.choice is not None else "nothing"}')

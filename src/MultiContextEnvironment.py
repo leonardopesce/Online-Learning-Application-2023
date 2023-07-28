@@ -37,7 +37,8 @@ class MultiContextEnvironment(Environment):
         self.probability_feature_values_in_categories = probability_feature_values_in_categories
 
     def get_reward(self, context, price_idx, conversion_prob, n_clicks, cum_daily_costs):
-        return conversion_prob * (self.prices['C1'][price_idx] - self.other_costs) * n_clicks - cum_daily_costs
+        tmp = conversion_prob * (self.prices['C1'][price_idx] - self.other_costs) * n_clicks - cum_daily_costs
+        return tmp
 
     def round(self, price_idx, bid_idx, user_features_set):
         # price_idx, bid_idx = learner.pull_arms()
@@ -70,33 +71,33 @@ class MultiContextEnvironment(Environment):
             clicks_given_bid_list.append(clicks_given_features)
             cost_given_features = probability_of_features * cost_given_bid
             cost_given_bid_list.append(cost_given_features)
-            bernoulli_realizations_list.append(np.random.choice(bernoulli_realizations, int(clicks_given_features)))
+            bernoulli_realizations_list.append(np.random.choice(bernoulli_realizations, int(np.ceil(clicks_given_features))))
 
         return features_list, bernoulli_realizations_list, clicks_given_bid_list, cost_given_bid_list
 
 
+if __name__ == '__main__':
+    n_prices = 5
+    prices = {'C1': np.array([500, 550, 600, 650, 700]),
+              'C2': np.array([500, 550, 600, 650, 700]),
+              'C3': np.array([500, 550, 600, 650, 700])}
+    probabilities = {'C1': np.array([0.05, 0.05, 0.2, 0.1, 0.05]),
+                     'C2': np.array([0.05, 0.05, 0.1, 0.2, 0.1]),
+                     'C3': np.array([0.1, 0.2, 0.25, 0.05, 0.05])}
+    bids_to_clicks = {'C1': np.array([100, 2]),
+                      'C2': np.array([90, 2]),
+                      'C3': np.array([80, 3])}
+    bids_to_cum_costs = {'C1': np.array([400, 0.035]),
+                         'C2': np.array([200, 0.07]),
+                         'C3': np.array([300, 0.04])}
+    other_costs = 400
 
-n_prices = 5
-prices = {'C1': np.array([500, 550, 600, 650, 700]),
-          'C2': np.array([500, 550, 600, 650, 700]),
-          'C3': np.array([500, 550, 600, 650, 700])}
-probabilities = {'C1': np.array([0.05, 0.05, 0.2, 0.1, 0.05]),
-                 'C2': np.array([0.05, 0.05, 0.1, 0.2, 0.1]),
-                 'C3': np.array([0.1, 0.2, 0.25, 0.05, 0.05])}
-bids_to_clicks = {'C1': np.array([100, 2]),
-                  'C2': np.array([90, 2]),
-                  'C3': np.array([80, 3])}
-bids_to_cum_costs = {'C1': np.array([400, 0.035]),
-                     'C2': np.array([200, 0.07]),
-                     'C3': np.array([300, 0.04])}
-other_costs = 400
+    categories = ['C1', 'C2', 'C3']
+    # C1: young 0, man 1; C2: old 1, man 1; C3: [0,1], woman 0
+    feature_names = ['age', 'sex']
+    feature_values = {'age': [0, 1], 'sex': [0, 1]}
+    # age: 0 -> young, 1 -> old; sex: 0 -> woman, 1 -> man
+    feature_values_to_categories = {(0, 0): 'C3', (0, 1): 'C1', (1, 0): 'C3', (1, 1): 'C2'}
+    probability_feature_values_in_categories = {'C1': {(0, 1): 1}, 'C2': {(1, 1): 1}, 'C3': {(0, 0): 0.5, (1, 0): 0.5}}
 
-categories = ['C1', 'C2', 'C3']
-# C1: young 0, man 1; C2: old 1, man 1; C3: [0,1], woman 0
-feature_names = ['age', 'sex']
-feature_values = {'age': [0, 1], 'sex': [0, 1]}
-# age: 0 -> young, 1 -> old; sex: 0 -> woman, 1 -> man
-feature_values_to_categories = {(0, 0): 'C3', (0, 1): 'C1', (1, 0): 'C3', (1, 1): 'C2'}
-probability_feature_values_in_categories = {'C1': {(0, 1): 1}, 'C2': {(1, 1): 1}, 'C3': {(0, 0): 0.5, (1, 0): 0.5}}
-
-env = MultiContextEnvironment(n_prices, prices, probabilities, bids_to_clicks, bids_to_cum_costs, other_costs, categories, feature_names, feature_values, feature_values_to_categories, probability_feature_values_in_categories)
+    env = MultiContextEnvironment(n_prices, prices, probabilities, bids_to_clicks, bids_to_cum_costs, other_costs, categories, feature_names, feature_values, feature_values_to_categories, probability_feature_values_in_categories)
