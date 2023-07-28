@@ -48,7 +48,7 @@ class ContextNode:
         expanded: True, if the node has been evaluated by the context generation algorithm; False otherwise
     """
 
-    def __init__(self, feature_names, feature_values, feature_to_observation, confidence, father):
+    def __init__(self, prices, bids, feature_names, feature_values, feature_to_observation, confidence, father):
         """
         Initializes the node of the context tree
         :param list feature_names: List containing the name of the features used to index the feature_values parameter
@@ -60,15 +60,36 @@ class ContextNode:
         :param ContextNode father: Father node
         """
 
+        self.prices = prices
+        self.bids = bids
         self.feature_names = feature_names
         self.feature_values = feature_values
         self.feature_to_observation = feature_to_observation
         self.confidence = confidence
-        self.aggregate_reward = self.compute_aggregate_reward()
+        self.aggregate_reward = 0#self.compute_aggregate_reward()
         self.father = father
         self.children = {}
         self.choice = None
         self.expanded = False
+
+        kernel = ScaleKernel(RBFKernel())
+        likelihood = GaussianLikelihood()
+
+        self.gp_reward = BaseGaussianProcess(likelihood=likelihood, kernel=kernel)
+
+        price_obs = np.array([observation[0] for key in self.feature_to_observation.keys() for observation in self.feature_to_observation.get(key)])
+        bids_obs = np.array([observation[2] for key in self.feature_to_observation.keys() for observation in self.feature_to_observation.get(key)])
+        x = torch.Tensor(np.block([price_obs, bids_obs]))
+
+        y = torch.Tensor(observation[-1] for key in self.feature_to_observation.keys() for observation in self.feature_to_observation.get(key))
+
+        self.gp_reward.fit(x, y)
+
+        x = torch.Tensor(np.block([self.prices, self.bids]))
+        means_rewards, sigmas_rewards, lower_bounds_rewards, upper_bounds_rewards = self.gp_reward.predict(x)
+
+        num_samples = sum(observation[3] for key in self.feature_to_observation.keys() for observation in self.feature_to_observation.get(key))
+        self.aggregate_reward = np.max(self.aggregate_reward - sigmas_rewards) #* lower_bound(self.confidence, num_samples))
 
     def compute_aggregate_reward(self):
         """
@@ -113,12 +134,18 @@ class ContextNode:
                     # Computing the lower bound of the reward given by the context obtained splitting on the feature
                     # with feature_name and considering to take the samples with value of feature_name equal to the
                     # value feature_value
-                    feature_values_to_reward_lower_bound[feature_value] = np.mean([observation[-1] for key in self.feature_to_observation.keys() for observation in self.feature_to_observation.get(key) if key[feature_idx] == feature_value]) - lower_bound(self.confidence, feature_values_to_num_samples[feature_value])
+                    child = ContextNode(self.prices, self.bids, self.feature_names, self.feature_values,
+                                        [observation for key in self.feature_to_observation.keys()
+                                         for observation in self.feature_to_observation.get(key)
+                                         if key[feature_idx] == feature_value], self.confidence, self)
+
+                    feature_values_to_reward_lower_bound[feature_value] = child.aggregate_reward
+                    # feature_values_to_reward_lower_bound[feature_value] = np.mean([observation[-1] for key in self.feature_to_observation.keys() for observation in self.feature_to_observation.get(key) if key[feature_idx] == feature_value]) - lower_bound(self.confidence, feature_values_to_num_samples[feature_value])
 
                     # Computing the lower bound of the probaility of having the context obtained by splitting on the
                     # feature with feature_name and considering to take the samples with value of feature_name equal to
                     # the value feature_value
-                    feature_values_to_reward_probability_split[feature_value] = (feature_values_to_num_samples[feature_value] / total_num_samples) - lower_bound(self.confidence, feature_values_to_num_samples[feature_value])
+                    feature_values_to_reward_probability_split[feature_value] = (feature_values_to_num_samples[feature_value] / total_num_samples) #- lower_bound(self.confidence, feature_values_to_num_samples[feature_value])
 
                 # Computing the lower bound of the reward given by splitting on the feature with name feature_name as
                 # the sum of the product between the reward of a context and the probability of that context
@@ -148,7 +175,7 @@ class ContextNode:
                     new_feature_to_observation = {remove_element_from_tuple(key, chosen_feature_idx): self.feature_to_observation[key] for key in self.feature_to_observation if key[chosen_feature_idx] == feature_value}
 
                     # Creating ContextNode children and initializing them
-                    self.children[feature_value] = ContextNode(new_feature_names, new_feature_values, new_feature_to_observation, self.confidence, self)
+                    self.children[feature_value] = ContextNode(self.prices, self.bids, new_feature_names, new_feature_values, new_feature_to_observation, self.confidence, self)
 
                 # Running the creation of the subtree also on the children of the current node
                 for child_key in self.children:

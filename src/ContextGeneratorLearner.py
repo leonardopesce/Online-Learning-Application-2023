@@ -4,7 +4,6 @@ import numpy as np
 from PricingAdvertisingLearner import PricingAdvertisingLearner
 from ContextLearner import ContextLearner
 from LearnerFactory import LearnerFactory
-from ContextTree import ContextTree
 
 
 class ContextGeneratorLearner:
@@ -191,30 +190,6 @@ class ContextGeneratorLearner:
                     # Updating the new learner using the past observation of the users in the context it has to consider
                     new_learner.update(element[0], element[1], element[2], element[3], element[4], element[5])
             new_learner.t = self.t #TODO: check if this is correct, i.e. if it is needed to set the new learner time to the current timestep.
-            # Appending a new context learner to the set of the new learner to use in future time steps
-            new_learners.append(ContextLearner(context, new_learner))
-
-        # Setting the new learners into the context generator learner
-        self.context_learners = new_learners
-
-    def update_context1(self):
-        context_tree = ContextTree(self.feature_names, self.feature_values, self.feature_to_observation, 0.99)
-        new_contexts = context_tree.get_context_structure()
-        print(new_contexts)
-        # Redefining the learners to use in the next steps of the learning procedure using the new contexts
-        # Defining the list of the new context learners (learners + contexts)
-        new_learners = []
-        # Iterating on the new contexts
-        for context in new_contexts:
-            # Defining a new learner
-            new_learner = LearnerFactory().get_learner(self.learner_type, self.prices, self.bids)
-            # Iterating on the tuples of features of the user in the context
-            for feature_tuple in context:
-                # Iterating on the observation regarding the user with the chosen values of features
-                for element in self.feature_to_observation.get(feature_tuple):
-                    # Updating the new learner using the past observation of the users in the context it has to consider
-                    new_learner.update(element[0], element[1], element[2], element[3], element[4], element[5])
-            new_learner.t = self.t  # TODO: check if this is correct, i.e. if it is needed to set the new learner time to the current timestep.
             # Appending a new context learner to the set of the new learner to use in future time steps
             new_learners.append(ContextLearner(context, new_learner))
 

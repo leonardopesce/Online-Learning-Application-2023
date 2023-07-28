@@ -1,3 +1,4 @@
+import numpy as np
 from matplotlib import pyplot as plt
 
 from Environment import Environment
@@ -6,7 +7,7 @@ from Clairvoyant import Clairvoyant
 from TSPricingAdvertising import TSLearnerPricingAdvertising
 from UCBPricingAdvertising import UCBLearnerPricingAdvertising
 from collections import Counter
-import numpy as np
+from step3 import iterate_over_counter
 
 """
 Consider the case in which there are three classes of users (C1, C2, and C3), 
@@ -156,6 +157,21 @@ print(Counter(ucb_best_price))
 print('Best bid found in the experiments by UCB')
 print('The format is bid: number of experiments in which it is the most bid price')
 print(Counter(ucb_best_bid))
+
+# Print occurrences of best arm in TS
+print('Best price found in the experiments by TS')
+print('The format is price: number of experiments in which it is the most played price')
+#iterate_over_counter(Counter(ts_best_price), env.prices[category])
+print('Best bid found in the experiments by TS')
+print('The format is bid: number of experiments in which it is the most bid price')
+#iterate_over_counter(Counter(ts_best_bid), env.bids)
+# Print occurrences of best arm in UCB1
+print('Best price found in the experiments by UCB')
+print('The format is price: number of experiments in which it is the most played price')
+#iterate_over_counter(Counter(ucb_best_price), env.prices[category])
+print('Best bid found in the experiments by UCB')
+print('The format is bid: number of experiments in which it is the most bid price')
+#iterate_over_counter(Counter(ucb_best_bid), env.bids)
 
 # Plot the results, comparison TS-UCB
 _, axes = plt.subplots(2, 2, figsize=(20, 20))

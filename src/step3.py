@@ -49,9 +49,10 @@ T = 365
 # we have to perform a sufficiently large number experiments
 n_experiments = 10
 
-# To evaluate which are the most played prices and bids
+# To evaluate which are the most played prices and bids by the TS learner
 ts_best_price = []
 ts_best_bid = []
+# To evaluate which are the most played prices and bids by the UCB learner
 ucb_best_price = []
 ucb_best_bid = []
 
