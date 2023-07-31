@@ -14,8 +14,8 @@ class Plots():
             :param np.arange x_range: array with round values
         """
         axes[0].set_title(f'Instantaneous Regret {label}')
-        axes[0].plot(regret_mean, 'b')
-        axes[0].fill_between(x_range, regret_mean - regret_std, regret_mean + regret_std, color='b', alpha=0.2)
+        axes[0].plot(regret_mean, 'r')
+        axes[0].fill_between(x_range, regret_mean - regret_std, regret_mean + regret_std, color='r', alpha=0.2)
         axes[0].axhline(y=0, color='b', linestyle='--')
         axes[0].legend([f"{label} mean", f"{label}std"])
         axes[0].set_xlabel("t")
@@ -51,8 +51,8 @@ class Plots():
             :param: np.arange x_range: array with round values
         """
         axes[2].set_title(f'Cumulative regret plot for {label}')
-        axes[2].plot(cum_regret_mean, 'b')
-        axes[2].fill_between(x_range, cum_regret_mean - cum_regret_std, cum_regret_mean + cum_regret_std, color='b', alpha=0.2)
+        axes[2].plot(cum_regret_mean, 'r')
+        axes[2].fill_between(x_range, cum_regret_mean - cum_regret_std, cum_regret_mean + cum_regret_std, color='r', alpha=0.2)
         axes[2].legend([f"{label} mean", f"{label} std"])
         axes[2].set_xlabel("t")
         axes[2].set_ylabel("Cumulative regret")

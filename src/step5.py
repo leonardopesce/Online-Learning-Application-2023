@@ -1,4 +1,3 @@
-import numpy as np
 from tqdm import tqdm
 from Clairvoyant import *
 from UCB import *
@@ -84,6 +83,7 @@ for e in tqdm(range(0, n_experiments)):
 
     # CUSUM-UCB
     env_cusum_ucb = NonStationaryEnvironment(n_prices, prices, probabilities, bids_to_clicks, bids_to_cum_costs, other_costs, phases_duration)
+    #cusum_ucb_learner = CUSUMUCBLearner(prices[category])
     cusum_ucb_learner = CUSUMUCBLearner(prices[category])
 
     # Iterate over the number of rounds
@@ -149,15 +149,50 @@ plots = Plots()
 plots.plot_all_algorithms(regret_means=[regret_ucb_mean, regret_swucb_mean, regret_cusum_ucb_mean],
                           cum_regret_means=[cumulative_regret_ucb_mean, cumulative_regret_swucb_mean, cumulative_regret_cusum_ucb_mean],
                           reward_means=[reward_ucb_mean, reward_swucb_mean, reward_cusum_ucb_mean],
-                          cum_reward_means=[cumulative_reward_ucb_mean, cumulative_reward_swucb_mean, cumulative_regret_cusum_ucb_mean],
+                          cum_reward_means=[cumulative_reward_ucb_mean, cumulative_reward_swucb_mean, cumulative_reward_cusum_ucb_mean],
                           best_reward=best_rewards, legend=['UCB', 'SW-UCB', 'CUSUM-UCB'])
+"""
 plots.plot_single_algorithms(regret_means=[regret_ucb_mean, regret_swucb_mean, regret_cusum_ucb_mean],
-                             regret_stds=[regret_ucb_std, regret_swucb_std, regret_swucb_std],
+                             regret_stds=[regret_ucb_std, regret_swucb_std, regret_cusum_ucb_std],
                              cum_regret_means=[cumulative_regret_ucb_mean, cumulative_regret_swucb_mean, cumulative_regret_cusum_ucb_mean],
                              cum_regret_stds=[cumulative_regret_ucb_std, cumulative_regret_swucb_std, cumulative_regret_cusum_ucb_std],
                              reward_means=[reward_ucb_mean, reward_swucb_mean, reward_cusum_ucb_mean],
                              reward_stds=[reward_ucb_std, reward_swucb_std, reward_cusum_ucb_std],
-                             cum_reward_means=[cumulative_reward_ucb_mean, cumulative_reward_swucb_mean, cumulative_regret_cusum_ucb_mean],
+                             cum_reward_means=[cumulative_reward_ucb_mean, cumulative_reward_swucb_mean, cumulative_reward_cusum_ucb_mean],
                              cum_reward_stds=[cumulative_reward_ucb_std, cumulative_reward_swucb_std, cumulative_reward_cusum_ucb_std],
                              best_reward=best_rewards,
                              legend=['UCB', 'SW-UCB', 'CUSUM-UCB'], x_range=np.arange(0, T, 1))
+"""
+
+#TODO controlla gli appunti sul quaderno
+#TODO maybe do some plots with different values of parameters to compare them
+"""
+Parameters for CUSUM are:
+- eps, to have an underestimation of the deviation from the reference point, it's the exploration term of UCB
+- M, number of valid samples that are used to compute the reference point
+- h, value over which a detection is flagged
+- alpha, pure exploration parameter
+
+eps 
+The change in the rewards should be greater than 3*eps, anyway eps should be of the order of changes in the 
+distributions. With these parameters the smallest change in the reward is around 200, so eps should not be greater than 
+60. With eps=50 the algorithm performs well, if eps is increased the performance are worse.
+
+M 
+If M is too big, so comparable to the length of the horizon, all the observations are used to compute the reference 
+points so the algorithm behaves like a normal UCB. If M is very small like 1 or 2 it is suboptimal. M should be big 
+enough to have a good estimate of the reference point and such that each arm is played at least M times between each 
+breakpoint. So M could be around 5-15.
+
+h
+A lower threshold makes the algorithm more sensitive, while a higher threshold makes it less sensitive. It should be 
+tuned around log(T/number_breakpoints)=2 (from the paper) or should be of the order of logT=6 (appunti). 
+Values in the range 12-60 seem good.
+
+alpha
+From the paper it should be tuned around sqrt(log(T/number_breakpoints)*number_breakpoints/T)=0.13. I also tried alpha
+decreasing in time like 1/t, but it is not good because over time there is less exploration and so it is more difficult  
+to detect changes. A good alpha seems 0.1.
+
+https://arxiv.org/pdf/1711.03539.pdf dovrebbe essere il pdf a cui è stato fatto riferimento anche a lezione
+"""

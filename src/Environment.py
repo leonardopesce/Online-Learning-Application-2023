@@ -508,4 +508,4 @@ def test():
     env.plot_rewards(categories=['C1'], plot_aggregate_model=True, plotly_show=True)
 
 
-test()
+#test()

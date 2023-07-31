@@ -120,7 +120,9 @@ def test():
     print(clairvoyant.maximize_reward_from_price(category))
     print(clairvoyant.maximize_reward(category))
     #env.plot_whole_advertising_model()
-    clairvoyant.check(category)
+    for category in probabilities.keys():
+        print(category)
+        clairvoyant.check(category)
 
 #test()
 

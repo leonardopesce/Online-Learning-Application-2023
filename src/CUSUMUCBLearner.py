@@ -14,7 +14,7 @@ class CUSUMUCBLearner(UCBLearner):
         detections: List to store the times when a change is detected for each arm
     """
 
-    def __init__(self, arms_values, M=5, eps=0.05, h=100, alpha=0.05):  #TODO maybe change these parameters, h = np.log(T)*2, h=50 funziona
+    def __init__(self, arms_values, M=15, eps=50, h=18, alpha=0.1):
         """
         Initializes the UCB1 learner with CUSUM
 
