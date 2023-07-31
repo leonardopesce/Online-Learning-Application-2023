@@ -1,3 +1,4 @@
+import math
 from tqdm import tqdm
 from Clairvoyant import *
 from UCB import *
@@ -46,8 +47,9 @@ phases_duration = [121, 121, 123]
 T = 365
 assert np.sum(phases_duration) == T
 #window_size = int(T ** 0.5)
-window_size = 50
-
+window_size = 70
+#window_size = math.ceil(2 * np.sqrt(T * np.log(T) / 3))
+print(window_size)
 # Since the reward functions are stochastic to better visualize the results and remove the noise
 # we have to perform a sufficiently large number experiments
 n_experiments = 200
@@ -195,4 +197,18 @@ decreasing in time like 1/t, but it is not good because over time there is less 
 to detect changes. A good alpha seems 0.1.
 
 https://arxiv.org/pdf/1711.03539.pdf dovrebbe essere il pdf a cui è stato fatto riferimento anche a lezione
+"""
+
+"""
+Parameters for Sliding widows UCB:
+- windows size: number of valid samples that are used to compute the reference point
+
+windows size
+From the paper  9 If the horizon T and the growth rate of the number of breakpoints Υ(T) are known in advance we can set the
+windows size to 2 * (upper bound reward) * sqrt(T * log(T) / number of breakpoints)
+The lower is the windows size the higher is the times that the algorithm has to retry all the arms. So, the cumulative regret will increase.
+However, the larger is the windows the lower is the sensitivity of the algorithm.
+A good range of values is between 40 and 60.
+
+https://arxiv.org/pdf/0805.3415.pdf it should be the original paper of SW-UCB
 """
