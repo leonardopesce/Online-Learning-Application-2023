@@ -47,7 +47,7 @@ phases_duration = [121, 121, 123]
 T = 365
 assert np.sum(phases_duration) == T
 #window_size = int(T ** 0.5)
-window_size = 70
+window_size = 50
 #window_size = math.ceil(2 * np.sqrt(T * np.log(T) / 3))
 print(window_size)
 # Since the reward functions are stochastic to better visualize the results and remove the noise
@@ -85,7 +85,6 @@ for e in tqdm(range(0, n_experiments)):
 
     # CUSUM-UCB
     env_cusum_ucb = NonStationaryEnvironment(n_prices, prices, probabilities, bids_to_clicks, bids_to_cum_costs, other_costs, phases_duration)
-    #cusum_ucb_learner = CUSUMUCBLearner(prices[category])
     cusum_ucb_learner = CUSUMUCBLearner(prices[category])
 
     # Iterate over the number of rounds
@@ -170,10 +169,10 @@ plots.plot_single_algorithms(regret_means=[regret_ucb_mean, regret_swucb_mean, r
 #TODO maybe do some plots with different values of parameters to compare them
 """
 Parameters for CUSUM are:
-- eps, to have an underestimation of the deviation from the reference point, it's the exploration term of UCB
-- M, number of valid samples that are used to compute the reference point
-- h, value over which a detection is flagged
-- alpha, pure exploration parameter
+- eps: to have an underestimation of the deviation from the reference point, it's the exploration term of UCB
+- M: number of valid samples that are used to compute the reference point
+- h: value over which a detection is flagged
+- alpha: pure exploration parameter
 
 eps 
 The change in the rewards should be greater than 3*eps, anyway eps should be of the order of changes in the 

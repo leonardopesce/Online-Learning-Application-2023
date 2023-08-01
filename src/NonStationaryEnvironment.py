@@ -58,5 +58,5 @@ class NonStationaryEnvironment(Environment):
         :rtype: str
         """
 
-        current_phase = np.searchsorted(np.cumsum(self.phases_duration), self.t, side='right')
+        current_phase = np.searchsorted(np.cumsum(self.phases_duration), self.t % np.sum(self.phases_duration), side='right')
         return 'C' + str(current_phase + 1)

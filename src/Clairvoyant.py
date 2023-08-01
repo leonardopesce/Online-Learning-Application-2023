@@ -63,6 +63,30 @@ class Clairvoyant:
 
         return best_bid_idx, self.environment.bids[best_bid_idx], values[best_bid_idx]
 
+    def maximize_reward_given_bid(self, category, bid):
+        """
+        Finds the price, considering a single category, that maximizes the reward given a fixed bid
+
+        :param str category: Category considered in the maximization of the reward
+        :param int bid: Fixed bid
+
+        :return: Index of the best price in the list of the prices, value of the best price, value of the best expected
+        reward
+        :rtype: tuple
+        """
+
+        n_clicks = fun(bid, *self.environment.bids_to_clicks[category])
+        cum_daily_costs = fun(bid, *self.environment.bids_to_cum_costs[category])
+        values = np.array([])
+        for idx, price in enumerate(self.environment.prices[category]):
+            conversion_times_margin = self.environment.probabilities[category][idx] * (price - self.environment.other_costs)
+            values = np.append(values, n_clicks * conversion_times_margin - cum_daily_costs)
+
+        best_price_idx = np.random.choice(np.where(values == values.max())[0])
+
+        return best_price_idx, self.environment.prices[category][best_price_idx], values[best_price_idx]
+
+
     def maximize_reward(self, category):
         """
         Finds the price and the bid, considering a single category, that maximize the reward, defined as the number of
