@@ -63,7 +63,7 @@ class EXP3Learner(Learner):
         self.total_observations_per_arm[pulled_arm].append(len(bernoulli_realization))
 
         for realization in bernoulli_realization:
-            reward = (realization * (self.arms_values[pulled_arm] - self.other_costs) - self.worse_reward) / (self.best_reward - self.worse_reward)
+            reward = (realization * (self.arms_values[pulled_arm] - self.other_costs) - self.worst_reward) / (self.best_reward - self.worst_reward)
             self.weights[pulled_arm] = self.weights[pulled_arm] * np.exp(self.gamma * reward / (self.p[pulled_arm] * self.n_arms))
 
     def update1(self, pulled_arm, reward, bernoulli_realization):

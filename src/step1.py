@@ -3,6 +3,7 @@ from Clairvoyant import *
 from UCB import *
 from TSReward import *
 from collections import Counter
+from plots import plot_single_algorithm, plot_all_algorithms
 
 """
 Simulation for the step 1: learning for pricing 
@@ -53,6 +54,7 @@ env = Environment(n_prices, prices, probabilities, bids_to_clicks, bids_to_cum_c
 clairvoyant = Clairvoyant(env)
 # Optimize the problem
 best_price_idx, best_price, best_bid_idx, best_bid, best_reward = clairvoyant.maximize_reward(category)
+best_rewards = np.ones((T,)) * best_reward
 
 # Each iteration simulates the learner-environment interaction
 for e in tqdm(range(0, n_experiments)):
@@ -97,129 +99,10 @@ print(Counter(ts_best))
 # Print occurrences of best arm in UCB1
 print(Counter(ucb_best))
 
-#TODO make functions to plot
+# Plot the results
+reward_per_algorithm = [ucb_reward_per_experiment, ts_reward_per_experiment]
+labels = ['UCB', 'TS']
 
-# Plot the results, comparison TS-UCB
-_, axes = plt.subplots(2, 2, figsize=(20, 20))
-axes = axes.flatten()
-best_rewards = np.ones((T,)) * best_reward
-regret_ts_mean = np.mean(best_rewards - ts_reward_per_experiment, axis=0)
-regret_ts_std = np.std(best_rewards - ts_reward_per_experiment, axis=0)
-regret_ucb_mean = np.mean(best_rewards - ucb_reward_per_experiment, axis=0)
-regret_ucb_std = np.std(best_rewards - ucb_reward_per_experiment, axis=0)
-cumulative_regret_ts_mean = np.mean(np.cumsum(best_rewards - ts_reward_per_experiment, axis=1), axis=0)
-cumulative_regret_ts_std = np.std(np.cumsum(best_rewards - ts_reward_per_experiment, axis=1), axis=0)
-cumulative_regret_ucb_mean = np.mean(np.cumsum(best_rewards - ucb_reward_per_experiment, axis=1), axis=0)
-cumulative_regret_ucb_std = np.std(np.cumsum(best_rewards - ucb_reward_per_experiment, axis=1), axis=0)
-reward_ts_mean = np.mean(ts_reward_per_experiment, axis=0)
-reward_ts_std = np.std(ts_reward_per_experiment, axis=0)
-reward_ucb_mean = np.mean(ucb_reward_per_experiment, axis=0)
-reward_ucb_std = np.std(ucb_reward_per_experiment, axis=0)
-cumulative_reward_ts_mean = np.mean(np.cumsum(ts_reward_per_experiment, axis=1), axis=0)
-cumulative_reward_ts_std = np.std(np.cumsum(ts_reward_per_experiment, axis=1), axis=0)
-cumulative_reward_ucb_mean = np.mean(np.cumsum(ucb_reward_per_experiment, axis=1), axis=0)
-cumulative_reward_ucb_std = np.std(np.cumsum(ucb_reward_per_experiment, axis=1), axis=0)
-
-axes[0].set_title('Instantaneous regret plot')
-axes[0].plot(regret_ts_mean, 'r')
-axes[0].plot(regret_ucb_mean, 'g')
-axes[0].axhline(y=0, color='b', linestyle='--')
-axes[0].legend(["TS", "UCB"])
-axes[0].set_xlabel("t")
-axes[0].set_ylabel("Instantaneous regret")
-
-axes[1].set_title('Instantaneous reward plot')
-axes[1].plot(reward_ts_mean, 'r')
-axes[1].plot(reward_ucb_mean, 'g')
-axes[1].plot(best_rewards, 'b')
-axes[1].legend(["TS", "UCB", "Clairvoyant"])
-axes[1].set_xlabel("t")
-axes[1].set_ylabel("Instantaneous reward")
-
-axes[2].set_title('Cumulative regret plot')
-axes[2].plot(cumulative_regret_ts_mean, 'r')
-axes[2].plot(cumulative_regret_ucb_mean, 'g')
-axes[2].legend(["TS", "UCB"])
-axes[2].set_xlabel("t")
-axes[2].set_ylabel("Cumulative regret")
-
-axes[3].set_title('Cumulative reward plot')
-axes[3].plot(cumulative_reward_ts_mean, 'r')
-axes[3].plot(cumulative_reward_ucb_mean, 'g')
-axes[3].plot(np.cumsum(best_rewards), 'b')
-axes[3].legend(["TS", "UCB", "Clairvoyant"])
-axes[3].set_xlabel("t")
-axes[3].set_ylabel("Cumulative reward")
-plt.show()
-
-# Plot the results for TS with std
-_, axes = plt.subplots(2, 2, figsize=(20, 20))
-axes = axes.flatten()
-
-axes[0].set_title('Instantaneous regret plot for TS')
-axes[0].plot(regret_ts_mean, 'r')
-axes[0].fill_between(range(0, T), regret_ts_mean - regret_ts_std, regret_ts_mean + regret_ts_std, color='r', alpha=0.4)
-axes[0].axhline(y=0, color='b', linestyle='--')
-axes[0].legend(["TS mean", "TS std"])
-axes[0].set_xlabel("t")
-axes[0].set_ylabel("Instantaneous regret")
-
-axes[1].set_title('Instantaneous reward plot for TS')
-axes[1].plot(reward_ts_mean, 'r')
-axes[1].fill_between(range(0, T), reward_ts_mean - reward_ts_std, reward_ts_mean + reward_ts_std, color='r', alpha=0.4)
-axes[1].plot(best_rewards, 'b')
-axes[1].legend(["TS mean", "TS std", "Clairvoyant"])
-axes[1].set_xlabel("t")
-axes[1].set_ylabel("Instantaneous reward")
-
-axes[2].set_title('Cumulative regret plot for TS')
-axes[2].plot(cumulative_regret_ts_mean, 'r')
-axes[2].fill_between(range(0, T), cumulative_regret_ts_mean - cumulative_regret_ts_std, cumulative_regret_ts_mean + cumulative_regret_ts_std, color='r', alpha=0.4)
-axes[2].legend(["TS mean", "TS std"])
-axes[2].set_xlabel("t")
-axes[2].set_ylabel("Cumulative regret")
-
-axes[3].set_title('Cumulative reward plot for TS')
-axes[3].plot(cumulative_reward_ts_mean, 'r')
-axes[3].fill_between(range(0, T), cumulative_reward_ts_mean - cumulative_reward_ts_std, cumulative_reward_ts_mean + cumulative_reward_ts_std, color='r', alpha=0.4)
-axes[3].plot(np.cumsum(best_rewards), 'b')
-axes[3].legend(["TS mean", "TS std", "Clairvoyant"])
-axes[3].set_xlabel("t")
-axes[3].set_ylabel("Cumulative reward")
-plt.show()
-
-# Plot the results for UCB with std
-_, axes = plt.subplots(2, 2, figsize=(20, 20))
-axes = axes.flatten()
-
-axes[0].set_title('Instantaneous regret plot for UCB')
-axes[0].plot(regret_ucb_mean, 'g')
-axes[0].fill_between(range(0, T), regret_ucb_mean - regret_ucb_std, regret_ucb_mean + regret_ucb_std, color='g', alpha=0.4)
-axes[0].axhline(y=0, color='b', linestyle='--')
-axes[0].legend(["UCB mean", "UCB std"])
-axes[0].set_xlabel("t")
-axes[0].set_ylabel("Instantaneous regret")
-
-axes[1].set_title('Instantaneous reward plot for UCB')
-axes[1].plot(reward_ucb_mean, 'g')
-axes[1].fill_between(range(0, T), reward_ucb_mean - reward_ucb_std, reward_ucb_mean + reward_ucb_std, color='g', alpha=0.4)
-axes[1].plot(best_rewards, 'b')
-axes[1].legend(["UCB mean", "UCB std", "Clairvoyant"])
-axes[1].set_xlabel("t")
-axes[1].set_ylabel("Instantaneous reward")
-
-axes[2].set_title('Cumulative regret plot for UCB')
-axes[2].plot(cumulative_regret_ucb_mean, 'g')
-axes[2].fill_between(range(0, T), cumulative_regret_ucb_mean - cumulative_regret_ucb_std, cumulative_regret_ucb_mean + cumulative_regret_ucb_std, color='g', alpha=0.4)
-axes[2].legend(["UCB mean", "UCB std"])
-axes[2].set_xlabel("t")
-axes[2].set_ylabel("Cumulative regret")
-
-axes[3].set_title('Cumulative reward plot for UCB')
-axes[3].plot(cumulative_reward_ucb_mean, 'g')
-axes[3].fill_between(range(0, T), cumulative_reward_ucb_mean - cumulative_reward_ucb_std, cumulative_reward_ucb_mean + cumulative_reward_ucb_std, color='g', alpha=0.4)
-axes[3].plot(np.cumsum(best_rewards), 'b')
-axes[3].legend(["UCB mean", "UCB std", "Clairvoyant"])
-axes[3].set_xlabel("t")
-axes[3].set_ylabel("Cumulative reward")
-plt.show()
+plot_all_algorithms(reward_per_algorithm, best_rewards, labels)
+for i, label in enumerate(labels):
+    plot_single_algorithm(reward_per_algorithm[i], best_rewards, label, np.arange(0, T, 1))

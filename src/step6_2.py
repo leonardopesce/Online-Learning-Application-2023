@@ -5,7 +5,7 @@ from NonStationaryEnvironment import *
 from SWUCB import SWUCBLearner
 from CUSUMUCBLearner import CUSUMUCBLearner
 from EXP3 import EXP3Learner
-from Plots import Plots
+from plots import plot_single_algorithm, plot_all_algorithms
 
 """
 Simulation for the step 6: dealing with non-stationary environments with many abrupt changes
@@ -78,7 +78,7 @@ for phase, phase_len in enumerate(phases_duration):
     best_price_idx, best_price, best_reward = clairvoyant.maximize_reward_given_bid('C' + str(phase + 1), bid_idx)
     best_reward_per_phase.append(best_reward)
 
-# TODO
+# Save the best rewards along the year
 for t in range(T):
     phase_idx = np.searchsorted(np.cumsum(phases_duration), t % np.sum(phases_duration), side='right')
     best_rewards = np.append(best_rewards, best_reward_per_phase[phase_idx])
@@ -103,11 +103,11 @@ for e in tqdm(range(0, n_experiments)):
     env_exp3 = NonStationaryEnvironment(n_prices, prices, probabilities, bids_to_clicks, bids_to_cum_costs, other_costs, phases_duration)
     n_clicks = env_exp3.get_n_clicks(category, bid_idx)
     cum_daily_costs = env_exp3.get_cum_daily_costs(category, bid_idx)
-    worst_reward = n_clicks * 0 * (min(prices[category]) - other_costs) - cum_daily_costs
+    #worst_reward = n_clicks * 0 * (min(prices[category]) - other_costs) - cum_daily_costs
     #best_reward = n_clicks * 1 * (max(prices[category]) - other_costs) - cum_daily_costs
     worst_reward = 0
     best_reward = 300
-    exp3_learner = EXP3Learner(prices[category], worse_reward, best_reward, gamma=0.1, other_costs=other_costs)
+    exp3_learner = EXP3Learner(prices[category], worst_reward, best_reward, gamma=0.1, other_costs=other_costs)
 
     # Iterate over the number of rounds
     for t in range(0, T):
@@ -145,53 +145,10 @@ for e in tqdm(range(0, n_experiments)):
     cusum_ucb_reward_per_experiment.append(cusum_ucb_learner.collected_rewards)
     exp3_reward_per_experiment.append(exp3_learner.collected_rewards)
 
-regret_ucb_mean = np.mean(best_rewards - ucb_reward_per_experiment, axis=0)
-regret_ucb_std = np.std(best_rewards - ucb_reward_per_experiment, axis=0)
-regret_swucb_mean = np.mean(best_rewards - swucb_reward_per_experiment, axis=0)
-regret_swucb_std = np.std(best_rewards - swucb_reward_per_experiment, axis=0)
-regret_cusum_ucb_mean = np.mean(best_rewards - cusum_ucb_reward_per_experiment, axis=0)
-regret_cusum_ucb_std = np.std(best_rewards - cusum_ucb_reward_per_experiment, axis=0)
-regret_exp3_mean = np.mean(best_rewards - exp3_reward_per_experiment, axis=0)
-regret_exp3_std = np.std(best_rewards - exp3_reward_per_experiment, axis=0)
-cumulative_regret_ucb_mean = np.mean(np.cumsum(best_rewards - ucb_reward_per_experiment, axis=1), axis=0)
-cumulative_regret_ucb_std = np.std(np.cumsum(best_rewards - ucb_reward_per_experiment, axis=1), axis=0)
-cumulative_regret_swucb_mean = np.mean(np.cumsum(best_rewards - swucb_reward_per_experiment, axis=1), axis=0)
-cumulative_regret_swucb_std = np.std(np.cumsum(best_rewards - swucb_reward_per_experiment, axis=1), axis=0)
-cumulative_regret_cusum_ucb_mean = np.mean(np.cumsum(best_rewards - cusum_ucb_reward_per_experiment, axis=1), axis=0)
-cumulative_regret_cusum_ucb_std = np.std(np.cumsum(best_rewards - cusum_ucb_reward_per_experiment, axis=1), axis=0)
-cumulative_regret_exp3_mean = np.mean(np.cumsum(best_rewards - exp3_reward_per_experiment, axis=1), axis=0)
-cumulative_regret_exp3_std = np.std(np.cumsum(best_rewards - exp3_reward_per_experiment, axis=1), axis=0)
-reward_ucb_mean = np.mean(ucb_reward_per_experiment, axis=0)
-reward_ucb_std = np.std(ucb_reward_per_experiment, axis=0)
-reward_swucb_mean = np.mean(swucb_reward_per_experiment, axis=0)
-reward_swucb_std = np.std(swucb_reward_per_experiment, axis=0)
-reward_cusum_ucb_mean = np.mean(cusum_ucb_reward_per_experiment, axis=0)
-reward_cusum_ucb_std = np.std(cusum_ucb_reward_per_experiment, axis=0)
-reward_exp3_mean = np.mean(exp3_reward_per_experiment, axis=0)
-reward_exp3_std = np.std(exp3_reward_per_experiment, axis=0)
-cumulative_reward_ucb_mean = np.mean(np.cumsum(ucb_reward_per_experiment, axis=1), axis=0)
-cumulative_reward_ucb_std = np.std(np.cumsum(ucb_reward_per_experiment, axis=1), axis=0)
-cumulative_reward_swucb_mean = np.mean(np.cumsum(swucb_reward_per_experiment, axis=1), axis=0)
-cumulative_reward_swucb_std = np.std(np.cumsum(swucb_reward_per_experiment, axis=1), axis=0)
-cumulative_reward_cusum_ucb_mean = np.mean(np.cumsum(cusum_ucb_reward_per_experiment, axis=1), axis=0)
-cumulative_reward_cusum_ucb_std = np.std(np.cumsum(cusum_ucb_reward_per_experiment, axis=1), axis=0)
-cumulative_reward_exp3_mean = np.mean(np.cumsum(exp3_reward_per_experiment, axis=1), axis=0)
-cumulative_reward_exp3_std = np.std(np.cumsum(exp3_reward_per_experiment, axis=1), axis=0)
+# Plot the results
+reward_per_algorithm = [ucb_reward_per_experiment, swucb_reward_per_experiment, cusum_ucb_reward_per_experiment, exp3_reward_per_experiment]
+labels = ['UCB', 'SW-UCB', 'CUSUM-UCB', 'EXP3']
 
-plots = Plots()
-plots.plot_all_algorithms(regret_means=[regret_ucb_mean, regret_swucb_mean, regret_cusum_ucb_mean, regret_exp3_mean],
-                          cum_regret_means=[cumulative_regret_ucb_mean, cumulative_regret_swucb_mean, cumulative_regret_cusum_ucb_mean, cumulative_regret_exp3_mean],
-                          reward_means=[reward_ucb_mean, reward_swucb_mean, reward_cusum_ucb_mean, reward_exp3_mean],
-                          cum_reward_means=[cumulative_reward_ucb_mean, cumulative_reward_swucb_mean, cumulative_reward_cusum_ucb_mean, cumulative_reward_exp3_mean],
-                          best_reward=best_rewards, legend=['UCB', 'SW-UCB', 'CUSUM-UCB', 'EXP3'])
-
-plots.plot_single_algorithms(regret_means=[regret_swucb_mean, regret_exp3_mean],
-                             regret_stds=[regret_swucb_std, regret_exp3_std],
-                             cum_regret_means=[cumulative_regret_swucb_mean, cumulative_regret_exp3_mean],
-                             cum_regret_stds=[cumulative_regret_swucb_std, cumulative_regret_exp3_std],
-                             reward_means=[reward_swucb_mean, reward_exp3_mean],
-                             reward_stds=[reward_swucb_std, reward_exp3_std],
-                             cum_reward_means=[cumulative_reward_swucb_mean, cumulative_reward_exp3_mean],
-                             cum_reward_stds=[cumulative_reward_swucb_std, cumulative_reward_exp3_std],
-                             best_reward=best_rewards,
-                             legend=['SW-UCB', 'EXP3'], x_range=np.arange(0, T, 1))
+plot_all_algorithms(reward_per_algorithm, best_rewards, labels)
+for i, label in enumerate(labels):
+    plot_single_algorithm(reward_per_algorithm[i], best_rewards, label, np.arange(0, T, 1))
