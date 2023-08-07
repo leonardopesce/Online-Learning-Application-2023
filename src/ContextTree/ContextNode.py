@@ -73,7 +73,7 @@ class ContextNode:
         self.feature_values = feature_values
         self.feature_to_observation = feature_to_observation
         self.confidence = confidence
-        self.aggregate_reward = 0#self.compute_aggregate_reward()
+        self.aggregate_reward = 0  # self.compute_aggregate_reward()
         self.father = father
         self.children = {}
         self.choice = None
@@ -102,7 +102,7 @@ class ContextNode:
         means_rewards, sigmas_rewards, lower_bounds_rewards, upper_bounds_rewards = self.gp_reward.predict(price_bids)
 
         num_samples = sum(observation[3] for key in self.feature_to_observation.keys() for observation in self.feature_to_observation.get(key))
-        self.aggregate_reward = np.max(lower_bounds_rewards) # np.max(means_rewards - sigmas_rewards) # * lower_bound(self.confidence, num_samples)
+        self.aggregate_reward = np.max(lower_bounds_rewards)  # np.max(means_rewards - sigmas_rewards) # * lower_bound(self.confidence, num_samples)
 
     def compute_aggregate_reward(self):
         """

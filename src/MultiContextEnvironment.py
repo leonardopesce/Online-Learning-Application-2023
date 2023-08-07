@@ -7,9 +7,10 @@ class MultiContextEnvironment(Environment):
     - the average dependence between the number of clicks and the bid;
     - the average cumulative daily click cost for the bid;
     - the conversion rate for 5 different prices.
+
     The MultiContextEnvironment class allows the agents to interact with it using its functions.
-    From the outside the structure of the context is not visible and the class allows to have an interaction with an
-    environment with multiple contexts
+    From outside the structure of the context is not visible and the class allows to have an interaction with an
+    environment with multiple contexts.
 
     Attributes:
         n_prices: Number of prices
@@ -67,11 +68,11 @@ class MultiContextEnvironment(Environment):
             bernoulli_realizations, clicks_given_bid, cost_given_bid = super().round(category, price_idx, bid_idx)
 
             features_list.append(user_features)
-            clicks_given_features = probability_of_features * clicks_given_bid
+            clicks_given_features = int(np.ceil(probability_of_features * clicks_given_bid))
             clicks_given_bid_list.append(clicks_given_features)
             cost_given_features = probability_of_features * cost_given_bid
             cost_given_bid_list.append(cost_given_features)
-            bernoulli_realizations_list.append(np.random.choice(bernoulli_realizations, int(np.ceil(clicks_given_features))))
+            bernoulli_realizations_list.append(np.random.choice(bernoulli_realizations, clicks_given_features))
 
         return features_list, bernoulli_realizations_list, clicks_given_bid_list, cost_given_bid_list
 

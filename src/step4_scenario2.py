@@ -49,9 +49,9 @@ n_prices = 5
 prices = {'C1': np.array([500, 550, 600, 650, 700]),
           'C2': np.array([500, 550, 600, 650, 700]),
           'C3': np.array([500, 550, 600, 650, 700])}
-probabilities = {'C1': np.array([0.03, 0.04, 0.05, 0.03, 0.01]),
-                 'C2': np.array([0.05, 0.05, 0.1, 0.2, 0.1]),
-                 'C3': np.array([0.1, 0.3, 0.2, 0.05, 0.05])}
+probabilities = {'C1': np.array([0.2, 0.5, 0.1, 0.03, 0.01]),
+                 'C2': np.array([0.01, 0.03, 0.05, 0.2, 0.55]),
+                 'C3': np.array([0.03, 0.1, 0.6, 0.05, 0.04])}
 bids_to_clicks = {'C1': np.array([100, 2]),
                   'C2': np.array([2, 2]),
                   'C3': np.array([3, 3])}
@@ -116,6 +116,7 @@ for e in tqdm(range(0, n_experiments)):
 
     # Iterate over the number of rounds
     for t in range(0, T):
+        # Apply the context generation algorithm offline every 2 weeks (i.e. t multiple of 14).
         if t % time_between_context_generation == 0 and t != 0:
             for clt in context_learners_type:
                 clt.update_context1()
@@ -134,8 +135,8 @@ for e in tqdm(range(0, n_experiments)):
 
                 # TODO: may be still based on category and not on features
                 reward = 0
-                for i in range(len(feature_list)):
-                    reward += env.get_reward(feature_list[i], price_idx, float(np.mean(bernoulli_realizations[i])), n_clicks[i], cum_daily_cost[i])
+                for i, feature in enumerate(feature_list):
+                    reward += env.get_reward(feature, price_idx, float(np.mean(bernoulli_realizations[i])), n_clicks[i], cum_daily_cost[i])
 
                 # prepare data for update of context learner
                 features_list.append(feature_list)

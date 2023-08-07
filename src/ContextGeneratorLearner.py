@@ -59,7 +59,7 @@ class ContextGeneratorLearner:
         # Generate all possible combinations using itertools.product
         all_combinations = list(itertools.product(*value_lists))
         # Convert each combination to a tuple and add it to a set
-        result_set = set(tuple(combination) for combination in all_combinations)
+        result_set = set(all_combinations)
 
         return result_set
 
@@ -214,22 +214,21 @@ class ContextGeneratorLearner:
                 for element in self.feature_to_observation.get(feature_tuple):
                     # Updating the new learner using the past observation of the users in the context it has to consider
                     new_learner.update(element[0], element[1], element[2], element[3], element[4], element[5])
-            new_learner.t = self.t #TODO: check if this is correct, i.e. if it is needed to set the new learner time to the current timestep.
+
             # Appending a new context learner to the set of the new learner to use in future time steps
             new_learners.append(ContextLearner(context, new_learner))
 
         # Setting the new learners into the context generator learner
         self.context_learners = new_learners
 
-
-    def pull_arm(self, other_costs):
+    def pull_arm(self, other_costs: float) -> list[list[set, int, int]]:
         """
         Chooses the price to play and the bid for all the learners based on the learning algorithm of the learner
 
         :param float other_costs: Know costs of the product, used to compute the margin
 
         :return: Context of the Learner, Index of the price to pull, index of the bid to pull
-        :rtype: tuple
+        :rtype: list
         """
         pulled = []
         for learner in self.context_learners:
