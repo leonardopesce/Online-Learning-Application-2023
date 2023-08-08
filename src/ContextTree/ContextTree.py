@@ -17,14 +17,14 @@ class ContextTree:
         requested
     """
 
-    def __init__(self, prices, bids, feature_names, feature_values, feature_to_observation, confidence):
+    def __init__(self, prices: dict, bids, feature_names: list, feature_values: dict, feature_to_observation: dict, confidence: float):
         """
         Initialize the data structure
 
         :param list feature_names: List containing the name of the features used to index the feature_values parameter
         :param dict feature_values: Dictionary containing the mapping between the features and the values the features
         can assume, the format is {feature_name: [value0, value1, value2, ...]}
-        feature_to_observation: Dictionary of the observations divided by tuples of features, the format is
+        :param dict feature_to_observation: Dictionary of the observations divided by tuples of features, the format is
         {tuple_of_features: [observation_list_1, observation_list_2, ...]}
         :param float confidence: Confidence to use in the lower bound used in the context generation algorithm
         """

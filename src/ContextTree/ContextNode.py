@@ -1,5 +1,6 @@
 import numpy as np
 import torch
+import matplotlib.pyplot as plt
 
 from gpytorch.kernels import RBFKernel, ScaleKernel
 from gpytorch.likelihoods import GaussianLikelihood
@@ -97,10 +98,14 @@ class ContextNode:
         # Create all the possible combinations of price and bid.
         price_bids = torch.Tensor(np.array(np.meshgrid(self.prices, self.bids)).T.reshape(-1, 2))
         # print(price_bids, price_bids.shape)
-            
+
         # x = torch.Tensor(np.block([self.prices[:, None], self.bids[:, None]]))
         means_rewards, sigmas_rewards, lower_bounds_rewards, upper_bounds_rewards = self.gp_reward.predict(price_bids)
-
+        # Plot the surface of rewards given all the combinations of prices and bids.
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='3d')
+        ax.plot_trisurf(price_bids[:, 0], price_bids[:, 1], means_rewards, linewidth=0.2, antialiased=True)
+        plt.show()
         num_samples = sum(observation[3] for key in self.feature_to_observation.keys() for observation in self.feature_to_observation.get(key))
         self.aggregate_reward = np.max(lower_bounds_rewards)  # np.max(means_rewards - sigmas_rewards) # * lower_bound(self.confidence, num_samples)
 

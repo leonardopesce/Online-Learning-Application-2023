@@ -259,8 +259,8 @@ class ContextGeneratorLearner:
             learner.get_learner().update(pulled_price_list[idx], np.concatenate(bernoulli_realizations_list[idx], axis=0),
                                          pulled_bid_list[idx], np.sum(clicks_given_bid_list[idx]),
                                          np.sum(cost_given_bid_list[idx]), rewards[idx])
-            for i in range(len(features_list[idx])):
-                self.feature_to_observation[features_list[idx][i]].append([pulled_price_list[idx], bernoulli_realizations_list[idx][i], pulled_bid_list[idx], clicks_given_bid_list[idx][i], cost_given_bid_list[idx][i], rewards[idx]])
+            for i, feature in enumerate(features_list[idx]):
+                self.feature_to_observation[feature].append([pulled_price_list[idx], bernoulli_realizations_list[idx][i], pulled_bid_list[idx], clicks_given_bid_list[idx][i], cost_given_bid_list[idx][i], rewards[idx]])
 
 
     def get_pulled_prices(self):
