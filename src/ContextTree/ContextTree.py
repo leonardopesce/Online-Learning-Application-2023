@@ -64,10 +64,21 @@ class ContextTree:
                 context_structure_final.append(all_combinations)
             else:
                 for context in context_structure:
-                    context_tuple = ()
+                    list_of_tuples = [()]
                     for feature_name in self.feature_names:
-                        context_tuple = context_tuple + tuple([context[feature_name]])
-                    context_structure_final.append([context_tuple])
+                        if feature_name in context.keys():
+                            # Iterating on the tuples of features composing the context e.g. {feature2: 1, feature3: 1} --> [(0,1,1),(1,1,1)] --> [(0,1), (1,1)]
+                            for i, context_tuple in enumerate(list_of_tuples):
+                                list_of_tuples[i] = context_tuple + tuple([context[feature_name]])
+                        else:
+                            # Iterating on the tuples of features composing the context e.g. {feature2: 1, feature3: 1} --> [(0,1,1),(1,1,1)] --> [(0,1), (1,1)]
+                            new_list_of_tuples = []
+                            for context_tuple in list_of_tuples:
+                                for feature_val in self.feature_values[feature_name]:
+                                    new_list_of_tuples.append(context_tuple + tuple([feature_val]))
+                            list_of_tuples = new_list_of_tuples
+
+                    context_structure_final.append(list_of_tuples)
 
             self.context_structure = context_structure_final
 

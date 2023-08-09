@@ -176,6 +176,7 @@ class ContextNode:
 
             # If the lower bound of the reward given by splitting in disaggregate context is higher than the reward of
             # the aggregate model in the node the context is split on the found feature
+            print(feature_values_to_reward, self.aggregate_reward)
             if feature_values_to_reward[name_feature_max_reward] > self.aggregate_reward:
                 # Setting the feature to use to separate the contexts
                 self.choice = name_feature_max_reward

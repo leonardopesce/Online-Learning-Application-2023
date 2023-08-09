@@ -134,9 +134,9 @@ for e in tqdm(range(0, n_experiments)):
                 feature_list, bernoulli_realizations, n_clicks, cum_daily_cost = env.round(price_idx, bid_idx, context)
 
                 # TODO: may be still based on category and not on features
-                reward = 0
+                reward = []
                 for i, feature in enumerate(feature_list):
-                    reward += env.get_reward(feature, price_idx, float(np.mean(bernoulli_realizations[i])), n_clicks[i], cum_daily_cost[i])
+                    reward.append(env.get_reward(feature, price_idx, float(np.mean(bernoulli_realizations[i])), n_clicks[i], cum_daily_cost[i]))
 
                 # prepare data for update of context learner
                 features_list.append(feature_list)
