@@ -456,4 +456,4 @@ def test():
     env.plot_rewards(categories=['C1'], plot_aggregate_model=True)
 
 
-test()
+# test()

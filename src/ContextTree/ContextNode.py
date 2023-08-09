@@ -105,10 +105,10 @@ class ContextNode:
         means_rewards, sigmas_rewards, lower_bounds_rewards, upper_bounds_rewards = self.gp_reward.predict(price_bids)
 
         # Plot the surface of rewards given all the combinations of prices and bids.
-        fig = plt.figure()
-        ax = fig.add_subplot(111, projection='3d')
-        ax.plot_trisurf(price_bids[:, 0], price_bids[:, 1], means_rewards, linewidth=0.2, antialiased=True)
-        plt.show()
+        # fig = plt.figure()
+        # ax = fig.add_subplot(111, projection='3d')
+        # ax.plot_trisurf(price_bids[:, 0], price_bids[:, 1], means_rewards, linewidth=0.2, antialiased=True)
+        # plt.show()
         num_samples = sum(observation[3] for key in self.feature_to_observation.keys() for observation in self.feature_to_observation.get(key))
         self.aggregate_reward = np.max(lower_bounds_rewards)  # np.max(means_rewards - sigmas_rewards) # * lower_bound(self.confidence, num_samples)
 
@@ -144,7 +144,6 @@ class ContextNode:
             for feature_name in self.feature_names:
                 feature_values_to_num_samples = {}
                 feature_values_to_reward_probability_split = {}
-                feature_values_to_reward = {}
                 feature_values_to_reward_lower_bound = {}
                 feature_idx = self.feature_names.index(feature_name)
                 for feature_value in self.feature_values[feature_name]:
@@ -176,7 +175,7 @@ class ContextNode:
 
             # If the lower bound of the reward given by splitting in disaggregate context is higher than the reward of
             # the aggregate model in the node the context is split on the found feature
-            print(feature_values_to_reward, self.aggregate_reward)
+            print(feature_values_to_reward_lower_bound, feature_values_to_reward_probability_split, self.aggregate_reward)
             if feature_values_to_reward[name_feature_max_reward] > self.aggregate_reward:
                 # Setting the feature to use to separate the contexts
                 self.choice = name_feature_max_reward

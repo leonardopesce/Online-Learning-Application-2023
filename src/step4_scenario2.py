@@ -47,17 +47,17 @@ probability_feature_values_in_categories = {'C1': {(0, 1): 1}, 'C2': {(1, 1): 1}
 # Setting the environment parameters
 n_prices = 5
 prices = {'C1': np.array([500, 550, 600, 650, 700]),
-          'C2': np.array([500, 550, 600, 650, 700]),
-          'C3': np.array([500, 550, 600, 650, 700])}
-probabilities = {'C1': np.array([0.2, 0.5, 0.1, 0.03, 0.01]),
-                 'C2': np.array([0.01, 0.03, 0.05, 0.2, 0.55]),
-                 'C3': np.array([0.03, 0.1, 0.6, 0.05, 0.04])}
+              'C2': np.array([500, 550, 600, 650, 700]),
+              'C3': np.array([500, 550, 600, 650, 700])}
+probabilities = {'C1': np.array([0.05, 0.05, 0.3, 0.1, 0.05]),
+                 'C2': np.array([0.05, 0.05, 0.1, 0.1, 0.3]),
+                 'C3': np.array([0.3, 0.1, 0.1, 0.05, 0.05])}
 bids_to_clicks = {'C1': np.array([100, 2]),
-                  'C2': np.array([2, 2]),
-                  'C3': np.array([3, 3])}
-bids_to_cum_costs = {'C1': np.array([20, 0.5]),
-                     'C2': np.array([2, 2]),
-                     'C3': np.array([3, 3])}
+                  'C2': np.array([90, 2]),
+                  'C3': np.array([80, 3])}
+bids_to_cum_costs = {'C1': np.array([400, 0.035]),
+                     'C2': np.array([200, 0.07]),
+                     'C3': np.array([300, 0.04])}
 other_costs = 400
 
 # Bids setup
@@ -68,7 +68,7 @@ bids = np.linspace(min_bid, max_bid, n_bids)
 sigma = 2
 
 # Time horizon of the experiment
-T = 50
+T = 365
 
 # Since the reward functions are stochastic to better visualize the results and remove the noise
 # we have to perform a sufficiently large number experiments
@@ -84,6 +84,10 @@ TS, UCB = 0, 1
 env = MultiContextEnvironment(n_prices, prices, probabilities, bids_to_clicks, bids_to_cum_costs, other_costs,
                               categories, feature_names, feature_values, feature_values_to_categories,
                               probability_feature_values_in_categories)
+
+env.plot_rewards(categories=['C1', 'C2', 'C3'], plot_aggregate_model=True)
+env.plot_whole_advertising_model()
+
 # Define the clairvoyant
 clairvoyant = Clairvoyant(env)
 
@@ -120,6 +124,7 @@ for e in tqdm(range(0, n_experiments)):
         if t % time_between_context_generation == 0 and t != 0:
             for clt in context_learners_type:
                 clt.update_context1()
+                clt.update_context()
 
         # Iterate over TS and UCB
         for clt in context_learners_type:

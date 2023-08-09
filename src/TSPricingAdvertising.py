@@ -96,3 +96,14 @@ class TSLearnerPricingAdvertising(PricingAdvertisingLearner):
 
     def get_reward(self):
         return self.TS_pricing.collected_rewards
+
+    @property
+    def t(self):
+        if self.TS_pricing.t != self.GPTS_advertising.t:
+            raise ValueError("TS and GPTS have different time steps")
+        return self.TS_pricing.t
+
+    @t.setter
+    def t(self, t):
+        self.TS_pricing.t = t
+        self.GPTS_advertising.t = t

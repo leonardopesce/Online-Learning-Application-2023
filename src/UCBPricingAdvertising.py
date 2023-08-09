@@ -94,3 +94,15 @@ class UCBLearnerPricingAdvertising(PricingAdvertisingLearner):
 
     def get_reward(self):
         return self.UCB_pricing.collected_rewards
+
+    @property
+    def t(self):
+        if self.UCB_pricing.t != self.GPUCB_advertising.t:
+            raise ValueError("The two learners have different time steps")
+        return self.UCB_pricing.t
+
+    @t.setter
+    def t(self, value):
+        self.UCB_pricing.t = value
+        self.GPUCB_advertising.t = value
+

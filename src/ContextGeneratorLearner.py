@@ -63,10 +63,10 @@ class ContextGeneratorLearner:
 
         return result_set
 
-    def update_context1(self):
+    def update_context(self):
         context_tree = ContextTree(self.prices, self.bids, self.feature_names, self.feature_values, self.feature_to_observation, 0.95)
         new_contexts = context_tree.get_context_structure()
-        print(new_contexts)
+        print(f"{self.t} - {self.learner_type} - New Context: {new_contexts}")
         # Redefining the learners to use in the next steps of the learning procedure using the new contexts
         # Defining the list of the new context learners (learners + contexts)
         new_learners = []
@@ -81,6 +81,7 @@ class ContextGeneratorLearner:
                     # Updating the new learner using the past observation of the users in the context it has to consider
                     new_learner.update(element[0], element[1], element[2], element[3], element[4], element[5])
 
+            new_learner.t = self.t
             # Appending a new context learner to the set of the new learner to use in future time steps
             new_learners.append(ContextLearner(context, new_learner))
 
