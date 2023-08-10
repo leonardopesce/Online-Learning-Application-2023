@@ -21,7 +21,9 @@ def lower_bound(confidence, num_samples):
     """
 
     return np.sqrt((-np.log(confidence)) / (2 * num_samples))
-
+    # The higher the confidence the lower the splitting chances since the num_samples will be accounted a lot
+    # The lower the confidence (going to 0) the higher the splitting chances since the num_samples will be not so important,
+    # the bounds will be very big anyway
 
 def remove_element_from_tuple(input_tuple, index):
     """
@@ -56,7 +58,7 @@ class ContextNode:
         expanded: True, if the node has been evaluated by the context generation algorithm; False otherwise
     """
 
-    def __init__(self, prices, bids, feature_names, feature_values, feature_to_observation, confidence, father):
+    def __init__(self, prices, bids, whole_feature_names, feature_names, feature_values, feature_to_observation, confidence, father):
         """
         Initializes the node of the context tree
         :param list feature_names: List containing the name of the features used to index the feature_values parameter
@@ -70,6 +72,7 @@ class ContextNode:
 
         self.prices = prices
         self.bids = bids
+        self.whole_feature_names = whole_feature_names
         self.feature_names = feature_names
         self.feature_values = feature_values
         self.feature_to_observation = feature_to_observation
@@ -110,7 +113,12 @@ class ContextNode:
         # ax.plot_trisurf(price_bids[:, 0], price_bids[:, 1], means_rewards, linewidth=0.2, antialiased=True)
         # plt.show()
         num_samples = sum(observation[3] for key in self.feature_to_observation.keys() for observation in self.feature_to_observation.get(key))
-        self.aggregate_reward = np.max(lower_bounds_rewards)  # np.max(means_rewards - sigmas_rewards) # * lower_bound(self.confidence, num_samples)
+        #idx = np.argmax(means_rewards - sigmas_rewards)
+        self.aggregate_reward = np.max(means_rewards - sigmas_rewards)
+        #print(lower_bounds_rewards)
+        #self.aggregate_reward = np.max(lower_bounds_rewards)
+        #print(f'Lower bound {lower_bound(self.confidence, num_samples)}')
+        #self.aggregate_reward = np.max(means_rewards - lower_bound(self.confidence, num_samples))
 
     def compute_aggregate_reward(self):
         """
@@ -146,7 +154,7 @@ class ContextNode:
                 feature_values_to_num_samples = {}
                 feature_values_to_reward_probability_split = {}
                 feature_values_to_reward_lower_bound = {}
-                feature_idx = self.feature_names.index(feature_name)
+                feature_idx = self.whole_feature_names.index(feature_name)
                 for feature_value in self.feature_values[feature_name]:
                     # Computing the number of samples when splitting on the feature with feature_name and considering
                     # to take the samples with value of feature_name equal to the value feature_value
@@ -155,9 +163,9 @@ class ContextNode:
                     # Computing the lower bound of the reward given by the context obtained splitting on the feature
                     # with feature_name and considering to take the samples with value of feature_name equal to the
                     # value feature_value
-                    dsabdsa = {key: self.feature_to_observation.get(key) for key in self.feature_to_observation.keys() if key[feature_idx] == feature_value}
-                    child = ContextNode(self.prices, self.bids, self.feature_names, self.feature_values,
-                                        dsabdsa, self.confidence, self)
+                    child_observations = {key: self.feature_to_observation.get(key) for key in self.feature_to_observation.keys() if key[feature_idx] == feature_value}
+                    child = ContextNode(self.prices, self.bids, self.whole_feature_names, self.feature_names, self.feature_values,
+                                        child_observations, self.confidence, self)
 
                     feature_values_to_reward_lower_bound[feature_value] = child.aggregate_reward
                     # feature_values_to_reward_lower_bound[feature_value] = np.mean([observation[-1] for key in self.feature_to_observation.keys() for observation in self.feature_to_observation.get(key) if key[feature_idx] == feature_value]) - lower_bound(self.confidence, feature_values_to_num_samples[feature_value])
@@ -183,7 +191,7 @@ class ContextNode:
                 self.choice = name_feature_max_reward
 
                 # Computing the new values to give to the new nodes and executing the split
-                chosen_feature_idx = self.feature_names.index(name_feature_max_reward)
+                chosen_feature_idx = self.whole_feature_names.index(name_feature_max_reward)
                 new_feature_names = self.feature_names.copy()
                 new_feature_names.remove(name_feature_max_reward)
                 new_feature_values = self.feature_values.copy()
@@ -193,10 +201,10 @@ class ContextNode:
                     # Computing the new observations to give to the specific child keeping only the sets of observations
                     # respecting the condition that says that the observations are related to samples in that context:
                     # key_of_dictionary_of_observation[name_feature_max_reward] == feature_value
-                    new_feature_to_observation = {remove_element_from_tuple(key, chosen_feature_idx): self.feature_to_observation[key] for key in self.feature_to_observation if key[chosen_feature_idx] == feature_value}
+                    new_feature_to_observation = {key: self.feature_to_observation[key] for key in self.feature_to_observation if key[chosen_feature_idx] == feature_value}
 
                     # Creating ContextNode children and initializing them
-                    self.children[feature_value] = ContextNode(self.prices, self.bids, new_feature_names, new_feature_values, new_feature_to_observation, self.confidence, self)
+                    self.children[feature_value] = ContextNode(self.prices, self.bids, self.whole_feature_names, new_feature_names, new_feature_values, new_feature_to_observation, self.confidence, self)
 
                 # Running the creation of the subtree also on the children of the current node
                 for child_key in self.children:

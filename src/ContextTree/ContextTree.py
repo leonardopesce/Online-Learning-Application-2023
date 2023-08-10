@@ -29,7 +29,7 @@ class ContextTree:
         :param float confidence: Confidence to use in the lower bound used in the context generation algorithm
         """
 
-        self.root = ContextNode(prices, bids, feature_names, feature_values, feature_to_observation, confidence, None)
+        self.root = ContextNode(prices, bids, feature_names, feature_names, feature_values, feature_to_observation, confidence, None)
         self.feature_names = feature_names
         self.feature_values = feature_values
         self.confidence = confidence

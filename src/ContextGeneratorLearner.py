@@ -66,7 +66,7 @@ class ContextGeneratorLearner:
 
     def update_context(self):
         if self.context_tree is None:
-            self.context_tree = ContextTree(self.prices, self.bids, self.feature_names, self.feature_values, self.feature_to_observation, 0.95)
+            self.context_tree = ContextTree(self.prices, self.bids, self.feature_names, self.feature_values, self.feature_to_observation, 0.99)
         else:
             self.context_tree.split_children(self.feature_to_observation)
 
