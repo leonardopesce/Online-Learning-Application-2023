@@ -42,6 +42,7 @@ class ContextGeneratorLearner:
         self.feature_values = feature_values
         self.time_between_context_generation = time_between_context_generation
         self.learner_type = learner_type
+        self.context_tree = None
 
     def create_user_feature_tuples(self, feature_names, feature_values):
         """
@@ -64,8 +65,12 @@ class ContextGeneratorLearner:
         return result_set
 
     def update_context(self):
-        context_tree = ContextTree(self.prices, self.bids, self.feature_names, self.feature_values, self.feature_to_observation, 0.95)
-        new_contexts = context_tree.get_context_structure()
+        if self.context_tree is None:
+            self.context_tree = ContextTree(self.prices, self.bids, self.feature_names, self.feature_values, self.feature_to_observation, 0.95)
+        else:
+            self.context_tree.split_children(self.feature_to_observation)
+
+        new_contexts = self.context_tree.get_context_structure()
         print(f"{self.t} - {self.learner_type} - New Context: {new_contexts}")
         # Redefining the learners to use in the next steps of the learning procedure using the new contexts
         # Defining the list of the new context learners (learners + contexts)

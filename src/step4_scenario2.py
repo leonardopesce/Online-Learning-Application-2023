@@ -123,7 +123,6 @@ for e in tqdm(range(0, n_experiments)):
         # Apply the context generation algorithm offline every 2 weeks (i.e. t multiple of 14).
         if t % time_between_context_generation == 0 and t != 0:
             for clt in context_learners_type:
-                clt.update_context1()
                 clt.update_context()
 
         # Iterate over TS and UCB

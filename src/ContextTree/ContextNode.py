@@ -131,7 +131,8 @@ class ContextNode:
         Splits the node and the observations in new child nodes in the case the condition of the context generation
         algorithm is verified
         """
-        if not self.expanded and len(self.feature_names) > 0:
+        #if not self.expanded and
+        if len(self.feature_names) > 0:
             # Finding the attribute with the highest marginal increase
 
             # Computing the total number of observations considered in the node
@@ -154,8 +155,9 @@ class ContextNode:
                     # Computing the lower bound of the reward given by the context obtained splitting on the feature
                     # with feature_name and considering to take the samples with value of feature_name equal to the
                     # value feature_value
+                    dsabdsa = {key: self.feature_to_observation.get(key) for key in self.feature_to_observation.keys() if key[feature_idx] == feature_value}
                     child = ContextNode(self.prices, self.bids, self.feature_names, self.feature_values,
-                                        {key: self.feature_to_observation.get(key) for key in self.feature_to_observation.keys() if key[feature_idx] == feature_value}, self.confidence, self)
+                                        dsabdsa, self.confidence, self)
 
                     feature_values_to_reward_lower_bound[feature_value] = child.aggregate_reward
                     # feature_values_to_reward_lower_bound[feature_value] = np.mean([observation[-1] for key in self.feature_to_observation.keys() for observation in self.feature_to_observation.get(key) if key[feature_idx] == feature_value]) - lower_bound(self.confidence, feature_values_to_num_samples[feature_value])
@@ -175,7 +177,7 @@ class ContextNode:
 
             # If the lower bound of the reward given by splitting in disaggregate context is higher than the reward of
             # the aggregate model in the node the context is split on the found feature
-            print(feature_values_to_reward_lower_bound, feature_values_to_reward_probability_split, self.aggregate_reward)
+            print(f"Feature values to reward: {feature_values_to_reward}\n{name_feature_max_reward}\nAggregate reward: {self.aggregate_reward}")
             if feature_values_to_reward[name_feature_max_reward] > self.aggregate_reward:
                 # Setting the feature to use to separate the contexts
                 self.choice = name_feature_max_reward
@@ -201,11 +203,11 @@ class ContextNode:
                     self.children[child_key].split()
 
             # Setting the current node as expanded
-            self.expanded = True
+            # self.expanded = True
 
     def get_contexts(self):
         """
-        Computes recursively the context following the structure of the three
+        Computes recursively the context following the structure of the tree
 
         :return: Context of the subtree that starts from the node
         :rtype: list
@@ -224,3 +226,19 @@ class ContextNode:
                     contexts.append({self.choice: key_child})
 
         return contexts
+
+    def set_feature_to_observation(self, new_feature_to_obs: dict) -> None:
+        self.feature_to_observation = new_feature_to_obs
+
+    @property
+    def leaves(self) -> list:
+        leaves = []
+
+        if len(self.children) != 0:
+            for key_child in self.children:
+                child_leaves = self.children[key_child].leaves
+                leaves.extend(child_leaves)
+        else:
+            leaves.append(self)
+
+        return leaves
