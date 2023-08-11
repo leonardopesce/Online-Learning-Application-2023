@@ -43,7 +43,17 @@ class ContextTree:
 
         self.root.split()
 
-    def split_children(self, feature_to_obs: dict):
+    def split_leaves(self, feature_to_obs: dict):
+        """
+        Starts the splitting procedure that applies the context generation algorithm starting from the leaf nodes.
+        The new observations to give to the leaves are needed
+
+        :param dict feature_to_obs: Dictionary of the new observations divided by tuples of features, the format is
+        {tuple_of_features: [observation_list_1, observation_list_2, ...]}
+
+        :returns:
+        :rtype: dict
+        """
         context_structure = self.get_context_structure()
         leaves = self.root.leaves
 

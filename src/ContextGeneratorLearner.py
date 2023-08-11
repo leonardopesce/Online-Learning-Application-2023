@@ -65,33 +65,36 @@ class ContextGeneratorLearner:
         return result_set
 
     def update_context(self):
+        old_context = None
         if self.context_tree is None:
-            self.context_tree = ContextTree(self.prices, self.bids, self.feature_names, self.feature_values, self.feature_to_observation, 0.99)
+            self.context_tree = ContextTree(self.prices, self.bids, self.feature_names, self.feature_values, self.feature_to_observation, 0.05)
         else:
-            self.context_tree.split_children(self.feature_to_observation)
+            old_context = self.context_tree.get_context_structure()
+            self.context_tree.split_leaves(self.feature_to_observation)
 
         new_contexts = self.context_tree.get_context_structure()
-        print(f"{self.t} - {self.learner_type} - New Context: {new_contexts}")
-        # Redefining the learners to use in the next steps of the learning procedure using the new contexts
-        # Defining the list of the new context learners (learners + contexts)
-        new_learners = []
-        # Iterating on the new contexts
-        for context in new_contexts:
-            # Defining a new learner
-            new_learner = LearnerFactory().get_learner(self.learner_type, self.prices, self.bids)
-            # Iterating on the tuples of features of the user in the context
-            for feature_tuple in context:
-                # Iterating on the observation regarding the user with the chosen values of features
-                for element in self.feature_to_observation.get(feature_tuple):
-                    # Updating the new learner using the past observation of the users in the context it has to consider
-                    new_learner.update(element[0], element[1], element[2], element[3], element[4], element[5])
+        if old_context != new_contexts:
+            print(f"{self.t} - {self.learner_type} - New Context: {new_contexts}")
+            # Redefining the learners to use in the next steps of the learning procedure using the new contexts
+            # Defining the list of the new context learners (learners + contexts)
+            new_learners = []
+            # Iterating on the new contexts
+            for context in new_contexts:
+                # Defining a new learner
+                new_learner = LearnerFactory().get_learner(self.learner_type, self.prices, self.bids)
+                # Iterating on the tuples of features of the user in the context
+                for feature_tuple in context:
+                    # Iterating on the observation regarding the user with the chosen values of features
+                    for element in self.feature_to_observation.get(feature_tuple):
+                        # Updating the new learner using the past observation of the users in the context it has to consider
+                        new_learner.update(element[0], element[1], element[2], element[3], element[4], element[5])
 
-            new_learner.t = self.t
-            # Appending a new context learner to the set of the new learner to use in future time steps
-            new_learners.append(ContextLearner(context, new_learner))
+                new_learner.t = self.t
+                # Appending a new context learner to the set of the new learner to use in future time steps
+                new_learners.append(ContextLearner(context, new_learner))
 
-        # Setting the new learners into the context generator learner
-        self.context_learners = new_learners
+            # Setting the new learners into the context generator learner
+            self.context_learners = new_learners
 
     def pull_arm(self, other_costs: float) -> list[list[set, int, int]]:
         """
@@ -163,13 +166,13 @@ class ContextGeneratorLearner:
 
     def get_collective_reward(self):
         """
-        Returns the collective reward
+        Returns the collective reward obtained by the learner
 
         :returns: Collective reward
         :rtype: float
         """
-        collective_reward = 0
-        for learner in self.context_learners:
-            collective_reward += learner.get_learner().get_reward()
+
+        rewards = [[observation[-1] for observation in self.feature_to_observation.get(key)] for key in self.feature_to_observation.keys()]
+        collective_reward = np.sum(np.array(rewards), axis=0)
 
         return collective_reward

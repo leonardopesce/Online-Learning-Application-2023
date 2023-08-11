@@ -157,12 +157,12 @@ for e in tqdm(range(0, n_experiments)):
                        rewards=rewards)
 
     # Store the most played prices and bids by TS
-    ts_best_price.append(Counter(context_learners_type[TS].get_pulled_prices()).most_common(1)[0])
-    ts_best_bid.append(Counter(context_learners_type[TS].get_pulled_bids()).most_common(1)[0])
+    #ts_best_price.append(Counter(context_learners_type[TS].get_pulled_prices()).most_common(1)[0])
+    #ts_best_bid.append(Counter(context_learners_type[TS].get_pulled_bids()).most_common(1)[0])
 
     # Store the most played prices and bids by UCB1
-    ucb_best_price.append(Counter(context_learners_type[UCB].get_pulled_prices()).most_common(1)[0])
-    ucb_best_bid.append(Counter(context_learners_type[UCB].get_pulled_bids()).most_common(1)[0])
+    #ucb_best_price.append(Counter(context_learners_type[UCB].get_pulled_prices()).most_common(1)[0])
+    #ucb_best_bid.append(Counter(context_learners_type[UCB].get_pulled_bids()).most_common(1)[0])
 
     # Store the values of the collected rewards of the learners
     ts_reward_per_experiment.append(np.array(context_learners_type[TS].get_collective_reward()))
@@ -177,18 +177,18 @@ for e in tqdm(range(0, n_experiments)):
     gpts_pulled_bids_per_experiment[category].append(ts_learner[category].GPTS_advertising.pulled_bids)"""
 
 # Print occurrences of best arm in TS
-print(Counter(ts_best_price))
-print(Counter(ts_best_bid))
+#print(Counter(ts_best_price))
+#print(Counter(ts_best_bid))
 # Print occurrences of best arm in UCB1
-print(Counter(ucb_best_price))
-print(Counter(ucb_best_bid))
+#print(Counter(ucb_best_price))
+#print(Counter(ucb_best_bid))
 
 #plot data
 best_rewards = np.ones((T,)) * best_reward
-regret_ts_mean = np.mean(best_reward - ts_reward_per_experiment, axis=0)
-regret_ts_std = np.std(best_reward - ts_reward_per_experiment, axis=0)
+regret_ts_mean = np.mean(best_rewards - ts_reward_per_experiment, axis=0)
+regret_ts_std = np.std(best_rewards - ts_reward_per_experiment, axis=0)
 regret_ucb_mean = np.mean(best_reward - ucb_reward_per_experiment, axis=0)
-regret_ucb_std = np.std(best_reward - ucb_reward_per_experiment, axis=0)
+regret_ucb_std = np.std(best_rewards - ucb_reward_per_experiment, axis=0)
 cumulative_regret_ts_mean = np.mean(np.cumsum(best_reward - ts_reward_per_experiment, axis=1), axis=0)
 cumulative_regret_ts_std = np.std(np.cumsum(best_reward - ts_reward_per_experiment, axis=1), axis=0)
 cumulative_regret_ucb_mean = np.mean(np.cumsum(best_reward - ucb_reward_per_experiment, axis=1), axis=0)

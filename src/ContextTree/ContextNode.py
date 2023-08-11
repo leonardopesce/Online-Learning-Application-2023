@@ -8,8 +8,10 @@ from gpytorch.likelihoods import GaussianLikelihood
 from GPs import BaseGaussianProcess
 
 
+def lower_bound1(delta, num_samples, interval):
+    return np.sqrt((-np.log(delta) * (interval ** 2)) / (2 * num_samples))
 
-def lower_bound(confidence, num_samples):
+def lower_bound(delta, num_samples):
     """
     Computes the lower bound used by the context generation algorithm
 
@@ -20,7 +22,7 @@ def lower_bound(confidence, num_samples):
     :rtype: float
     """
 
-    return np.sqrt((-np.log(confidence)) / (2 * num_samples))
+    return np.sqrt((-np.log(delta)) / (2 * num_samples))
     # The higher the confidence the lower the splitting chances since the num_samples will be accounted a lot
     # The lower the confidence (going to 0) the higher the splitting chances since the num_samples will be not so important,
     # the bounds will be very big anyway
@@ -108,17 +110,27 @@ class ContextNode:
         means_rewards, sigmas_rewards, lower_bounds_rewards, upper_bounds_rewards = self.gp_reward.predict(price_bids)
 
         # Plot the surface of rewards given all the combinations of prices and bids.
-        # fig = plt.figure()
-        # ax = fig.add_subplot(111, projection='3d')
-        # ax.plot_trisurf(price_bids[:, 0], price_bids[:, 1], means_rewards, linewidth=0.2, antialiased=True)
-        # plt.show()
-        num_samples = sum(observation[3] for key in self.feature_to_observation.keys() for observation in self.feature_to_observation.get(key))
+        if self.father is not None and False:
+            fig, axs = plt.subplots(1, 2)
+            axs[0].scatter(price_bids[:, 0], means_rewards)
+            axs[0].set_title(f'{self.father.choice} = {[key for key in self.father.children.keys() if self.father.children.get(key) is self]} {self.feature_names}')
+            # axs[0].fill_between(price_bids[:, 0], means_rewards - sigmas_rewards, means_rewards + sigmas_rewards, alpha=0.5)
+            axs[1].scatter(price_bids[:, 1], means_rewards)
+            axs[1].set_title(f'{self.father.choice} = {[key for key in self.father.children.keys() if self.father.children.get(key) == self]} {self.feature_names}')
+            # axs[1].set_title(f'{self.feature_names}')
+            # axs[1].fill_between(price_bids[:, 1], means_rewards - sigmas_rewards, means_rewards + sigmas_rewards, alpha=0.5)
+            #axs[2].plot_trisurf(price_bids[:, 0], price_bids[:, 1], means_rewards, linewidth=0.2, antialiased=True)
+            plt.show()
+        print('--------------')
+        num_samples = sum(len(key) for key in self.feature_to_observation.values())
+        print(num_samples)
         #idx = np.argmax(means_rewards - sigmas_rewards)
-        self.aggregate_reward = np.max(means_rewards - sigmas_rewards)
+        #self.aggregate_reward = np.max(means_rewards - sigmas_rewards)
         #print(lower_bounds_rewards)
         #self.aggregate_reward = np.max(lower_bounds_rewards)
-        #print(f'Lower bound {lower_bound(self.confidence, num_samples)}')
-        #self.aggregate_reward = np.max(means_rewards - lower_bound(self.confidence, num_samples))
+        print(max(means_rewards))
+        print(f'Lower bound {lower_bound1(self.confidence, num_samples, np.max(means_rewards) - np.min(means_rewards))}')
+        self.aggregate_reward = np.max(means_rewards - lower_bound1(self.confidence, num_samples, np.max(means_rewards) - np.min(means_rewards)))
 
     def compute_aggregate_reward(self):
         """
