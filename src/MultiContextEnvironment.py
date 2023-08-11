@@ -38,7 +38,7 @@ class MultiContextEnvironment(Environment):
         self.probability_feature_values_in_categories = probability_feature_values_in_categories
 
     def get_reward(self, context, price_idx, conversion_prob, n_clicks, cum_daily_costs):
-        tmp = conversion_prob * (self.prices['C1'][price_idx] - self.other_costs) * n_clicks - cum_daily_costs
+        tmp = conversion_prob * (self.prices.get(self.feature_values_to_categories.get(context))[price_idx] - self.other_costs) * n_clicks - cum_daily_costs
         return tmp
 
     def round(self, price_idx, bid_idx, user_features_set):
