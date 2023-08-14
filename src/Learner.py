@@ -32,7 +32,7 @@ class Learner:
         """
         Pulls the arm to play, in this "abstract" learner class, it does nothing
         """
-        return
+        pass
 
     def update_observations(self, pulled_arm, reward):
         """

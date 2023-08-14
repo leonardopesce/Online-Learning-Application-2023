@@ -6,6 +6,7 @@ from SWUCB import SWUCBLearner
 from CUSUMUCBLearner import CUSUMUCBLearner
 from EXP3 import EXP3Learner
 from plots import plot_single_algorithm, plot_all_algorithms
+import settings
 
 """
 Simulation for the step 6: dealing with non-stationary environments with many abrupt changes
@@ -21,120 +22,74 @@ non-stationary flavors of UBC1. The expected result is that EXP3 outperforms the
 setting.
 """
 
-# Considered category is C1
 category = 'C1'
 
-# Setting the environment parameters
-n_prices = 5
-prices = {'C1': np.array([500, 550, 600, 650, 700]),
-          'C2': np.array([500, 550, 600, 650, 700]),
-          'C3': np.array([500, 550, 600, 650, 700])}
-probabilities = {'C1': np.array([0.03, 0.04, 0.05, 0.03, 0.01]),  # best arm is 2 (starting from 0)
-                 'C2': np.array([0.03, 0.05, 0.03, 0.05, 0.02]),  # best arm is 3
-                 'C3': np.array([0.06, 0.07, 0.02, 0.02, 0.01])}  # best arm is 1
-bids_to_clicks = {'C1': np.array([100, 2]),  # this curve doesn't change
-                  'C2': np.array([100, 2]),
-                  'C3': np.array([100, 2])}
-bids_to_cum_costs = {'C1': np.array([20, 0.5]),  # this curve doesn't change
-                     'C2': np.array([20, 0.5]),
-                     'C3': np.array([20, 0.5])}
-other_costs = 400
-phases_duration = [121, 121, 123]
-bid_idx = 20  #TODO, bid is fixed, is okay like this?
-# with this bid_idx the n_clicks=100 and cum_daily_costs=16.4
+bid_idx = 90
 
 # Time horizon of the experiment
 T = 365
-assert np.sum(phases_duration) == T
-window_size = 50
+assert np.sum(settings.phases_duration) == T
+
+# Learners parameters
+window_size = int(3 * (T ** 0.5))
+M = 150
+eps = 0.1
+h = 2 * np.log(T)
+alpha = 0.1
+
 # Since the reward functions are stochastic to better visualize the results and remove the noise
 # we have to perform a sufficiently large number experiments
-n_experiments = 100
+n_experiments = 50
 
-# Store the rewards for each experiment for the learners
-ucb_reward_per_experiment = []
-swucb_reward_per_experiment = []
-cusum_ucb_reward_per_experiment = []
-exp3_reward_per_experiment = []
+algorithms = ['UCB', 'SW-UCB', 'CUSUM-UCB', 'EXP3']
+
+# To store the learners, environments and rewards for each experiment for the learners
+learners = dict()
+environments = dict()
+rewards = dict()
+for algorithm in algorithms:
+    rewards[algorithm] = []
 best_rewards = np.array([])
 
-# Define the environment
-env = NonStationaryEnvironment(n_prices, prices, probabilities, bids_to_clicks, bids_to_cum_costs, other_costs, phases_duration)
+# Define the environment for clairvoyant
+env = NonStationaryEnvironment(settings.n_prices, settings.prices, settings.probabilities, settings.bids_to_clicks_cost, settings.bids_to_cum_costs_cost, settings.other_costs, settings.phases_duration)
 # Define the clairvoyant
 clairvoyant = Clairvoyant(env)
 
 # Compute the best rewards over the year with the clairvoyant
-for phase, phase_len in enumerate(phases_duration):
+for phase, phase_len in enumerate(settings.phases_duration):
     # Optimize the problem for each phase
     best_price_idx, best_price, best_reward = clairvoyant.maximize_reward_given_bid('C' + str(phase + 1), bid_idx)
     best_rewards = np.append(best_rewards, [best_reward] * phase_len)
 
 # Each iteration simulates the learner-environment interaction
 for e in tqdm(range(0, n_experiments)):
-    # Define the environment and learners
+    # Define the environments
+    for algorithm in algorithms:
+        environments[algorithm] = NonStationaryEnvironment(settings.n_prices, settings.prices, settings.probabilities, settings.bids_to_clicks_cost, settings.bids_to_cum_costs_cost, settings.other_costs, settings.phases_duration)
 
-    # UCB1
-    env_ucb = NonStationaryEnvironment(n_prices, prices, probabilities, bids_to_clicks, bids_to_cum_costs, other_costs, phases_duration)
-    ucb_learner = UCBLearner(prices[category])
-
-    # SW-UCB
-    env_swucb = NonStationaryEnvironment(n_prices, prices, probabilities, bids_to_clicks, bids_to_cum_costs, other_costs, phases_duration)
-    swucb_learner = SWUCBLearner(prices[category], window_size)
-
-    # CUSUM-UCB
-    env_cusum_ucb = NonStationaryEnvironment(n_prices, prices, probabilities, bids_to_clicks, bids_to_cum_costs, other_costs, phases_duration)
-    cusum_ucb_learner = CUSUMUCBLearner(prices[category])
-
-    # EXP3
-    env_exp3 = NonStationaryEnvironment(n_prices, prices, probabilities, bids_to_clicks, bids_to_cum_costs, other_costs, phases_duration)
-    n_clicks = env_exp3.get_n_clicks(category, bid_idx)
-    cum_daily_costs = env_exp3.get_cum_daily_costs(category, bid_idx)
-    #worse_reward = n_clicks * 0 * (min(prices[category]) - other_costs) - cum_daily_costs
-    #best_reward = n_clicks * 1 * (max(prices[category]) - other_costs) - cum_daily_costs
-    worst_reward = 0
-    best_reward = 300
-    exp3_learner = EXP3Learner(prices[category], worst_reward, best_reward, gamma=0.1, other_costs=other_costs)
+    # Define the learners
+    learners['UCB'] = UCBLearner(settings.prices[category])
+    learners['SW-UCB'] = SWUCBLearner(settings.prices[category], window_size)
+    learners['CUSUM-UCB'] = CUSUMUCBLearner(settings.prices[category], M=M, eps=eps, h=h, alpha=alpha)
+    learners['EXP3'] = EXP3Learner(settings.prices[category], worst_reward=0, best_reward=max(settings.prices[category]) - settings.other_costs, gamma=0.1, other_costs=settings.other_costs)
 
     # Iterate over the number of rounds
     for t in range(0, T):
-        # UCB Learner
-        pulled_arm = ucb_learner.pull_arm()
-        n_clicks = env_ucb.get_n_clicks(category, bid_idx)
-        bernoulli_realizations = env_ucb.round_pricing(pulled_arm, n_clicks=int(np.floor(n_clicks)))
-        reward = env_ucb.get_reward_from_price(category, pulled_arm, np.mean(bernoulli_realizations), bid_idx)
-        ucb_learner.update(pulled_arm, reward, bernoulli_realizations)
-
-        # SW-UCB Learner
-        pulled_arm = swucb_learner.pull_arm()
-        n_clicks = env_swucb.get_n_clicks(category, bid_idx)
-        bernoulli_realizations = env_swucb.round_pricing(pulled_arm, n_clicks=int(np.floor(n_clicks)))
-        reward = env_swucb.get_reward_from_price(category, pulled_arm, np.mean(bernoulli_realizations), bid_idx)
-        swucb_learner.update(pulled_arm, reward, bernoulli_realizations)
-
-        # CUSUM-UCB Learner
-        pulled_arm = cusum_ucb_learner.pull_arm()
-        n_clicks = env_cusum_ucb.get_n_clicks(category, bid_idx)
-        bernoulli_realizations = env_cusum_ucb.round_pricing(pulled_arm, n_clicks=int(np.floor(n_clicks)))
-        reward = env_cusum_ucb.get_reward_from_price(category, pulled_arm, np.mean(bernoulli_realizations), bid_idx)
-        cusum_ucb_learner.update(pulled_arm, reward, bernoulli_realizations)
-
-        # EXP3 Learner
-        pulled_arm = exp3_learner.pull_arm()
-        n_clicks = env_exp3.get_n_clicks(category, bid_idx)
-        bernoulli_realizations = env_exp3.round_pricing(pulled_arm, n_clicks=int(np.floor(n_clicks)))
-        reward = env_exp3.get_reward_from_price(category, pulled_arm, np.mean(bernoulli_realizations), bid_idx)
-        exp3_learner.update(pulled_arm, reward, bernoulli_realizations)
+        for algorithm in algorithms:
+            n_clicks = environments[algorithm].get_n_clicks(category, bid_idx)
+            cum_daily_costs = environments[algorithm].get_cum_daily_costs(category, bid_idx)
+            pulled_arm = learners[algorithm].pull_arm(settings.other_costs, n_clicks, cum_daily_costs)
+            bernoulli_realizations = environments[algorithm].round_pricing(pulled_arm, int(np.floor(n_clicks)))
+            reward = environments[algorithm].get_reward_from_price(category, pulled_arm, np.mean(bernoulli_realizations), bid_idx)
+            learners[algorithm].update(pulled_arm, reward, bernoulli_realizations)
 
     # Store the values of the collected rewards of the learners
-    ucb_reward_per_experiment.append(ucb_learner.collected_rewards)
-    swucb_reward_per_experiment.append(swucb_learner.collected_rewards)
-    cusum_ucb_reward_per_experiment.append(cusum_ucb_learner.collected_rewards)
-    exp3_reward_per_experiment.append(exp3_learner.collected_rewards)
+    for algorithm in algorithms:
+        rewards[algorithm].append(learners[algorithm].collected_rewards)
 
 # Plot the results
-reward_per_algorithm = [ucb_reward_per_experiment, swucb_reward_per_experiment, cusum_ucb_reward_per_experiment, exp3_reward_per_experiment]
-labels = ['UCB', 'SW-UCB', 'CUSUM-UCB', 'EXP3']
-
-plot_all_algorithms(reward_per_algorithm, best_rewards, labels)
-for i, label in enumerate(labels):
-    plot_single_algorithm(reward_per_algorithm[i], best_rewards, label, np.arange(0, T, 1))
+reward_per_algorithm = [rewards[algorithm] for algorithm in algorithms]
+plot_all_algorithms(reward_per_algorithm, best_rewards, algorithms)
+for algorithm in algorithms:
+    plot_single_algorithm(rewards[algorithm], best_rewards, algorithm, np.arange(0, T, 1))

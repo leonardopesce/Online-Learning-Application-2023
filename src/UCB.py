@@ -1,6 +1,8 @@
+import numpy as np
+
 from Learner import *
 
-
+#TODO funziona se è facile capire quale è il migliore arm
 class UCBLearner(Learner):
     """
     Learner that applies the Upper Confidence Bound 1(UCB1) algorithm
@@ -25,7 +27,7 @@ class UCBLearner(Learner):
         self.empirical_means = np.zeros(self.n_arms)
         self.confidence = np.array([np.inf] * self.n_arms)
 
-    def pull_arm(self):
+    def pull_arm(self, cost, n_clicks, cum_daily_costs):
         """
         Chooses the arm to play based on the UCB1 algorithm, therefore choosing the arm with higher upper
         confidence bound, which is the mean of the reward of the arm plus the confidence interval
@@ -34,9 +36,8 @@ class UCBLearner(Learner):
         :rtype: int
         """
 
-        upper_confidence_bound = self.empirical_means + self.confidence
+        upper_confidence_bound = (self.empirical_means + self.confidence) * n_clicks * (self.arms_values - cost) - cum_daily_costs
         idx = np.random.choice(np.where(upper_confidence_bound == upper_confidence_bound.max())[0])
-
         return idx
 
     def update(self, pulled_arm, reward, bernoulli_realization):
@@ -53,12 +54,12 @@ class UCBLearner(Learner):
         self.update_observations(pulled_arm, reward)
         self.successes_per_arm[pulled_arm].append(np.sum(bernoulli_realization))
         self.total_observations_per_arm[pulled_arm].append(len(bernoulli_realization))
-        self.empirical_means[pulled_arm] = (self.empirical_means[pulled_arm] * (self.times_arms_played[pulled_arm] - 1) + reward) / self.times_arms_played[pulled_arm]
+        self.empirical_means[pulled_arm] = np.sum(self.successes_per_arm[pulled_arm]) / np.sum(self.total_observations_per_arm[pulled_arm])
+        #total_valid_samples = np.sum([np.sum(self.total_observations_per_arm[arm]) for arm in range(self.n_arms)])
         for arm in range(self.n_arms):
-            self.confidence[arm] = 100 * np.sqrt((2 * np.log(self.t) / self.times_arms_played[arm])) if self.times_arms_played[arm] > 0 else np.inf
-        # con 200 UCB better than TS, with 500 TS is better. At the moment we use 1000 since the maximum expected reward is around 900
-        # we wrote in our notebook to put as constant the max value possible. Maybe we could assume that is data is known from previous market analysis
-        # TODO choose the constant
+            #self.confidence[arm] = np.sqrt(2 * np.log(total_valid_samples) / np.sum(self.total_observations_per_arm[arm])) if self.times_arms_played[arm] > 0 else np.inf
+            self.confidence[arm] = np.sqrt(2 * np.log(self.t) / np.sum(self.total_observations_per_arm[arm])) if self.times_arms_played[arm] > 0 else np.inf
+            #TODO secondo me sarebbe più giusta la versione commentata però performa peggio perchè il bound è più grande e tende a provare di più gli altri arms
 
     def get_conv_prob(self, pulled_arm):
         """
@@ -71,7 +72,7 @@ class UCBLearner(Learner):
         """
 
         # In else put 1 to be more optimistic in the case we don't have data
-        return np.sum(self.successes_per_arm[pulled_arm]) / np.sum(self.total_observations_per_arm[pulled_arm]) if np.sum(self.total_observations_per_arm[pulled_arm]) > 0 else 1
+        return self.empirical_means[pulled_arm] if self.times_arms_played[pulled_arm] > 0 else 1
 
     def get_upper_confidence_bounds(self):
         """

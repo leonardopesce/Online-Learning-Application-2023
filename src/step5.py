@@ -5,6 +5,7 @@ from NonStationaryEnvironment import *
 from SWUCB import SWUCBLearner
 from CUSUMUCBLearner import CUSUMUCBLearner
 from plots import plot_single_algorithm, plot_all_algorithms
+import settings
 
 """
 Simulation for the step 5: dealing with non-stationary environments with two abrupt changes 
@@ -25,33 +26,23 @@ the length of the sliding window in the first case and different values for the 
 # Considered category is C1
 category = 'C1'
 
-# Setting the environment parameters
-n_prices = 5
-prices = {'C1': np.array([500, 550, 600, 650, 700]),
-          'C2': np.array([500, 550, 600, 650, 700]),
-          'C3': np.array([500, 550, 600, 650, 700])}
-probabilities = {'C1': np.array([0.03, 0.04, 0.05, 0.03, 0.01]),  # best arm is 2 (starting from 0)
-                 'C2': np.array([0.03, 0.05, 0.03, 0.05, 0.02]),  # best arm is 3
-                 'C3': np.array([0.06, 0.07, 0.02, 0.02, 0.01])}  # best arm is 1
-bids_to_clicks = {'C1': np.array([100, 2]),  # this curve doesn't change
-                  'C2': np.array([100, 2]),
-                  'C3': np.array([100, 2])}
-bids_to_cum_costs = {'C1': np.array([20, 0.5]),  # this curve doesn't change
-                     'C2': np.array([20, 0.5]),
-                     'C3': np.array([20, 0.5])}
-other_costs = 400
-phases_duration = [121, 121, 123]
-
 # Time horizon of the experiment
 T = 365
-assert np.sum(phases_duration) == T
+assert np.sum(settings.phases_duration) == T
 #window_size = int(T ** 0.5)
-window_size = 50
+#window_size = 50
 #window_size = math.ceil(2 * np.sqrt(T * np.log(T) / 3))
+
+window_size = int(3 * (T ** 0.5))
+M = 150
+eps = 0.1
+h = 2 * np.log(T)
+alpha = 0.1
+
 print(window_size)
 # Since the reward functions are stochastic to better visualize the results and remove the noise
 # we have to perform a sufficiently large number experiments
-n_experiments = 200
+n_experiments = 50
 
 # Store the rewards for each experiment for the learners
 ucb_reward_per_experiment = []
@@ -60,12 +51,12 @@ cusum_ucb_reward_per_experiment = []
 best_rewards = np.array([])
 
 # Define the environment
-env = NonStationaryEnvironment(n_prices, prices, probabilities, bids_to_clicks, bids_to_cum_costs, other_costs, phases_duration)
+env = NonStationaryEnvironment(settings.n_prices, settings.prices, settings.probabilities, settings.bids_to_clicks_cost, settings.bids_to_cum_costs_cost, settings.other_costs, settings.phases_duration)
 # Define the clairvoyant
 clairvoyant = Clairvoyant(env)
 
 # Compute the best rewards over the year with the clairvoyant
-for phase, phase_len in enumerate(phases_duration):
+for phase, phase_len in enumerate(settings.phases_duration):
     # Optimize the problem for each phase
     best_price_idx, best_price, best_bid_idx, best_bid, best_reward = clairvoyant.maximize_reward('C' + str(phase + 1))
     best_rewards = np.append(best_rewards, [best_reward] * phase_len)
@@ -75,44 +66,51 @@ for e in tqdm(range(0, n_experiments)):
     # Define the environment and learners
 
     # UCB1
-    env_ucb = NonStationaryEnvironment(n_prices, prices, probabilities, bids_to_clicks, bids_to_cum_costs, other_costs, phases_duration)
-    ucb_learner = UCBLearner(prices[category])
+    env_ucb = NonStationaryEnvironment(settings.n_prices, settings.prices, settings.probabilities, settings.bids_to_clicks_cost, settings.bids_to_cum_costs_cost, settings.other_costs, settings.phases_duration)
+    ucb_learner = UCBLearner(settings.prices[category])
 
     # SW-UCB
-    env_swucb = NonStationaryEnvironment(n_prices, prices, probabilities, bids_to_clicks, bids_to_cum_costs, other_costs, phases_duration)
-    swucb_learner = SWUCBLearner(prices[category], window_size)
+    env_swucb = NonStationaryEnvironment(settings.n_prices, settings.prices, settings.probabilities, settings.bids_to_clicks_cost, settings.bids_to_cum_costs_cost, settings.other_costs, settings.phases_duration)
+    swucb_learner = SWUCBLearner(settings.prices[category], window_size)
 
     # CUSUM-UCB
-    env_cusum_ucb = NonStationaryEnvironment(n_prices, prices, probabilities, bids_to_clicks, bids_to_cum_costs, other_costs, phases_duration)
-    cusum_ucb_learner = CUSUMUCBLearner(prices[category])
+    env_cusum_ucb = NonStationaryEnvironment(settings.n_prices, settings.prices, settings.probabilities, settings.bids_to_clicks_cost, settings.bids_to_cum_costs_cost, settings.other_costs, settings.phases_duration)
+    cusum_ucb_learner = CUSUMUCBLearner(settings.prices[category], M=M, eps=eps, h=h, alpha=alpha)
 
     # Iterate over the number of rounds
     for t in range(0, T):
         # UCB Learner
-        pulled_arm = ucb_learner.pull_arm()
-        best_bid_idx = clairvoyant.maximize_reward_from_bid(category, ucb_learner.get_conv_prob(pulled_arm) * (
-                    env_ucb.prices[category][pulled_arm] - env_ucb.other_costs))[0]
-        n_clicks = env_ucb.get_n_clicks(category, best_bid_idx)
-        bernoulli_realizations = env_ucb.round_pricing(pulled_arm, n_clicks=int(np.floor(n_clicks)))
-        reward = env_ucb.get_reward_from_price(category, pulled_arm, np.mean(bernoulli_realizations), best_bid_idx)
+        best_bids_idx = [clairvoyant.maximize_reward_from_bid(category, ucb_learner.get_conv_prob(arm) * (
+                env_ucb.prices[category][arm] - env_ucb.other_costs))[0] for arm in range(settings.n_prices)]
+        n_clicks_list = np.array([env_ucb.get_n_clicks(category, bid) for bid in best_bids_idx])
+        cum_daily_costs_list = np.array([env_ucb.get_cum_daily_costs(category, bid) for bid in best_bids_idx])
+        pulled_arm = ucb_learner.pull_arm(settings.other_costs, n_clicks_list, cum_daily_costs_list)
+
+        bernoulli_realizations = env_ucb.round_pricing(pulled_arm, int(np.floor(n_clicks_list[pulled_arm])))
+        reward = env_ucb.get_reward_from_price(category, pulled_arm, np.mean(bernoulli_realizations), best_bids_idx[pulled_arm])
         ucb_learner.update(pulled_arm, reward, bernoulli_realizations)
 
         # SW-UCB Learner
-        pulled_arm = swucb_learner.pull_arm()
-        best_bid_idx = clairvoyant.maximize_reward_from_bid(category, swucb_learner.get_conv_prob(pulled_arm) * (
-                env_swucb.prices[category][pulled_arm] - env_swucb.other_costs))[0]
-        n_clicks = env_swucb.get_n_clicks(category, best_bid_idx)
-        bernoulli_realizations = env_swucb.round_pricing(pulled_arm, n_clicks=int(np.floor(n_clicks)))
-        reward = env_swucb.get_reward_from_price(category, pulled_arm, np.mean(bernoulli_realizations), best_bid_idx)
+        best_bids_idx = [clairvoyant.maximize_reward_from_bid(category, swucb_learner.get_conv_prob(arm) * (
+                env_swucb.prices[category][arm] - env_swucb.other_costs))[0] for arm in range(settings.n_prices)]
+        n_clicks_list = np.array([env_swucb.get_n_clicks(category, bid) for bid in best_bids_idx])
+        cum_daily_costs_list = np.array([env_swucb.get_cum_daily_costs(category, bid) for bid in best_bids_idx])
+        pulled_arm = swucb_learner.pull_arm(settings.other_costs, n_clicks_list, cum_daily_costs_list)
+
+        bernoulli_realizations = env_swucb.round_pricing(pulled_arm, int(np.floor(n_clicks_list[pulled_arm])))
+        reward = env_swucb.get_reward_from_price(category, pulled_arm, np.mean(bernoulli_realizations), best_bids_idx[pulled_arm])
         swucb_learner.update(pulled_arm, reward, bernoulli_realizations)
 
         # CUSUM-UCB Learner
-        pulled_arm = cusum_ucb_learner.pull_arm()
-        best_bid_idx = clairvoyant.maximize_reward_from_bid(category, cusum_ucb_learner.get_conv_prob(pulled_arm) * (
-                env_cusum_ucb.prices[category][pulled_arm] - env_cusum_ucb.other_costs))[0]
-        n_clicks = env_cusum_ucb.get_n_clicks(category, best_bid_idx)
-        bernoulli_realizations = env_cusum_ucb.round_pricing(pulled_arm, n_clicks=int(np.floor(n_clicks)))
-        reward = env_cusum_ucb.get_reward_from_price(category, pulled_arm, np.mean(bernoulli_realizations), best_bid_idx)
+        best_bids_idx = [clairvoyant.maximize_reward_from_bid(category, cusum_ucb_learner.get_conv_prob(arm) * (
+                env_cusum_ucb.prices[category][arm] - env_cusum_ucb.other_costs))[0] for arm in range(settings.n_prices)]
+        n_clicks_list = np.array([env_cusum_ucb.get_n_clicks(category, bid) for bid in best_bids_idx])
+        cum_daily_costs_list = np.array([env_cusum_ucb.get_cum_daily_costs(category, bid) for bid in best_bids_idx])
+        pulled_arm = cusum_ucb_learner.pull_arm(settings.other_costs, n_clicks_list, cum_daily_costs_list)
+
+        bernoulli_realizations = env_cusum_ucb.round_pricing(pulled_arm, int(np.floor(n_clicks_list[pulled_arm])))
+        reward = env_cusum_ucb.get_reward_from_price(category, pulled_arm, np.mean(bernoulli_realizations),
+                                                 best_bids_idx[pulled_arm])
         cusum_ucb_learner.update(pulled_arm, reward, bernoulli_realizations)
 
     # Store the values of the collected rewards of the learners
@@ -127,51 +125,3 @@ labels = ['UCB', 'SW-UCB', 'CUSUM-UCB']
 plot_all_algorithms(reward_per_algorithm, best_rewards, labels)
 for i, label in enumerate(labels):
     plot_single_algorithm(reward_per_algorithm[i], best_rewards, label, np.arange(0, T, 1))
-
-
-#TODO controlla gli appunti sul quaderno
-#TODO maybe do some plots with different values of parameters to compare them
-"""
-Parameters for CUSUM are:
-- eps: to have an underestimation of the deviation from the reference point, it's the exploration term of UCB
-- M: number of valid samples that are used to compute the reference point
-- h: value over which a detection is flagged
-- alpha: pure exploration parameter
-
-eps 
-The change in the rewards should be greater than 3*eps, anyway eps should be of the order of changes in the 
-distributions. With these parameters the smallest change in the reward is around 200, so eps should not be greater than 
-60. With eps=50 the algorithm performs well, if eps is increased the performance are worse.
-
-M 
-If M is too big, so comparable to the length of the horizon, all the observations are used to compute the reference 
-points so the algorithm behaves like a normal UCB. If M is very small like 1 or 2 it is suboptimal. M should be big 
-enough to have a good estimate of the reference point and such that each arm is played at least M times between each 
-breakpoint. So M could be around 5-15.
-
-h
-A lower threshold makes the algorithm more sensitive, while a higher threshold makes it less sensitive. It should be 
-tuned around log(T/number_breakpoints)=2 (from the paper) or should be of the order of logT=6 (appunti). 
-Values in the range 12-60 seem good.
-
-alpha
-From the paper it should be tuned around sqrt(log(T/number_breakpoints)*number_breakpoints/T)=0.13. I also tried alpha
-decreasing in time like 1/t, but it is not good because over time there is less exploration and so it is more difficult  
-to detect changes. A good alpha seems 0.1.
-
-https://arxiv.org/pdf/1711.03539.pdf dovrebbe essere il pdf a cui è stato fatto riferimento anche a lezione
-"""
-
-"""
-Parameters for Sliding widows UCB:
-- windows size: number of valid samples that are used to compute the reference point
-
-windows size
-From the paper  9 If the horizon T and the growth rate of the number of breakpoints Υ(T) are known in advance we can set the
-windows size to 2 * (upper bound reward) * sqrt(T * log(T) / number of breakpoints)
-The lower is the windows size the higher is the times that the algorithm has to retry all the arms. So, the cumulative regret will increase.
-However, the larger is the windows the lower is the sensitivity of the algorithm.
-A good range of values is between 40 and 60.
-
-https://arxiv.org/pdf/0805.3415.pdf it should be the original paper of SW-UCB
-"""

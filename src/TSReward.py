@@ -32,9 +32,7 @@ class TSRewardLearner(Learner):
         :rtype: int
         """
 
-        # TODO che sia da considerare anche la parte del'adv? al momento la consideriamo
         idx = np.argmax(n_clicks * np.random.beta(self.beta_parameters[:, 0], self.beta_parameters[:, 1]) * (self.arms_values - cost) - cum_daily_costs)
-
         return idx
 
     def update(self, pulled_arm, reward, bernoulli_realizations):

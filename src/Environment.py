@@ -54,7 +54,8 @@ class Environment:
         self.n_prices = n_prices
         self.prices = prices
         self.probabilities = probabilities
-        self.bids = np.linspace(0.5, 15, 100)
+        self.bids = np.linspace(0.5, 10, 100)
+        #self.bids = np.linspace(0.03, 3, 100)
         self.bids_to_clicks = bids_to_clicks
         self.bids_to_clicks_variance = 0.2
         self.bids_to_cum_costs = bids_to_cum_costs

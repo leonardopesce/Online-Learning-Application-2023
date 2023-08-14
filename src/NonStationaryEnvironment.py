@@ -16,6 +16,8 @@ class NonStationaryEnvironment(Environment):
     # alternativa è di cambiare l'environmnet facendo un refactor per essere generico per ogni classe e poi fare una sottoclasse nel caso del context
     # oppure la classe context environment puo contenere tanti environment quanti sono i context
     # oppure come faccio adesso metto un dizionario con chiave la fase
+
+    # altrimenti si puo mettere opzionale la category tipo in environment e clairvoyant
     def __init__(self, n_prices, prices, probabilities, bids_to_clicks, bids_to_cum_costs, other_costs, phases_duration):
         """
         Initializes the NonStationaryEnvironment class

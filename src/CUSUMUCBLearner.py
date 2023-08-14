@@ -14,7 +14,7 @@ class CUSUMUCBLearner(UCBLearner):
         detections: List to store the times when a change is detected for each arm
     """
 
-    def __init__(self, arms_values, M=15, eps=50, h=18, alpha=0.1):
+    def __init__(self, arms_values, M=10, eps=0.1, h=6, alpha=0.1):
         """
         Initializes the UCB1 learner with CUSUM
 
@@ -31,7 +31,7 @@ class CUSUMUCBLearner(UCBLearner):
         self.detections = [[] for _ in range(self.n_arms)]
         self.alpha = alpha
 
-    def pull_arm(self):
+    def pull_arm(self, cost, n_clicks, cum_daily_costs):
         """
         Chooses the arm to play based on the UCB1 algorithm with probability 1-alpha, therefore choosing the arm with
         higher upper confidence bound, which is the mean of the reward of the arm plus the confidence interval. With
@@ -41,7 +41,7 @@ class CUSUMUCBLearner(UCBLearner):
         :rtype: int
         """
 
-        return super().pull_arm() if np.random.binomial(1, 1 - self.alpha) else np.random.randint(0, self.n_arms)
+        return super().pull_arm(cost, n_clicks, cum_daily_costs) if np.random.binomial(1, 1 - self.alpha) else np.random.randint(0, self.n_arms)
 
     def update(self, pulled_arm, reward, bernoulli_realization):
         """
@@ -55,20 +55,26 @@ class CUSUMUCBLearner(UCBLearner):
 
         self.t += 1
         # Ask the change detector if flags a detection for the pulled arm
-        if self.change_detection[pulled_arm].update(reward):
-            # If flags a detection, restart the detection algorithm
-            self.detections[pulled_arm].append(self.t)
-            self.valid_rewards_per_arm[pulled_arm] = []
-            self.successes_per_arm[pulled_arm] = []
-            self.total_observations_per_arm[pulled_arm] = []
-            self.change_detection[pulled_arm].reset()
+        for sample in bernoulli_realization:
+            if self.change_detection[pulled_arm].update(sample):
+                # If flags a detection, restart the detection algorithm
+                self.detections[pulled_arm].append(self.t)
+                self.valid_rewards_per_arm[pulled_arm] = []
+                self.successes_per_arm[pulled_arm] = []
+                self.total_observations_per_arm[pulled_arm] = []
+                self.change_detection[pulled_arm].reset()
+                #print("det")
 
         self.update_observations(pulled_arm, reward)
         self.valid_rewards_per_arm[pulled_arm].append(reward)
         self.successes_per_arm[pulled_arm].append(np.sum(bernoulli_realization))
         self.total_observations_per_arm[pulled_arm].append(len(bernoulli_realization))
-        self.empirical_means[pulled_arm] = np.mean(self.valid_rewards_per_arm[pulled_arm])
-        total_valid_samples = sum([len(x) for x in self.valid_rewards_per_arm])
+        self.empirical_means[pulled_arm] = np.sum(self.successes_per_arm[pulled_arm]) / np.sum(self.total_observations_per_arm[pulled_arm])
+        #total_valid_samples = np.sum([np.sum(self.total_observations_per_arm[arm]) for arm in range(self.n_arms)])
+        #for arm in range(self.n_arms):
+         #   n_samples = len(self.valid_rewards_per_arm[arm])
+         #   #self.confidence[arm] = np.sqrt((2 * np.log(total_valid_samples) / np.sum(self.total_observations_per_arm[arm]))) if n_samples > 0 else np.inf
+
+        total_valid_samples = np.sum([len(self.valid_rewards_per_arm[arm]) for arm in range(self.n_arms)])
         for arm in range(self.n_arms):
-            n_samples = len(self.valid_rewards_per_arm[arm])
-            self.confidence[arm] = 100 * np.sqrt((2 * np.log(total_valid_samples) / n_samples)) if n_samples > 0 else np.inf
+            self.confidence[arm] = np.sqrt((2 * np.log(total_valid_samples) / np.sum(self.total_observations_per_arm[arm]))) if len(self.valid_rewards_per_arm[arm]) > 0 else np.inf

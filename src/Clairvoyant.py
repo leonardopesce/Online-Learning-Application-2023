@@ -132,18 +132,18 @@ def test():
     probabilities = {'C1': np.array([0.03, 0.04, 0.05, 0.03, 0.01]),  # best arm is 2 (starting from 0)
                      'C2': np.array([0.03, 0.05, 0.03, 0.05, 0.02]),  # best arm is 3
                      'C3': np.array([0.06, 0.07, 0.02, 0.02, 0.01])}  # best arm is 1
-    bids_to_clicks = {'C1': np.array([100, 2]),  # this curve doesn't change
-                      'C2': np.array([100, 2]),
-                      'C3': np.array([100, 2])}
-    bids_to_cum_costs = {'C1': np.array([20, 0.5]),  # this curve doesn't change
-                         'C2': np.array([20, 0.5]),
-                         'C3': np.array([20, 0.5])}
+    bids_to_clicks = {'C1': np.array([100, 2]),
+                      'C2': np.array([90, 2]),
+                      'C3': np.array([80, 3])}
+    bids_to_cum_costs = {'C1': np.array([20, 0.5]),
+                         'C2': np.array([18, 0.4]),
+                         'C3': np.array([16, 0.45])}
     other_costs = 400
     env = Environment(n_prices, prices, probabilities, bids_to_clicks, bids_to_cum_costs, other_costs)
     clairvoyant = Clairvoyant(env)
     print(clairvoyant.maximize_reward_from_price(category))
     print(clairvoyant.maximize_reward(category))
-    #env.plot_whole_advertising_model()
+    env.plot_whole_advertising_model()
     for category in probabilities.keys():
         print(category)
         clairvoyant.check(category)

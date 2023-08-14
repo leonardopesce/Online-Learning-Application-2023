@@ -40,7 +40,7 @@ class UCBLearnerPricingAdvertising:
         """
 
         # Getting the upper confidence bounds from the learner of the price
-        prices_upper_conf_bounds = self.UCB_pricing.get_upper_confidence_bounds()
+        prices_upper_conf_bounds = np.clip(self.UCB_pricing.get_upper_confidence_bounds(), 0, 1)
         conversion_times_margin = prices_upper_conf_bounds * (self.UCB_pricing.get_arms() - other_costs)
         # Getting the upper confidence bounds of the number of clicks from the learner of the bids (advertising problem)
         upper_conf_bounds_clicks, lower_conf_bounds_costs = self.GPUCB_advertising.get_confidence_bounds()
