@@ -161,3 +161,55 @@ def plot_all_algorithms(reward_per_algorithm, best_rewards, labels):
     axes[3].set_xlabel("t")
     axes[3].set_ylabel("Cumulative reward")
     plt.show()
+
+
+def plot_clicks_curve(bids, learners, labels):
+    """
+    Plot the estimate of the number of daily clicks curve
+
+    :param np.ndarray bids: Array with the possible values of bids
+    :param np.ndarray learners: Array with the GP learners
+    :param list labels: List of names of algorithms plotted
+    """
+
+    plt.figure(0)
+
+    for label in labels:
+        mean_clicks_per_experiment = np.mean(np.array([learner.means_clicks for learner in learners[label]]), axis=0)
+        lower_bounds_clicks_per_experiment = np.mean(np.array([learner.lower_bounds_clicks for learner in learners[label]]), axis=0)
+        upper_bounds_clicks_per_experiment = np.mean(np.array([learner.upper_bounds_clicks for learner in learners[label]]), axis=0)
+
+        plt.plot(bids, mean_clicks_per_experiment, label='GP-'+label)
+        plt.fill_between(bids, lower_bounds_clicks_per_experiment, upper_bounds_clicks_per_experiment, alpha=0.2)
+
+    plt.title('Clicks given the bid - GP')
+    plt.xlabel('Bids')
+    plt.ylabel('Number of clicks')
+    plt.legend()
+    plt.show()
+
+
+def plot_costs_curve(bids, learners, labels):
+    """
+    Plot the estimate of the cumulative daily cost of the clicks curve
+
+    :param np.ndarray bids: Array with the possible values of bids
+    :param np.ndarray learners: Array with the GP learners
+    :param list labels: List of names of algorithms plotted
+    """
+
+    plt.figure(1)
+
+    for label in labels:
+        mean_cum_costs_per_experiment = np.mean(np.array([learner.means_costs for learner in learners[label]]), axis=0)
+        lower_bounds_costs_per_experiment = np.mean(np.array([learner.lower_bounds_costs for learner in learners[label]]), axis=0)
+        upper_bounds_costs_per_experiment = np.mean(np.array([learner.upper_bounds_costs for learner in learners[label]]), axis=0)
+
+        plt.plot(bids, mean_cum_costs_per_experiment, label='GP-'+label)
+        plt.fill_between(bids, lower_bounds_costs_per_experiment, upper_bounds_costs_per_experiment, alpha=0.2)
+
+    plt.title('Cost of the clicks given the bid - GP')
+    plt.xlabel('Bids')
+    plt.ylabel('Cumulative cost')
+    plt.legend()
+    plt.show()

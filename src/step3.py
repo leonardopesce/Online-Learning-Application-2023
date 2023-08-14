@@ -1,4 +1,3 @@
-from matplotlib import pyplot as plt
 from Environment import Environment
 from tqdm import tqdm
 from Clairvoyant import Clairvoyant
@@ -6,11 +5,12 @@ from TSPricingAdvertising import TSLearnerPricingAdvertising
 from UCBPricingAdvertising import UCBLearnerPricingAdvertising
 from collections import Counter
 import numpy as np
+from plots import plot_single_algorithm, plot_all_algorithms, plot_clicks_curve, plot_costs_curve
 import settings
-
 
 """
 Simulation for the step 3: Learning for joint pricing and advertising
+
 Consider the case in which all the users belong to class C1, and no information about the advertising and pricing curves
 is known beforehand. Apply the GP-UCB and GP-TS algorithms when using GPs to model the two advertising curves, reporting
 the plots of the average (over a sufficiently large number of runs) value and standard deviation of the cumulative 
@@ -28,6 +28,14 @@ T = 365
 # we have to perform a sufficiently large number experiments
 n_experiments = 10
 
+algorithms = ['UCB', 'TS']
+# To store the learners to plot the advertising curves
+gp_learners = {algorithm: [] for algorithm in algorithms}
+
+# Store the rewards for each experiment for the learners
+ts_reward_per_experiment = []
+ucb_reward_per_experiment = []
+
 # To evaluate which are the most played prices and bids
 ts_best_price = []
 ts_best_bid = []
@@ -40,28 +48,7 @@ env = Environment(settings.n_prices, settings.prices, settings.probabilities, se
 clairvoyant = Clairvoyant(env)
 # Optimize the problem
 best_price_idx, best_price, best_bid_idx, best_bid, best_reward = clairvoyant.maximize_reward(category)
-
-# Store the rewards for each experiment for the TS learner
-ts_reward_per_experiment = []
-ts_clicks_per_experiment = []
-ts_mean_clicks_per_experiment = []
-ts_lower_bounds_clicks_per_experiment = []
-ts_upper_bounds_clicks_per_experiment = []
-ts_cum_costs_per_experiment = []
-ts_mean_cum_costs_per_experiment = []
-ts_lower_bounds_costs_per_experiment = []
-ts_upper_bounds_costs_per_experiment = []
-
-# Store some features for each experiment for the UCB1 learners
-ucb_reward_per_experiment = []
-ucb_clicks_per_experiment = []
-ucb_mean_clicks_per_experiment = []
-ucb_lower_bounds_clicks_per_experiment = []
-ucb_upper_bounds_clicks_per_experiment = []
-ucb_cum_costs_per_experiment = []
-ucb_mean_cum_costs_per_experiment = []
-ucb_lower_bounds_costs_per_experiment = []
-ucb_upper_bounds_costs_per_experiment = []
+best_rewards = np.ones((T,)) * best_reward
 
 # Each iteration simulates the learner-environment interaction
 for e in tqdm(range(0, n_experiments)):
@@ -95,27 +82,12 @@ for e in tqdm(range(0, n_experiments)):
     ucb_best_bid.append(Counter(ucb_learner.get_pulled_bids()).most_common(1)[0][0])
 
     # Store the values of the collected rewards of the learners
-    ts_reward_per_experiment.append(ts_learner.TS_pricing.collected_rewards)
-    ucb_reward_per_experiment.append(ucb_learner.UCB_pricing.collected_rewards)
+    ts_reward_per_experiment.append(ts_learner.learner_pricing.collected_rewards)
+    ucb_reward_per_experiment.append(ucb_learner.learner_pricing.collected_rewards)
 
-    ts_clicks_per_experiment.append(ts_learner.GPTS_advertising.collected_clicks)
-    ts_mean_clicks_per_experiment.append(ts_learner.GPTS_advertising.means_clicks)
-    ts_lower_bounds_clicks_per_experiment.append(ts_learner.GPTS_advertising.lower_bounds_clicks)
-    ts_upper_bounds_clicks_per_experiment.append(ts_learner.GPTS_advertising.upper_bounds_clicks)
-    ts_cum_costs_per_experiment.append(ts_learner.GPTS_advertising.collected_costs)
-    ts_mean_cum_costs_per_experiment.append(ts_learner.GPTS_advertising.means_costs)
-    ts_lower_bounds_costs_per_experiment.append(ts_learner.GPTS_advertising.lower_bounds_costs)
-    ts_upper_bounds_costs_per_experiment.append(ts_learner.GPTS_advertising.upper_bounds_costs)
-
-    ucb_clicks_per_experiment.append(ucb_learner.GPUCB_advertising.collected_clicks)
-    ucb_mean_clicks_per_experiment.append(ucb_learner.GPUCB_advertising.empirical_means_clicks)
-    ucb_lower_bounds_clicks_per_experiment.append(ucb_learner.GPUCB_advertising.lower_bounds_clicks)
-    ucb_upper_bounds_clicks_per_experiment.append(ucb_learner.GPUCB_advertising.upper_bounds_clicks)
-    ucb_cum_costs_per_experiment.append(ucb_learner.GPUCB_advertising.collected_costs)
-    ucb_mean_cum_costs_per_experiment.append(ucb_learner.GPUCB_advertising.empirical_means_costs)
-    ucb_lower_bounds_costs_per_experiment.append(ucb_learner.GPUCB_advertising.lower_bounds_costs)
-    ucb_upper_bounds_costs_per_experiment.append(ucb_learner.GPUCB_advertising.upper_bounds_costs)
-
+    # Store the learners
+    gp_learners['TS'].append(ts_learner.GP_advertising)
+    gp_learners['UCB'].append(ucb_learner.GP_advertising)
 
 def iterate_over_counter(counter, reference_array):
     for key, value in counter.items():
@@ -136,157 +108,10 @@ print('Best bid found in the experiments by UCB')
 print('The format is bid: number of experiments in which it is the most bid price')
 iterate_over_counter(Counter(ucb_best_bid), env.bids)
 
-# Plot the results, comparison TS-UCB
-_, axes = plt.subplots(2, 2, figsize=(20, 20))
-axes = axes.flatten()
-best_rewards = np.ones((T,)) * best_reward
-regret_ts_mean = np.mean(best_reward - ts_reward_per_experiment, axis=0)
-regret_ts_std = np.std(best_reward - ts_reward_per_experiment, axis=0)
-regret_ucb_mean = np.mean(best_reward - ucb_reward_per_experiment, axis=0)
-regret_ucb_std = np.std(best_reward - ucb_reward_per_experiment, axis=0)
-cumulative_regret_ts_mean = np.mean(np.cumsum(best_reward - ts_reward_per_experiment, axis=1), axis=0)
-cumulative_regret_ts_std = np.std(np.cumsum(best_reward - ts_reward_per_experiment, axis=1), axis=0)
-cumulative_regret_ucb_mean = np.mean(np.cumsum(best_reward - ucb_reward_per_experiment, axis=1), axis=0)
-cumulative_regret_ucb_std = np.std(np.cumsum(best_reward - ucb_reward_per_experiment, axis=1), axis=0)
-reward_ts_mean = np.mean(ts_reward_per_experiment, axis=0)
-reward_ts_std = np.std(ts_reward_per_experiment, axis=0)
-reward_ucb_mean = np.mean(ucb_reward_per_experiment, axis=0)
-reward_ucb_std = np.std(ucb_reward_per_experiment, axis=0)
-cumulative_reward_ts_mean = np.mean(np.cumsum(ts_reward_per_experiment, axis=1), axis=0)
-cumulative_reward_ts_std = np.std(np.cumsum(ts_reward_per_experiment, axis=1), axis=0)
-cumulative_reward_ucb_mean = np.mean(np.cumsum(ucb_reward_per_experiment, axis=1), axis=0)
-cumulative_reward_ucb_std = np.std(np.cumsum(ucb_reward_per_experiment, axis=1), axis=0)
-
-axes[0].set_title('Instantaneous regret plot')
-axes[0].plot(regret_ts_mean, 'r')
-axes[0].plot(regret_ucb_mean, 'g')
-axes[0].axhline(y=0, color='b', linestyle='--')
-axes[0].legend(["TS", "UCB"])
-axes[0].set_xlabel("t")
-axes[0].set_ylabel("Instantaneous regret")
-
-axes[1].set_title('Instantaneous reward plot')
-axes[1].plot(reward_ts_mean, 'r')
-axes[1].plot(reward_ucb_mean, 'g')
-axes[1].plot(best_rewards, 'b')
-axes[1].legend(["TS", "UCB", "Clairvoyant"])
-axes[1].set_xlabel("t")
-axes[1].set_ylabel("Instantaneous reward")
-
-axes[2].set_title('Cumulative regret plot')
-axes[2].plot(cumulative_regret_ts_mean, 'r')
-axes[2].plot(cumulative_regret_ucb_mean, 'g')
-axes[2].legend(["TS", "UCB"])
-axes[2].set_xlabel("t")
-axes[2].set_ylabel("Cumulative regret")
-
-axes[3].set_title('Cumulative reward plot')
-axes[3].plot(cumulative_reward_ts_mean, 'r')
-axes[3].plot(cumulative_reward_ucb_mean, 'g')
-axes[3].plot(np.cumsum(best_rewards), 'b')
-axes[3].legend(["TS", "UCB", "Clairvoyant"])
-axes[3].set_xlabel("t")
-axes[3].set_ylabel("Cumulative reward")
-plt.show()
-
-# Plot the results for TS with std
-_, axes = plt.subplots(2, 2, figsize=(20, 20))
-axes = axes.flatten()
-
-axes[0].set_title('Instantaneous regret plot for TS')
-axes[0].plot(regret_ts_mean, 'r')
-axes[0].fill_between(range(0, T), regret_ts_mean - regret_ts_std, regret_ts_mean + regret_ts_std, color='r', alpha=0.4)
-axes[0].axhline(y=0, color='b', linestyle='--')
-axes[0].legend(["TS mean", "TS std"])
-axes[0].set_xlabel("t")
-axes[0].set_ylabel("Instantaneous regret")
-
-axes[1].set_title('Instantaneous reward plot for TS')
-axes[1].plot(reward_ts_mean, 'r')
-axes[1].fill_between(range(0, T), reward_ts_mean - reward_ts_std, reward_ts_mean + reward_ts_std, color='r', alpha=0.4)
-axes[1].plot(best_rewards, 'b')
-axes[1].legend(["TS mean", "TS std", "Clairvoyant"])
-axes[1].set_xlabel("t")
-axes[1].set_ylabel("Instantaneous reward")
-
-axes[2].set_title('Cumulative regret plot for TS')
-axes[2].plot(cumulative_regret_ts_mean, 'r')
-axes[2].fill_between(range(0, T), cumulative_regret_ts_mean - cumulative_regret_ts_std, cumulative_regret_ts_mean + cumulative_regret_ts_std, color='r', alpha=0.4)
-axes[2].legend(["TS mean", "TS std"])
-axes[2].set_xlabel("t")
-axes[2].set_ylabel("Cumulative regret")
-
-axes[3].set_title('Cumulative reward plot for TS')
-axes[3].plot(cumulative_reward_ts_mean, 'r')
-axes[3].fill_between(range(0, T), cumulative_reward_ts_mean - cumulative_reward_ts_std, cumulative_reward_ts_mean + cumulative_reward_ts_std, color='r', alpha=0.4)
-axes[3].plot(np.cumsum(best_rewards), 'b')
-axes[3].legend(["TS mean", "TS std", "Clairvoyant"])
-axes[3].set_xlabel("t")
-axes[3].set_ylabel("Cumulative reward")
-plt.show()
-
-# Plot the results for UCB with std
-_, axes = plt.subplots(2, 2, figsize=(20, 20))
-axes = axes.flatten()
-
-axes[0].set_title('Instantaneous regret plot for UCB')
-axes[0].plot(regret_ucb_mean, 'g')
-axes[0].fill_between(range(0, T), regret_ucb_mean - regret_ucb_std, regret_ucb_mean + regret_ucb_std, color='g', alpha=0.4)
-axes[0].axhline(y=0, color='b', linestyle='--')
-axes[0].legend(["UCB mean", "UCB std"])
-axes[0].set_xlabel("t")
-axes[0].set_ylabel("Instantaneous regret")
-
-axes[1].set_title('Instantaneous reward plot for UCB')
-axes[1].plot(reward_ucb_mean, 'g')
-axes[1].fill_between(range(0, T), reward_ucb_mean - reward_ucb_std, reward_ucb_mean + reward_ucb_std, color='g', alpha=0.4)
-axes[1].plot(best_rewards, 'b')
-axes[1].legend(["UCB mean", "UCB std", "Clairvoyant"])
-axes[1].set_xlabel("t")
-axes[1].set_ylabel("Instantaneous reward")
-
-axes[2].set_title('Cumulative regret plot for UCB')
-axes[2].plot(cumulative_regret_ucb_mean, 'g')
-axes[2].fill_between(range(0, T), cumulative_regret_ucb_mean - cumulative_regret_ucb_std, cumulative_regret_ucb_mean + cumulative_regret_ucb_std, color='g', alpha=0.4)
-axes[2].legend(["UCB mean", "UCB std"])
-axes[2].set_xlabel("t")
-axes[2].set_ylabel("Cumulative regret")
-
-axes[3].set_title('Cumulative reward plot for UCB')
-axes[3].plot(cumulative_reward_ucb_mean, 'g')
-axes[3].fill_between(range(0, T), cumulative_reward_ucb_mean - cumulative_reward_ucb_std, cumulative_reward_ucb_mean + cumulative_reward_ucb_std, color='g', alpha=0.4)
-axes[3].plot(np.cumsum(best_rewards), 'b')
-axes[3].legend(["UCB mean", "UCB std", "Clairvoyant"])
-axes[3].set_xlabel("t")
-axes[3].set_ylabel("Cumulative reward")
-
-plt.show()
-
-# Plot Clicks' curve
-plt.figure(0)
-plt.title('Clicks GP')
-# Plot GP-TS
-plt.plot(bids, np.mean(np.array(ts_mean_clicks_per_experiment), axis=0), color='r', label='GP-TS')
-plt.fill_between(bids, np.mean(np.array(ts_lower_bounds_clicks_per_experiment), axis=0),
-                 np.mean(np.array(ts_upper_bounds_clicks_per_experiment), axis=0), alpha=0.2, color='r')
-# Plot GP-UCB
-plt.plot(bids, np.mean(np.array(ucb_mean_clicks_per_experiment), axis=0), color='b', label='GP-UCB')
-plt.fill_between(bids, np.mean(np.array(ucb_lower_bounds_clicks_per_experiment), axis=0),
-                 np.mean(np.array(ucb_upper_bounds_clicks_per_experiment), axis=0), alpha=0.2, color='b')
-plt.legend()
-plt.show()
-
-# Plot Costs' curve
-plt.figure(1)
-plt.title('Costs GP')
-# Plot GP-TS
-plt.plot(bids, np.mean(np.array(ts_mean_cum_costs_per_experiment), axis=0), color='r', label='GP-TS')
-plt.fill_between(bids, np.mean(np.array(ts_lower_bounds_costs_per_experiment), axis=0),
-                 np.mean(np.array(ts_upper_bounds_costs_per_experiment), axis=0), alpha=0.2, color='r')
-# Plot GP-UCB
-plt.plot(bids, np.mean(np.array(ucb_mean_cum_costs_per_experiment), axis=0), color='b', label='GP-UCB')
-plt.fill_between(bids, np.mean(np.array(ucb_lower_bounds_costs_per_experiment), axis=0),
-                 np.mean(np.array(ucb_upper_bounds_costs_per_experiment), axis=0), alpha=0.2, color='b')
-
-plt.legend()
-plt.show()
+# Plot the results
+reward_per_algorithm = [ucb_reward_per_experiment, ts_reward_per_experiment]
+plot_clicks_curve(bids, gp_learners, algorithms)
+plot_costs_curve(bids, gp_learners, algorithms)
+plot_all_algorithms(reward_per_algorithm, best_rewards, algorithms)
+for i, label in enumerate(algorithms):
+    plot_single_algorithm(reward_per_algorithm[i], best_rewards, label, np.arange(0, T, 1))

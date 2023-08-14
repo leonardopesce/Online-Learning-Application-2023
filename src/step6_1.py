@@ -24,8 +24,6 @@ setting.
 
 category = 'C1'
 
-bid_idx = 90
-
 # Time horizon of the experiment
 T = 365
 assert np.sum(settings.phases_duration) == T
@@ -46,9 +44,7 @@ algorithms = ['UCB', 'SW-UCB', 'CUSUM-UCB', 'EXP3']
 # To store the learners, environments and rewards for each experiment for the learners
 learners = dict()
 environments = dict()
-rewards = dict()
-for algorithm in algorithms:
-    rewards[algorithm] = []
+rewards = {algorithm: [] for algorithm in algorithms}
 best_rewards = np.array([])
 
 # Define the environment for clairvoyant
@@ -59,14 +55,13 @@ clairvoyant = Clairvoyant(env)
 # Compute the best rewards over the year with the clairvoyant
 for phase, phase_len in enumerate(settings.phases_duration):
     # Optimize the problem for each phase
-    best_price_idx, best_price, best_reward = clairvoyant.maximize_reward_given_bid('C' + str(phase + 1), bid_idx)
+    best_price_idx, best_price, best_reward = clairvoyant.maximize_reward_given_bid('C' + str(phase + 1), settings.bid_idx)
     best_rewards = np.append(best_rewards, [best_reward] * phase_len)
 
 # Each iteration simulates the learner-environment interaction
 for e in tqdm(range(0, n_experiments)):
     # Define the environments
-    for algorithm in algorithms:
-        environments[algorithm] = NonStationaryEnvironment(settings.n_prices, settings.prices, settings.probabilities, settings.bids_to_clicks_cost, settings.bids_to_cum_costs_cost, settings.other_costs, settings.phases_duration)
+    environments = {algorithm: NonStationaryEnvironment(settings.n_prices, settings.prices, settings.probabilities, settings.bids_to_clicks_cost, settings.bids_to_cum_costs_cost, settings.other_costs, settings.phases_duration) for algorithm in algorithms}
 
     # Define the learners
     learners['UCB'] = UCBLearner(settings.prices[category])
@@ -77,11 +72,11 @@ for e in tqdm(range(0, n_experiments)):
     # Iterate over the number of rounds
     for t in range(0, T):
         for algorithm in algorithms:
-            n_clicks = environments[algorithm].get_n_clicks(category, bid_idx)
-            cum_daily_costs = environments[algorithm].get_cum_daily_costs(category, bid_idx)
+            n_clicks = environments[algorithm].get_n_clicks(category, settings.bid_idx)
+            cum_daily_costs = environments[algorithm].get_cum_daily_costs(category, settings.bid_idx)
             pulled_arm = learners[algorithm].pull_arm(settings.other_costs, n_clicks, cum_daily_costs)
             bernoulli_realizations = environments[algorithm].round_pricing(pulled_arm, int(np.floor(n_clicks)))
-            reward = environments[algorithm].get_reward_from_price(category, pulled_arm, np.mean(bernoulli_realizations), bid_idx)
+            reward = environments[algorithm].get_reward_from_price(category, pulled_arm, np.mean(bernoulli_realizations), settings.bid_idx)
             learners[algorithm].update(pulled_arm, reward, bernoulli_realizations)
 
     # Store the values of the collected rewards of the learners

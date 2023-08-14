@@ -11,8 +11,8 @@ class UCBLearnerPricingAdvertising:
     Learner that applies the Upper Confidence Bound 1(UCB1) algorithm to the problem of advertising and pricing
 
     Attributes:
-        UCB_pricing: Learner that applies the Upper Confidence Bound 1(UCB1) algorithm to the pricing problem
-        GPUCB_advertising: Learner that applies the Upper Confidence Bound 1(UCB1) algorithm to the advertising problem
+        learner_pricing: Learner that applies the Upper Confidence Bound 1(UCB1) algorithm to the pricing problem
+        GP_advertising: Learner that applies the Upper Confidence Bound 1(UCB1) algorithm to the advertising problem
     """
 
     def __init__(self, prices, bids):
@@ -23,8 +23,8 @@ class UCBLearnerPricingAdvertising:
         :params numpy.ndarray bids: Bids in the advertising problem
         """
 
-        self.UCB_pricing = UCBLearner(prices)
-        self.GPUCB_advertising = GPUCB_Learner(bids)
+        self.learner_pricing = UCBLearner(prices)
+        self.GP_advertising = GPUCB_Learner(bids)
 
     def pull_arm(self, other_costs):
         """
@@ -40,10 +40,10 @@ class UCBLearnerPricingAdvertising:
         """
 
         # Getting the upper confidence bounds from the learner of the price
-        prices_upper_conf_bounds = np.clip(self.UCB_pricing.get_upper_confidence_bounds(), 0, 1)
-        conversion_times_margin = prices_upper_conf_bounds * (self.UCB_pricing.get_arms() - other_costs)
+        prices_upper_conf_bounds = np.clip(self.learner_pricing.get_upper_confidence_bounds(), 0, 1)
+        conversion_times_margin = prices_upper_conf_bounds * (self.learner_pricing.get_arms() - other_costs)
         # Getting the upper confidence bounds of the number of clicks from the learner of the bids (advertising problem)
-        upper_conf_bounds_clicks, lower_conf_bounds_costs = self.GPUCB_advertising.get_confidence_bounds()
+        upper_conf_bounds_clicks, lower_conf_bounds_costs = self.GP_advertising.get_confidence_bounds()
 
         # Computing the reward got for each price and bid it is possible to pull.
         rewards = upper_conf_bounds_clicks[None, :] * conversion_times_margin[:, None] - lower_conf_bounds_costs[None, :]
@@ -68,8 +68,8 @@ class UCBLearnerPricingAdvertising:
         :param float reward: Reward collected in the current time step playing the pulled arm
         """
 
-        self.UCB_pricing.update(pulled_price, reward, bernoulli_realizations)
-        self.GPUCB_advertising.update(pulled_bid, (reward, n_clicks, costs_adv))
+        self.learner_pricing.update(pulled_price, reward, bernoulli_realizations)
+        self.GP_advertising.update(pulled_bid, (reward, n_clicks, costs_adv))
 
     def get_pulled_prices(self):
         """
@@ -79,7 +79,7 @@ class UCBLearnerPricingAdvertising:
         :rtype: list
         """
 
-        return self.UCB_pricing.pulled_arms
+        return self.learner_pricing.pulled_arms
 
     def get_pulled_bids(self):
         """
@@ -89,4 +89,4 @@ class UCBLearnerPricingAdvertising:
         :rtype: list
         """
 
-        return self.GPUCB_advertising.pulled_arms
+        return self.GP_advertising.pulled_arms

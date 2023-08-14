@@ -11,8 +11,8 @@ class TSLearnerPricingAdvertising:
     Learner that applies the Thompson Sampling(TS) algorithm to the problem of advertising and pricing
 
     Attributes:
-        TS_pricing: Learner that applies the Thompson Sampling(TS) algorithm to the pricing problem
-        GPTS_advertising: Learner that applies the Gaussian Process Thompson Sampling(GPTS) algorithm to the advertising problem
+        learner_pricing: Learner that applies the Thompson Sampling(TS) algorithm to the pricing problem
+        GP_advertising: Learner that applies the Gaussian Process Thompson Sampling(GPTS) algorithm to the advertising problem
     """
 
     def __init__(self, prices, bids):
@@ -23,8 +23,8 @@ class TSLearnerPricingAdvertising:
         :params numpy.ndarray bids: Bids in the advertising problem
         """
 
-        self.TS_pricing = TSRewardLearner(prices)
-        self.GPTS_advertising = GPTS_Learner(bids)
+        self.learner_pricing = TSRewardLearner(prices)
+        self.GP_advertising = GPTS_Learner(bids)
 
     def pull_arm(self, other_costs):
         """
@@ -38,14 +38,14 @@ class TSLearnerPricingAdvertising:
         """
 
         # Sampling the beta distributions in order to have the estimates of the conversion probabilities
-        beta_distributions = self.TS_pricing.get_betas()
+        beta_distributions = self.learner_pricing.get_betas()
         sampled_beta_distributions = np.random.beta(beta_distributions[:, 0], beta_distributions[:, 1])
         # Computing the product between the estimates of the conversion probabilities and the margins
-        conversion_times_margin = sampled_beta_distributions * (self.TS_pricing.arms_values - other_costs)
+        conversion_times_margin = sampled_beta_distributions * (self.learner_pricing.arms_values - other_costs)
 
         # Sampling from a normal distribution with mean and std estimated by the GP
-        sampled_values_clicks = self.GPTS_advertising.sample_clicks()
-        sampled_values_costs = self.GPTS_advertising.sample_costs()
+        sampled_values_clicks = self.GP_advertising.sample_clicks()
+        sampled_values_costs = self.GP_advertising.sample_costs()
 
         # Computing the reward got for each price and bid it is possible to pull.
         rewards = sampled_values_clicks[None, :] * conversion_times_margin[:, None] - sampled_values_costs[None, :]
@@ -70,8 +70,8 @@ class TSLearnerPricingAdvertising:
         :param float reward: Reward collected in the current time step playing the pulled arm
         """
 
-        self.TS_pricing.update(pulled_price, reward, bernoulli_realizations)
-        self.GPTS_advertising.update(pulled_bid, (reward, n_clicks, costs_adv))
+        self.learner_pricing.update(pulled_price, reward, bernoulli_realizations)
+        self.GP_advertising.update(pulled_bid, (reward, n_clicks, costs_adv))
 
     def get_pulled_prices(self):
         """
@@ -81,7 +81,7 @@ class TSLearnerPricingAdvertising:
         :rtype: list
         """
 
-        return self.TS_pricing.pulled_arms
+        return self.learner_pricing.pulled_arms
 
     def get_pulled_bids(self):
         """
@@ -91,4 +91,4 @@ class TSLearnerPricingAdvertising:
         :rtype: list
         """
 
-        return self.GPTS_advertising.pulled_arms
+        return self.GP_advertising.pulled_arms

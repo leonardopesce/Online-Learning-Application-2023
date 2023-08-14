@@ -14,9 +14,9 @@ class GPUCB_Learner(Learner):
     Learner that applies the Upper Confidence Bound 1(UCB1) algorithm
 
     :param np.ndarray arms_values: Values associated to the arms
-    :param np.ndarray empirical_means_clicks: Empirical means of the clicks
+    :param np.ndarray means_clicks: Empirical means of the clicks
     :param np.ndarray confidence_clicks: Confidence intervals of the clicks
-    :param np.ndarray empirical_means_costs: Empirical means of the costs
+    :param np.ndarray means_costs: Empirical means of the costs
     :param np.ndarray confidence_costs: Confidence intervals of the costs
     :param np.ndarray sigmas_clicks: Standard deviations of the clicks
     :param np.ndarray lower_bounds_clicks: Lower bounds of the clicks
@@ -37,9 +37,9 @@ class GPUCB_Learner(Learner):
 
     def __init__(self, arms_values, confidence_level=0.95):
         super().__init__(arms_values)
-        self.empirical_means_clicks = np.zeros(self.n_arms)
+        self.means_clicks = np.zeros(self.n_arms)
         self.confidence_clicks = np.array([np.inf] * self.n_arms)
-        self.empirical_means_costs = np.zeros(self.n_arms)
+        self.means_costs = np.zeros(self.n_arms)
         self.confidence_costs = np.array([np.inf] * self.n_arms)
 
         self.sigmas_clicks = np.ones(self.n_arms) * 10
@@ -69,7 +69,7 @@ class GPUCB_Learner(Learner):
         # Fitting the Gaussian Process Regressor relative to clicks and making a prediction for the current round.
         y = torch.Tensor(self.collected_clicks)       # Clicks previously collected.
         self.gp_clicks.fit(x, y)
-        self.empirical_means_clicks, self.sigmas_clicks, self.lower_bounds_clicks, self.upper_bounds_clicks = self.gp_clicks.predict(torch.Tensor(self.arms_values))
+        self.means_clicks, self.sigmas_clicks, self.lower_bounds_clicks, self.upper_bounds_clicks = self.gp_clicks.predict(torch.Tensor(self.arms_values))
         self.sigmas_clicks = np.sqrt(self.sigmas_clicks)
         self.sigmas_clicks = np.maximum(self.sigmas_clicks, 1e-2)
         
@@ -79,7 +79,7 @@ class GPUCB_Learner(Learner):
         # Fitting the Gaussian Process Regressor relative to costs and making a prediction for the current round.
         y = torch.Tensor(self.collected_costs)        # Daily costs previously collected.
         self.gp_costs.fit(x, y)
-        self.empirical_means_costs, self.sigmas_costs, self.lower_bounds_costs, self.upper_bounds_costs = self.gp_costs.predict(torch.Tensor(self.get_arms()))
+        self.means_costs, self.sigmas_costs, self.lower_bounds_costs, self.upper_bounds_costs = self.gp_costs.predict(torch.Tensor(self.get_arms()))
         self.sigmas_costs = np.sqrt(self.sigmas_costs)
         self.sigmas_costs = np.maximum(self.sigmas_costs, 1e-2)
         
@@ -95,8 +95,8 @@ class GPUCB_Learner(Learner):
         :rtype: int
         """
 
-        upper_confidence_bound_clicks = self.empirical_means_clicks + self.confidence_clicks
-        lower_confidence_bound_costs = self.empirical_means_costs - self.confidence_costs
+        upper_confidence_bound_clicks = self.means_clicks + self.confidence_clicks
+        lower_confidence_bound_costs = self.means_costs - self.confidence_costs
         reward = upper_confidence_bound_clicks * prob_margin - lower_confidence_bound_costs
         idx = np.random.choice(np.where(reward == reward.max())[0])
 
@@ -140,4 +140,4 @@ class GPUCB_Learner(Learner):
         Returns:
             upper confidence bound for all the arms
         """
-        return self.empirical_means_clicks + self.confidence_clicks, self.empirical_means_costs - self.confidence_costs
+        return self.means_clicks + self.confidence_clicks, self.means_costs - self.confidence_costs

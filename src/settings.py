@@ -17,10 +17,10 @@ bids_to_clicks = {'C1': np.array([100, 2]),
 #bids_to_cum_costs = {'C1': np.array([20, 0.5]),
 #                     'C2': np.array([18, 0.4]),
 #                     'C3': np.array([16, 0.45])}
-other_costs = 400
 bids_to_cum_costs = {'C1': np.array([400, 0.08]),  # 0.035 instead of 0.08, old value Enri
                      'C2': np.array([200, 0.07]),
                      'C3': np.array([300, 0.04])}
+other_costs = 400
 
 # Bids setup
 n_bids = 100
@@ -39,6 +39,7 @@ bids_to_cum_costs_cost = {'C1': np.array([20, 0.5]),  # this curve doesn't chang
 
 # Parameters for step 6_2
 phases_duration5 = [16, 21, 23, 15, 19]
+bid_idx = 25
 prices5 = {'C1': np.array([500, 550, 600, 650, 700]),
            'C2': np.array([500, 550, 600, 650, 700]),
            'C3': np.array([500, 550, 600, 650, 700]),

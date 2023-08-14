@@ -163,7 +163,7 @@ class Environment:
 
         :param str category: Class of the user
         :param int price_idx: Index of the price
-        :param float conversion_prob: Conversion probability
+        :param np.ndarray conversion_prob: Conversion probability
         :param float n_clicks: Number of daily clicks
         :param float cum_daily_costs: Cumulative daily cost due to the advertising
 
@@ -182,7 +182,7 @@ class Environment:
 
         :param str category: Class of the user
         :param int price_idx: Index of the price
-        :param float conversion_prob: Conversion probability
+        :param np.ndarray conversion_prob: Conversion probability
         :param bid_idx: Index of the bid
 
         :return: Reward

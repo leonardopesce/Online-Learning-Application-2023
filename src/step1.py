@@ -81,7 +81,6 @@ for e in tqdm(range(0, n_experiments)):
     ts_best.append(np.argmax(ts_learner.beta_parameters[:, 0] / (ts_learner.beta_parameters[:, 0] + ts_learner.beta_parameters[:, 1])))
     ucb_best.append(np.argmax(ucb_learner.empirical_means + ucb_learner.confidence))
 
-
 # Print occurrences of best arm in TS
 print(Counter(ts_best))
 # Print occurrences of best arm in UCB1

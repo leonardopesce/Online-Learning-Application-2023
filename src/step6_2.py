@@ -25,10 +25,6 @@ setting.
 # Considered category is C1
 category = 'C1'
 
-#phases_duration = [16, 21, 23, 15, 19]
-bid_idx = 90  #TODO, bid is fixed, is okay like this?
-
-
 # Time horizon of the experiment
 T = 365
 window_size = int(3 * (T ** 0.5))
@@ -55,7 +51,7 @@ best_reward_per_phase = []
 # Compute the best rewards over the year with the clairvoyant
 for phase, phase_len in enumerate(settings.phases_duration5):
     # Optimize the problem for each phase
-    best_price_idx, best_price, best_reward = clairvoyant.maximize_reward_given_bid('C' + str(phase + 1), bid_idx)
+    best_price_idx, best_price, best_reward = clairvoyant.maximize_reward_given_bid('C' + str(phase + 1), settings.bid_idx)
     best_reward_per_phase.append(best_reward)
 
 # Save the best rewards along the year
@@ -81,8 +77,8 @@ for e in tqdm(range(0, n_experiments)):
 
     # EXP3
     env_exp3 = NonStationaryEnvironment(settings.n_prices, settings.prices5, settings.probabilities5, settings.bids_to_clicks_cost5, settings.bids_to_cum_costs_cost5, settings.other_costs, settings.phases_duration5)
-    n_clicks = env_exp3.get_n_clicks(category, bid_idx)
-    cum_daily_costs = env_exp3.get_cum_daily_costs(category, bid_idx)
+    n_clicks = env_exp3.get_n_clicks(category, settings.bid_idx)
+    cum_daily_costs = env_exp3.get_cum_daily_costs(category, settings.bid_idx)
     #worst_reward = n_clicks * 0 * (min(prices5[category]) - other_costs) - cum_daily_costs
     #best_reward = n_clicks * 1 * (max(prices5[category]) - other_costs) - cum_daily_costs
     worst_reward = 0
@@ -92,35 +88,35 @@ for e in tqdm(range(0, n_experiments)):
     # Iterate over the number of rounds
     for t in range(0, T):
         # UCB Learner
-        n_clicks = env_ucb.get_n_clicks(category, bid_idx)
-        cum_daily_costs = env_ucb.get_cum_daily_costs(category, bid_idx)
+        n_clicks = env_ucb.get_n_clicks(category, settings.bid_idx)
+        cum_daily_costs = env_ucb.get_cum_daily_costs(category, settings.bid_idx)
         pulled_arm = ucb_learner.pull_arm(settings.other_costs, n_clicks, cum_daily_costs)
         bernoulli_realizations = env_ucb.round_pricing(pulled_arm, int(np.floor(n_clicks)))
-        reward = env_ucb.get_reward_from_price(category, pulled_arm, np.mean(bernoulli_realizations), bid_idx)
+        reward = env_ucb.get_reward_from_price(category, pulled_arm, np.mean(bernoulli_realizations), settings.bid_idx)
         ucb_learner.update(pulled_arm, reward, bernoulli_realizations)
 
         # SW-UCB Learner
-        n_clicks = env_swucb.get_n_clicks(category, bid_idx)
-        cum_daily_costs = env_swucb.get_cum_daily_costs(category, bid_idx)
+        n_clicks = env_swucb.get_n_clicks(category, settings.bid_idx)
+        cum_daily_costs = env_swucb.get_cum_daily_costs(category, settings.bid_idx)
         pulled_arm = swucb_learner.pull_arm(settings.other_costs, n_clicks, cum_daily_costs)
         bernoulli_realizations = env_swucb.round_pricing(pulled_arm, int(np.floor(n_clicks)))
-        reward = env_swucb.get_reward_from_price(category, pulled_arm, np.mean(bernoulli_realizations), bid_idx)
+        reward = env_swucb.get_reward_from_price(category, pulled_arm, np.mean(bernoulli_realizations), settings.bid_idx)
         swucb_learner.update(pulled_arm, reward, bernoulli_realizations)
 
         # CUSUM-UCB Learner
-        n_clicks = env_cusum_ucb.get_n_clicks(category, bid_idx)
-        cum_daily_costs = env_cusum_ucb.get_cum_daily_costs(category, bid_idx)
+        n_clicks = env_cusum_ucb.get_n_clicks(category, settings.bid_idx)
+        cum_daily_costs = env_cusum_ucb.get_cum_daily_costs(category, settings.bid_idx)
         pulled_arm = cusum_ucb_learner.pull_arm(settings.other_costs, n_clicks, cum_daily_costs)
         bernoulli_realizations = env_cusum_ucb.round_pricing(pulled_arm, int(np.floor(n_clicks)))
-        reward = env_cusum_ucb.get_reward_from_price(category, pulled_arm, np.mean(bernoulli_realizations), bid_idx)
+        reward = env_cusum_ucb.get_reward_from_price(category, pulled_arm, np.mean(bernoulli_realizations), settings.bid_idx)
         cusum_ucb_learner.update(pulled_arm, reward, bernoulli_realizations)
 
         # EXP3 Learner
-        n_clicks = env_exp3.get_n_clicks(category, bid_idx)
-        cum_daily_costs = env_exp3.get_cum_daily_costs(category, bid_idx)
+        n_clicks = env_exp3.get_n_clicks(category, settings.bid_idx)
+        cum_daily_costs = env_exp3.get_cum_daily_costs(category, settings.bid_idx)
         pulled_arm = exp3_learner.pull_arm(settings.other_costs, n_clicks, cum_daily_costs)
         bernoulli_realizations = env_exp3.round_pricing(pulled_arm, int(np.floor(n_clicks)))
-        reward = env_exp3.get_reward_from_price(category, pulled_arm, np.mean(bernoulli_realizations), bid_idx)
+        reward = env_exp3.get_reward_from_price(category, pulled_arm, np.mean(bernoulli_realizations), settings.bid_idx)
         exp3_learner.update(pulled_arm, reward, bernoulli_realizations)
 
     # Store the values of the collected rewards of the learners
