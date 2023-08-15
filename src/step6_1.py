@@ -28,18 +28,15 @@ category = 'C1'
 T = 365
 assert np.sum(settings.phases_duration) == T
 
-# Learners parameters
-window_size = int(3 * (T ** 0.5))
-M = 150
-eps = 0.1
-h = 2 * np.log(T)
-alpha = 0.1
-
 # Since the reward functions are stochastic to better visualize the results and remove the noise
 # we have to perform a sufficiently large number experiments
 n_experiments = 50
 
 algorithms = ['UCB', 'SW-UCB', 'CUSUM-UCB', 'EXP3']
+
+# Learners parameters
+print(f"The window size is {settings.window_size}")
+print(f"Parameters for CUSUM-UCB are M={settings.M}, eps={settings.eps}, h={round(settings.h, 2)}, alpha={round(settings.alpha, 2)}")
 
 # To store the learners, environments and rewards for each experiment for the learners
 learners = dict()
@@ -65,8 +62,8 @@ for e in tqdm(range(0, n_experiments)):
 
     # Define the learners
     learners['UCB'] = UCBLearner(settings.prices[category])
-    learners['SW-UCB'] = SWUCBLearner(settings.prices[category], window_size)
-    learners['CUSUM-UCB'] = CUSUMUCBLearner(settings.prices[category], M=M, eps=eps, h=h, alpha=alpha)
+    learners['SW-UCB'] = SWUCBLearner(settings.prices[category], settings.window_size)
+    learners['CUSUM-UCB'] = CUSUMUCBLearner(settings.prices[category], M=settings.M, eps=settings.eps, h=settings.h, alpha=settings.alpha)
     learners['EXP3'] = EXP3Learner(settings.prices[category], worst_reward=0, best_reward=max(settings.prices[category]) - settings.other_costs, gamma=0.1, other_costs=settings.other_costs)
 
     # Iterate over the number of rounds

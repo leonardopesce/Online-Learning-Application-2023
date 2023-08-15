@@ -27,14 +27,15 @@ category = 'C1'
 
 # Time horizon of the experiment
 T = 365
-window_size = int(3 * (T ** 0.5))
-M = 150
-eps = 0.1
-h = 2 * np.log(T)
-alpha = 0.1
+
 # Since the reward functions are stochastic to better visualize the results and remove the noise
 # we have to perform a sufficiently large number experiments
 n_experiments = 50
+
+# Learners parameters
+print(f"The window size is {settings.window_size}")
+print(f"Parameters for CUSUM-UCB are M={settings.M}, eps={settings.eps}, h={round(settings.h, 2)}, alpha={round(settings.alpha, 2)}")
+
 # Store the rewards for each experiment for the learners
 ucb_reward_per_experiment = []
 swucb_reward_per_experiment = []
@@ -43,20 +44,20 @@ exp3_reward_per_experiment = []
 best_rewards = np.array([])
 
 # Define the environment
-env = NonStationaryEnvironment(settings.n_prices, settings.prices5, settings.probabilities5, settings.bids_to_clicks_cost5, settings.bids_to_cum_costs_cost5, settings.other_costs, settings.phases_duration5)
+env = NonStationaryEnvironment(settings.n_prices, settings.prices_step6, settings.probabilities_step6, settings.bids_to_clicks_cost_step6, settings.bids_to_cum_costs_cost_step6, settings.other_costs, settings.phases_duration_step6)
 # Define the clairvoyant
 clairvoyant = Clairvoyant(env)
 
 best_reward_per_phase = []
 # Compute the best rewards over the year with the clairvoyant
-for phase, phase_len in enumerate(settings.phases_duration5):
+for phase, phase_len in enumerate(settings.phases_duration_step6):
     # Optimize the problem for each phase
     best_price_idx, best_price, best_reward = clairvoyant.maximize_reward_given_bid('C' + str(phase + 1), settings.bid_idx)
     best_reward_per_phase.append(best_reward)
 
 # Save the best rewards along the year
 for t in range(T):
-    phase_idx = np.searchsorted(np.cumsum(settings.phases_duration5), t % np.sum(settings.phases_duration5), side='right')
+    phase_idx = np.searchsorted(np.cumsum(settings.phases_duration_step6), t % np.sum(settings.phases_duration_step6), side='right')
     best_rewards = np.append(best_rewards, best_reward_per_phase[phase_idx])
 
 # Each iteration simulates the learner-environment interaction
@@ -64,26 +65,26 @@ for e in tqdm(range(0, n_experiments)):
     # Define the environment and learners
 
     # UCB1
-    env_ucb = NonStationaryEnvironment(settings.n_prices, settings.prices5, settings.probabilities5, settings.bids_to_clicks_cost5, settings.bids_to_cum_costs_cost5, settings.other_costs, settings.phases_duration5)
-    ucb_learner = UCBLearner(settings.prices5[category])
+    env_ucb = NonStationaryEnvironment(settings.n_prices, settings.prices_step6, settings.probabilities_step6, settings.bids_to_clicks_cost_step6, settings.bids_to_cum_costs_cost_step6, settings.other_costs, settings.phases_duration_step6)
+    ucb_learner = UCBLearner(settings.prices_step6[category])
 
     # SW-UCB
-    env_swucb = NonStationaryEnvironment(settings.n_prices, settings.prices5, settings.probabilities5, settings.bids_to_clicks_cost5, settings.bids_to_cum_costs_cost5, settings.other_costs, settings.phases_duration5)
-    swucb_learner = SWUCBLearner(settings.prices5[category], window_size)
+    env_swucb = NonStationaryEnvironment(settings.n_prices, settings.prices_step6, settings.probabilities_step6, settings.bids_to_clicks_cost_step6, settings.bids_to_cum_costs_cost_step6, settings.other_costs, settings.phases_duration_step6)
+    swucb_learner = SWUCBLearner(settings.prices_step6[category], settings.window_size)
 
     # CUSUM-UCB
-    env_cusum_ucb = NonStationaryEnvironment(settings.n_prices, settings.prices5, settings.probabilities5, settings.bids_to_clicks_cost5, settings.bids_to_cum_costs_cost5, settings.other_costs, settings.phases_duration5)
-    cusum_ucb_learner = CUSUMUCBLearner(settings.prices5[category], M=M, eps=eps, h=h, alpha=alpha)
+    env_cusum_ucb = NonStationaryEnvironment(settings.n_prices, settings.prices_step6, settings.probabilities_step6, settings.bids_to_clicks_cost_step6, settings.bids_to_cum_costs_cost_step6, settings.other_costs, settings.phases_duration_step6)
+    cusum_ucb_learner = CUSUMUCBLearner(settings.prices_step6[category], M=settings.M, eps=settings.eps, h=settings.h, alpha=settings.alpha)
 
     # EXP3
-    env_exp3 = NonStationaryEnvironment(settings.n_prices, settings.prices5, settings.probabilities5, settings.bids_to_clicks_cost5, settings.bids_to_cum_costs_cost5, settings.other_costs, settings.phases_duration5)
+    env_exp3 = NonStationaryEnvironment(settings.n_prices, settings.prices_step6, settings.probabilities_step6, settings.bids_to_clicks_cost_step6, settings.bids_to_cum_costs_cost_step6, settings.other_costs, settings.phases_duration_step6)
     n_clicks = env_exp3.get_n_clicks(category, settings.bid_idx)
     cum_daily_costs = env_exp3.get_cum_daily_costs(category, settings.bid_idx)
     #worst_reward = n_clicks * 0 * (min(prices5[category]) - other_costs) - cum_daily_costs
     #best_reward = n_clicks * 1 * (max(prices5[category]) - other_costs) - cum_daily_costs
     worst_reward = 0
-    best_reward = max(settings.prices5[category]) - settings.other_costs
-    exp3_learner = EXP3Learner(settings.prices5[category], worst_reward, best_reward, gamma=0.1, other_costs=settings.other_costs)
+    best_reward = max(settings.prices_step6[category]) - settings.other_costs
+    exp3_learner = EXP3Learner(settings.prices_step6[category], worst_reward, best_reward, gamma=0.1, other_costs=settings.other_costs)
 
     # Iterate over the number of rounds
     for t in range(0, T):

@@ -29,20 +29,14 @@ category = 'C1'
 # Time horizon of the experiment
 T = 365
 assert np.sum(settings.phases_duration) == T
-#window_size = int(T ** 0.5)
-#window_size = 50
-#window_size = math.ceil(2 * np.sqrt(T * np.log(T) / 3))
 
-window_size = int(3 * (T ** 0.5))
-M = 150
-eps = 0.1
-h = 2 * np.log(T)
-alpha = 0.1
-
-print(window_size)
 # Since the reward functions are stochastic to better visualize the results and remove the noise
 # we have to perform a sufficiently large number experiments
 n_experiments = 50
+
+# Learners parameters
+print(f"The window size is {settings.window_size}")
+print(f"Parameters for CUSUM-UCB are M={settings.M}, eps={settings.eps}, h={round(settings.h, 2)}, alpha={round(settings.alpha, 2)}")
 
 # Store the rewards for each experiment for the learners
 ucb_reward_per_experiment = []
@@ -71,11 +65,11 @@ for e in tqdm(range(0, n_experiments)):
 
     # SW-UCB
     env_swucb = NonStationaryEnvironment(settings.n_prices, settings.prices, settings.probabilities, settings.bids_to_clicks_cost, settings.bids_to_cum_costs_cost, settings.other_costs, settings.phases_duration)
-    swucb_learner = SWUCBLearner(settings.prices[category], window_size)
+    swucb_learner = SWUCBLearner(settings.prices[category], settings.window_size)
 
     # CUSUM-UCB
     env_cusum_ucb = NonStationaryEnvironment(settings.n_prices, settings.prices, settings.probabilities, settings.bids_to_clicks_cost, settings.bids_to_cum_costs_cost, settings.other_costs, settings.phases_duration)
-    cusum_ucb_learner = CUSUMUCBLearner(settings.prices[category], M=M, eps=eps, h=h, alpha=alpha)
+    cusum_ucb_learner = CUSUMUCBLearner(settings.prices[category], M=settings.M, eps=settings.eps, h=settings.h, alpha=settings.alpha)
 
     # Iterate over the number of rounds
     for t in range(0, T):
