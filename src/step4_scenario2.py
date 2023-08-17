@@ -47,11 +47,11 @@ probability_feature_values_in_categories = {'C1': {(0, 1): 1}, 'C2': {(1, 1): 1}
 # Setting the environment parameters
 n_prices = 5
 prices = {'C1': np.array([500, 550, 600, 650, 700]),
-              'C2': np.array([500, 550, 600, 650, 700]),
-              'C3': np.array([500, 550, 600, 650, 700])}
-probabilities = {'C1': np.array([0.05, 0.05, 0.3, 0.1, 0.05]),
-                 'C2': np.array([0.05, 0.05, 0.1, 0.1, 0.3]),
-                 'C3': np.array([0.3, 0.1, 0.1, 0.05, 0.05])}
+          'C2': np.array([500, 550, 600, 650, 700]),
+          'C3': np.array([500, 550, 600, 650, 700])}
+probabilities = {'C1': np.array([0.93, 0.82, 0.51, 0.15, 0.05]),
+                 'C2': np.array([0.93, 0.91, 0.89, 0.65, 0.3]),
+                 'C3': np.array([0.93, 0.75, 0.40, 0.05, 0.01])}
 bids_to_clicks = {'C1': np.array([100, 2]),
                   'C2': np.array([90, 2]),
                   'C3': np.array([80, 3])}
@@ -63,7 +63,7 @@ other_costs = 400
 # Bids setup
 n_bids = 100
 min_bid = 0.5
-max_bid = 20.0
+max_bid = 15.0
 bids = np.linspace(min_bid, max_bid, n_bids)
 sigma = 2
 

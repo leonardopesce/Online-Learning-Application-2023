@@ -92,13 +92,14 @@ class ContextNode:
 
         # Note that price_obs and bids_obs are the indices of the prices and bids that are used in the GP.
         # They need to be converted to the actual prices and bids.
-        price_obs = np.array([observation[0] for key in self.feature_to_observation.keys() for observation in self.feature_to_observation.get(key)])
-        bids_obs = np.array([observation[2] for key in self.feature_to_observation.keys() for observation in self.feature_to_observation.get(key)])
+        flattened_obs = self.get_flattened_observations()
+        price_obs = np.array([obs[0][0] for obs in flattened_obs])
+        bids_obs = np.array([obs[0][2] for obs in flattened_obs])
 
         x = torch.Tensor(np.block([self.prices[price_obs][:, None], self.bids[bids_obs][:, None]]))
 
-        y = torch.Tensor([observation[-1] for key in self.feature_to_observation.keys() for observation in self.feature_to_observation.get(key)])
-
+        y = torch.Tensor([obs[0][-1] for obs in flattened_obs])
+        y = (y - y.min()) / (y.max() - y.min())
         self.gp_reward.fit(x, y)
         
         # Create a vector with 2 columns such that the first column is the price and the second column is the bid.
@@ -130,7 +131,44 @@ class ContextNode:
         #self.aggregate_reward = np.max(lower_bounds_rewards)
         print(max(means_rewards))
         print(f'Lower bound {lower_bound1(self.confidence, num_samples, np.max(means_rewards) - np.min(means_rewards))}')
-        self.aggregate_reward = np.max(means_rewards - lower_bound1(self.confidence, num_samples, np.max(means_rewards) - np.min(means_rewards)))
+        self.aggregate_reward = np.max(lower_bounds_rewards) # np.max(means_rewards - lower_bound1(self.confidence, num_samples, 1)) #np.max(means_rewards) - np.min(means_rewards)))
+
+    def get_flattened_observations(self):
+        result = []
+        temp = []
+        for key in self.feature_to_observation.keys():
+            temp.append(self.feature_to_observation.get(key))
+
+        grouped_obs = []
+        for i in range(len(temp[0])):
+            daily_obs = []
+            for j in range(len(temp)):
+                daily_obs.append(temp[j][i])
+            grouped_obs.append(daily_obs)
+
+        for daily_obs in grouped_obs:
+            new_obs = []
+            new_pulled_price_id = None
+            new_bernoulli_realizations = np.array([])
+            new_pulled_bid_id = None
+            new_clicks_given_bid = 0
+            new_cost_given_bid = 0
+            new_reward = 0
+
+            for ob in daily_obs:
+                new_pulled_price_id = ob[0]
+                new_bernoulli_realizations = np.concatenate((new_bernoulli_realizations, ob[1]))
+                new_pulled_bid_id = ob[2]
+                new_clicks_given_bid += ob[3]
+                new_cost_given_bid += ob[4]
+                new_reward += ob[5]
+
+            new_obs.append([new_pulled_price_id, new_bernoulli_realizations, new_pulled_bid_id, new_clicks_given_bid, new_cost_given_bid, new_reward])
+            result.append(new_obs)
+
+        return result
+
+
 
     def compute_aggregate_reward(self):
         """
