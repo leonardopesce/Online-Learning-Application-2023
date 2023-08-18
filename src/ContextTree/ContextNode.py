@@ -92,13 +92,13 @@ class ContextNode:
 
         # Note that price_obs and bids_obs are the indices of the prices and bids that are used in the GP.
         # They need to be converted to the actual prices and bids.
-        flattened_obs = self.get_flattened_observations()
-        price_obs = np.array([obs[0][0] for obs in flattened_obs])
-        bids_obs = np.array([obs[0][2] for obs in flattened_obs])
+        self.flattened_obs = self.get_flattened_observations()
+        price_obs = np.array([obs[0][0] for obs in self.flattened_obs])
+        bids_obs = np.array([obs[0][2] for obs in self.flattened_obs])
 
         x = torch.Tensor(np.block([self.prices[price_obs][:, None], self.bids[bids_obs][:, None]]))
 
-        y = torch.Tensor([obs[0][-1] for obs in flattened_obs])
+        y = torch.Tensor([obs[0][-1] for obs in self.flattened_obs])
         y = (y - y.min()) / (y.max() - y.min())
         self.gp_reward.fit(x, y)
         
@@ -133,11 +133,14 @@ class ContextNode:
         print(f'Lower bound {lower_bound1(self.confidence, num_samples, np.max(means_rewards) - np.min(means_rewards))}')
         self.aggregate_reward = np.max(lower_bounds_rewards) # np.max(means_rewards - lower_bound1(self.confidence, num_samples, 1)) #np.max(means_rewards) - np.min(means_rewards)))
 
-    def get_flattened_observations(self):
+    def get_flattened_observations(self, fto=None):
+        if fto is None:
+            fto = self.feature_to_observation
+
         result = []
         temp = []
-        for key in self.feature_to_observation.keys():
-            temp.append(self.feature_to_observation.get(key))
+        for key in fto.keys():
+            temp.append(fto.get(key))
 
         grouped_obs = []
         for i in range(len(temp[0])):
