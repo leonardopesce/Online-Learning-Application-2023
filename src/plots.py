@@ -163,13 +163,14 @@ def plot_all_algorithms(reward_per_algorithm, best_rewards, labels):
     plt.show()
 
 
-def plot_clicks_curve(bids, learners, labels):
+def plot_clicks_curve(bids, learners, labels, original):
     """
     Plot the estimate of the number of daily clicks curve
 
     :param np.ndarray bids: Array with the possible values of bids
-    :param np.ndarray learners: Array with the GP learners
+    :param dict learners: Dictionary with arrays with the GP learners
     :param list labels: List of names of algorithms plotted
+    :param ndarray original: y-values of the original curve
     """
 
     plt.figure(0)
@@ -182,6 +183,7 @@ def plot_clicks_curve(bids, learners, labels):
         plt.plot(bids, mean_clicks_per_experiment, label='GP-'+label)
         plt.fill_between(bids, lower_bounds_clicks_per_experiment, upper_bounds_clicks_per_experiment, alpha=0.2)
 
+    plt.plot(bids, original, label='Original curve')
     plt.title('Clicks given the bid - GP')
     plt.xlabel('Bids')
     plt.ylabel('Number of clicks')
@@ -189,13 +191,14 @@ def plot_clicks_curve(bids, learners, labels):
     plt.show()
 
 
-def plot_costs_curve(bids, learners, labels):
+def plot_costs_curve(bids, learners, labels, original):
     """
     Plot the estimate of the cumulative daily cost of the clicks curve
 
     :param np.ndarray bids: Array with the possible values of bids
-    :param np.ndarray learners: Array with the GP learners
+    :param dict learners: Dictionary with arrays with the GP learners
     :param list labels: List of names of algorithms plotted
+    :param ndarray original: y-values of the original curve
     """
 
     plt.figure(1)
@@ -208,6 +211,7 @@ def plot_costs_curve(bids, learners, labels):
         plt.plot(bids, mean_cum_costs_per_experiment, label='GP-'+label)
         plt.fill_between(bids, lower_bounds_costs_per_experiment, upper_bounds_costs_per_experiment, alpha=0.2)
 
+    plt.plot(bids, original, label='Original curve')
     plt.title('Cost of the clicks given the bid - GP')
     plt.xlabel('Bids')
     plt.ylabel('Cumulative cost')

@@ -34,14 +34,16 @@ assert np.sum(settings.phases_duration) == T
 # we have to perform a sufficiently large number experiments
 n_experiments = 50
 
+algorithms = ['UCB', 'SW-UCB', 'CUSUM-UCB']
+
 # Learners parameters
 print(f"The window size is {settings.window_size}")
 print(f"Parameters for CUSUM-UCB are M={settings.M}, eps={settings.eps}, h={round(settings.h, 2)}, alpha={round(settings.alpha, 2)}")
 
-# Store the rewards for each experiment for the learners
-ucb_reward_per_experiment = []
-swucb_reward_per_experiment = []
-cusum_ucb_reward_per_experiment = []
+# To store the learners, environments and rewards for each experiment for the learners
+learners = dict()
+environments = dict()
+rewards = {algorithm: [] for algorithm in algorithms}
 best_rewards = np.array([])
 
 # Define the environment
@@ -57,65 +59,31 @@ for phase, phase_len in enumerate(settings.phases_duration):
 
 # Each iteration simulates the learner-environment interaction
 for e in tqdm(range(0, n_experiments)):
-    # Define the environment and learners
+    # Define the environments
+    environments = {algorithm: NonStationaryEnvironment(settings.n_prices, settings.prices, settings.probabilities, settings.bids_to_clicks_cost, settings.bids_to_cum_costs_cost, settings.other_costs, settings.phases_duration) for algorithm in algorithms}
 
-    # UCB1
-    env_ucb = NonStationaryEnvironment(settings.n_prices, settings.prices, settings.probabilities, settings.bids_to_clicks_cost, settings.bids_to_cum_costs_cost, settings.other_costs, settings.phases_duration)
-    ucb_learner = UCBLearner(settings.prices[category])
-
-    # SW-UCB
-    env_swucb = NonStationaryEnvironment(settings.n_prices, settings.prices, settings.probabilities, settings.bids_to_clicks_cost, settings.bids_to_cum_costs_cost, settings.other_costs, settings.phases_duration)
-    swucb_learner = SWUCBLearner(settings.prices[category], settings.window_size)
-
-    # CUSUM-UCB
-    env_cusum_ucb = NonStationaryEnvironment(settings.n_prices, settings.prices, settings.probabilities, settings.bids_to_clicks_cost, settings.bids_to_cum_costs_cost, settings.other_costs, settings.phases_duration)
-    cusum_ucb_learner = CUSUMUCBLearner(settings.prices[category], M=settings.M, eps=settings.eps, h=settings.h, alpha=settings.alpha)
+    # Define the learners
+    learners['UCB'] = UCBLearner(settings.prices[category])
+    learners['SW-UCB'] = SWUCBLearner(settings.prices[category], settings.window_size)
+    learners['CUSUM-UCB'] = CUSUMUCBLearner(settings.prices[category], M=settings.M, eps=settings.eps, h=settings.h, alpha=settings.alpha)
 
     # Iterate over the number of rounds
     for t in range(0, T):
-        # UCB Learner
-        best_bids_idx = [clairvoyant.maximize_reward_from_bid(category, ucb_learner.get_conv_prob(arm) * (
-                env_ucb.prices[category][arm] - env_ucb.other_costs))[0] for arm in range(settings.n_prices)]
-        n_clicks_list = np.array([env_ucb.get_n_clicks(category, bid) for bid in best_bids_idx])
-        cum_daily_costs_list = np.array([env_ucb.get_cum_daily_costs(category, bid) for bid in best_bids_idx])
-        pulled_arm = ucb_learner.pull_arm(settings.other_costs, n_clicks_list, cum_daily_costs_list)
-
-        bernoulli_realizations = env_ucb.round_pricing(pulled_arm, int(np.floor(n_clicks_list[pulled_arm])))
-        reward = env_ucb.get_reward_from_price(category, pulled_arm, np.mean(bernoulli_realizations), best_bids_idx[pulled_arm])
-        ucb_learner.update(pulled_arm, reward, bernoulli_realizations)
-
-        # SW-UCB Learner
-        best_bids_idx = [clairvoyant.maximize_reward_from_bid(category, swucb_learner.get_conv_prob(arm) * (
-                env_swucb.prices[category][arm] - env_swucb.other_costs))[0] for arm in range(settings.n_prices)]
-        n_clicks_list = np.array([env_swucb.get_n_clicks(category, bid) for bid in best_bids_idx])
-        cum_daily_costs_list = np.array([env_swucb.get_cum_daily_costs(category, bid) for bid in best_bids_idx])
-        pulled_arm = swucb_learner.pull_arm(settings.other_costs, n_clicks_list, cum_daily_costs_list)
-
-        bernoulli_realizations = env_swucb.round_pricing(pulled_arm, int(np.floor(n_clicks_list[pulled_arm])))
-        reward = env_swucb.get_reward_from_price(category, pulled_arm, np.mean(bernoulli_realizations), best_bids_idx[pulled_arm])
-        swucb_learner.update(pulled_arm, reward, bernoulli_realizations)
-
-        # CUSUM-UCB Learner
-        best_bids_idx = [clairvoyant.maximize_reward_from_bid(category, cusum_ucb_learner.get_conv_prob(arm) * (
-                env_cusum_ucb.prices[category][arm] - env_cusum_ucb.other_costs))[0] for arm in range(settings.n_prices)]
-        n_clicks_list = np.array([env_cusum_ucb.get_n_clicks(category, bid) for bid in best_bids_idx])
-        cum_daily_costs_list = np.array([env_cusum_ucb.get_cum_daily_costs(category, bid) for bid in best_bids_idx])
-        pulled_arm = cusum_ucb_learner.pull_arm(settings.other_costs, n_clicks_list, cum_daily_costs_list)
-
-        bernoulli_realizations = env_cusum_ucb.round_pricing(pulled_arm, int(np.floor(n_clicks_list[pulled_arm])))
-        reward = env_cusum_ucb.get_reward_from_price(category, pulled_arm, np.mean(bernoulli_realizations),
-                                                 best_bids_idx[pulled_arm])
-        cusum_ucb_learner.update(pulled_arm, reward, bernoulli_realizations)
+        for algorithm in algorithms:
+            best_bids_idx = [clairvoyant.maximize_reward_from_bid(category, learners[algorithm].get_conv_prob(arm) * (environments[algorithm].prices[category][arm] - environments[algorithm].other_costs))[0] for arm in range(settings.n_prices)]
+            n_clicks_list = np.array([environments[algorithm].get_n_clicks(category, bid) for bid in best_bids_idx])
+            cum_daily_costs_list = np.array([environments[algorithm].get_cum_daily_costs(category, bid) for bid in best_bids_idx])
+            pulled_arm = learners[algorithm].pull_arm(settings.other_costs, n_clicks_list, cum_daily_costs_list)
+            bernoulli_realizations = environments[algorithm].round_pricing(pulled_arm, int(np.floor(n_clicks_list[pulled_arm])))
+            reward = environments[algorithm].get_reward_from_price(category, pulled_arm, np.mean(bernoulli_realizations), best_bids_idx[pulled_arm])
+            learners[algorithm].update(pulled_arm, reward, bernoulli_realizations)
 
     # Store the values of the collected rewards of the learners
-    ucb_reward_per_experiment.append(ucb_learner.collected_rewards)
-    swucb_reward_per_experiment.append(swucb_learner.collected_rewards)
-    cusum_ucb_reward_per_experiment.append(cusum_ucb_learner.collected_rewards)
+    for algorithm in algorithms:
+        rewards[algorithm].append(learners[algorithm].collected_rewards)
 
 # Plot the results
-reward_per_algorithm = [ucb_reward_per_experiment, swucb_reward_per_experiment, cusum_ucb_reward_per_experiment]
-labels = ['UCB', 'SW-UCB', 'CUSUM-UCB']
-
-plot_all_algorithms(reward_per_algorithm, best_rewards, labels)
-for i, label in enumerate(labels):
-    plot_single_algorithm(reward_per_algorithm[i], best_rewards, label, np.arange(0, T, 1))
+reward_per_algorithm = [rewards[algorithm] for algorithm in algorithms]
+plot_all_algorithms(reward_per_algorithm, best_rewards, algorithms)
+for i, algorithm in enumerate(algorithms):
+    plot_single_algorithm(reward_per_algorithm[i], best_rewards, algorithm, np.arange(0, T, 1))

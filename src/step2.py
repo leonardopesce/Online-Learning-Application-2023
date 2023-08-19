@@ -29,12 +29,15 @@ T = 365
 n_experiments = 10
 
 algorithms = ['UCB', 'TS']
+
+# To store the learners, environments and rewards for each experiment for the learners
+learners = dict()
+environments = dict()
+rewards = {algorithm: [] for algorithm in algorithms}
+best_rewards = np.array([])
+
 # To store the learners to plot the advertising curves
 gp_learners = {algorithm: [] for algorithm in algorithms}
-
-# Store the rewards for each experiment for the learners
-ts_reward_per_experiment = []
-ucb_reward_per_experiment = []
 
 # Define the environment
 env = Environment(settings.n_prices, settings.prices, settings.probabilities, settings.bids_to_clicks, settings.bids_to_cum_costs, settings.other_costs)
@@ -42,54 +45,39 @@ env = Environment(settings.n_prices, settings.prices, settings.probabilities, se
 clairvoyant = Clairvoyant(env)
 # Optimize the problem
 best_price_idx, best_price, best_bid_idx, best_bid, best_reward = clairvoyant.maximize_reward(category)
-best_rewards = np.ones((T,)) * best_reward
+best_rewards = np.append(best_rewards, np.ones((T,)) * best_reward)
 
 # Each iteration simulates the learner-environment interaction
 for e in tqdm(range(0, n_experiments)):
-    # Define the learners
-    # GP-TS learner
-    gpts_learner = GPTS_Learner(arms=bids)
-    # GP-UCB learner
-    gpucb_learner = GPUCB_Learner(arms_values=bids)
+    # Define the environments
+    environments = {algorithm: Environment(settings.n_prices, settings.prices, settings.probabilities, settings.bids_to_clicks, settings.bids_to_cum_costs, settings.other_costs) for algorithm in algorithms}
+
+    # Define the GP learners
+    learners['UCB'] = GPUCB_Learner(arms_values=bids)
+    learners['TS'] = GPTS_Learner(arms=bids)
 
     # Iterate over the number of rounds
     for t in range(0, T):
         price_idx, price, prob_margin = clairvoyant.maximize_reward_from_price(category)
-        # Simulate the interaction learner-environment
-        # GP-TS learner
-        pulled_arm = gpts_learner.pull_arm_GPs(prob_margin)
-        n_clicks, costs = env.round_advertising(category, pulled_arm)
-        reward_gpts = env.get_reward(category=category, price_idx=price_idx,
-                                     conversion_prob=settings.probabilities[category][price_idx], n_clicks=n_clicks,
-                                     cum_daily_costs=costs)
+        for algorithm in algorithms:
+            pulled_arm = learners[algorithm].pull_arm_GPs(prob_margin)
+            n_clicks, costs = environments[algorithm].round_advertising(category, pulled_arm)
+            reward = environments[algorithm].get_reward(category=category, price_idx=price_idx, conversion_prob=settings.probabilities[category][price_idx], n_clicks=n_clicks, cum_daily_costs=costs)
+            # Update the internal state of the learner passing it the reward, the number of clicks and the costs sampled
+            # from the environment.
+            learners[algorithm].update(pulled_arm, (reward, n_clicks, costs))
 
-        # GP-UCB learner
-        pulled_arm = gpucb_learner.pull_arm_GPs(prob_margin)
-        n_clicks, costs = env.round_advertising(category, pulled_arm)
-        reward_gpucb = env.get_reward(category=category, price_idx=price_idx,
-                                      conversion_prob=settings.probabilities[category][price_idx], n_clicks=n_clicks,
-                                      cum_daily_costs=costs)
-
-        # Here we update the internal state of the learner passing it the reward,
-        # the number of clicks and the costs sampled from the environment.
-        gpts_learner.update(pulled_arm, (reward_gpts, n_clicks, costs))
-        gpucb_learner.update(pulled_arm, (reward_gpucb, n_clicks, costs))
-
-    # Store the values of the collected rewards of the learners
-    ts_reward_per_experiment.append(gpts_learner.collected_rewards)
-    ucb_reward_per_experiment.append(gpucb_learner.collected_rewards)
-
-    # Store the learners
-    gp_learners['TS'].append(gpts_learner)
-    gp_learners['UCB'].append(gpucb_learner)
-
-    # gpts_learner.plot_clicks()
-    # gpts_learner.plot_costs()
+    # Store the values of the collected rewards of the learners and the learners
+    for algorithm in algorithms:
+        rewards[algorithm].append(learners[algorithm].collected_rewards)
+        gp_learners[algorithm].append(learners[algorithm])
+        # learners[algorithm].plot_clicks()
+        # learners[algorithm].plot_costs()
 
 # Plot the results
-reward_per_algorithm = [ucb_reward_per_experiment, ts_reward_per_experiment]
-plot_clicks_curve(bids, gp_learners, algorithms)
-plot_costs_curve(bids, gp_learners, algorithms)
+reward_per_algorithm = [rewards[algorithm] for algorithm in algorithms]
+plot_clicks_curve(bids, gp_learners, algorithms, original=env.get_clicks_curve(bids, category))
+plot_costs_curve(bids, gp_learners, algorithms, original=env.get_costs_curve(bids, category))
 plot_all_algorithms(reward_per_algorithm, best_rewards, algorithms)
-for i, label in enumerate(algorithms):
-    plot_single_algorithm(reward_per_algorithm[i], best_rewards, label, np.arange(0, T, 1))
+for i, algorithm in enumerate(algorithms):
+    plot_single_algorithm(reward_per_algorithm[i], best_rewards, algorithm, np.arange(0, T, 1))

@@ -55,7 +55,6 @@ class Environment:
         self.prices = prices
         self.probabilities = probabilities
         self.bids = np.linspace(0.5, 10, 100)
-        #self.bids = np.linspace(0.03, 3, 100)
         self.bids_to_clicks = bids_to_clicks
         self.bids_to_clicks_variance = 0.2
         self.bids_to_cum_costs = bids_to_cum_costs
@@ -155,6 +154,32 @@ class Environment:
         """
 
         return fun(self.bids[bid_idx], *self.bids_to_cum_costs[category])
+
+    def get_clicks_curve(self, bids, category):
+        """
+        Returns the number of clicks corresponding to the bids and class of the user
+
+        :param ndarray bids: List of bids values
+        :param str category: Class of the user
+
+        :return: Number of clicks
+        :rtype: ndarray
+        """
+
+        return fun(bids, *self.bids_to_clicks[category])
+
+    def get_costs_curve(self, bids, category):
+        """
+        Returns the cumulative daily costs due to advertising corresponding to the bids and class of the user
+
+        :param ndarray bids: List of bids values
+        :param str category: Class of the user
+
+        :return: Cumulative daily costs
+        :rtype: ndarray
+        """
+
+        return fun(bids, *self.bids_to_cum_costs[category])
 
     def get_reward(self, category, price_idx, conversion_prob, n_clicks, cum_daily_costs):
         """

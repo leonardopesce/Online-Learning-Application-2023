@@ -28,10 +28,18 @@ class Learner:
         self.collected_rewards = np.array([])
         self.times_arms_played = np.zeros(self.n_arms)
 
-    def pull_arm(self):
+    def pull_arm(self, cost, n_clicks, cum_daily_costs):
         """
-        Pulls the arm to play, in this "abstract" learner class, it does nothing
+        Pulls the arm to play based on the algorithm, in this "abstract" learner class, it does nothing
+
+        :param float cost: Cost associated to all the arms
+        :param numpy.ndarray n_clicks: Number of clicks
+        :param numpy.ndarray cum_daily_costs: Cumulative daily costs
+
+        :return: Index of the arm to pull
+        :rtype: int
         """
+
         pass
 
     def update_observations(self, pulled_arm, reward):
