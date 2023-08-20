@@ -99,7 +99,7 @@ class ContextNode:
         x = torch.Tensor(np.block([self.prices[price_obs][:, None], self.bids[bids_obs][:, None]]))
 
         y = torch.Tensor([obs[0][-1] for obs in self.flattened_obs])
-        y = (y - y.min()) / (y.max() - y.min())
+        # y = (y - y.min()) / (y.max() - y.min())
         self.gp_reward.fit(x, y)
         
         # Create a vector with 2 columns such that the first column is the price and the second column is the bid.
@@ -122,16 +122,18 @@ class ContextNode:
             # axs[1].fill_between(price_bids[:, 1], means_rewards - sigmas_rewards, means_rewards + sigmas_rewards, alpha=0.5)
             #axs[2].plot_trisurf(price_bids[:, 0], price_bids[:, 1], means_rewards, linewidth=0.2, antialiased=True)
             plt.show()
-        print('--------------')
+        #print('--------------')
         num_samples = sum(len(key) for key in self.feature_to_observation.values())
-        print(num_samples)
         #idx = np.argmax(means_rewards - sigmas_rewards)
         #self.aggregate_reward = np.max(means_rewards - sigmas_rewards)
         #print(lower_bounds_rewards)
         #self.aggregate_reward = np.max(lower_bounds_rewards)
-        print(max(means_rewards))
-        print(f'Lower bound {lower_bound1(self.confidence, num_samples, np.max(means_rewards) - np.min(means_rewards))}')
-        self.aggregate_reward = np.max(lower_bounds_rewards) # np.max(means_rewards - lower_bound1(self.confidence, num_samples, 1)) #np.max(means_rewards) - np.min(means_rewards)))
+        # print(f"Max means rewards: {max(means_rewards)}")
+        self.mr = means_rewards
+        best_reward_idx = np.argmax(means_rewards)
+        best_reward = means_rewards[best_reward_idx]
+        #print(f'Lower bound {lower_bound1(self.confidence, num_samples, np.max(means_rewards) - np.min(means_rewards))}')
+        self.aggregate_reward = best_reward - 2.5 * sigmas_rewards[best_reward_idx] # np.max(means_rewards - lower_bound1(0.01, num_samples, 1)) # np.max(means_rewards - lower_bound1(self.confidence, num_samples, 1)) #np.max(means_rewards) - np.min(means_rewards)))
 
     def get_flattened_observations(self, fto=None):
         if fto is None:
@@ -197,21 +199,26 @@ class ContextNode:
             # Finding the attribute with the highest marginal increase
 
             # Computing the total number of observations considered in the node
-            total_num_samples = sum(observation[3] for key in self.feature_to_observation.keys() for observation in self.feature_to_observation.get(key))
+            total_num_samples = sum(len(key) for key in self.feature_to_observation.values())
 
             # Computing the lower bounds of the rewards of the disaggregate contexts for a split on the various features
             # taken separately
+            feature_split_to_children = {}
             rewards_sub_contexts = {}
             feature_values_to_reward = {}
             for feature_name in self.feature_names:
+                print(f"Splitting on {feature_name}")
                 feature_values_to_num_samples = {}
                 feature_values_to_reward_probability_split = {}
                 feature_values_to_reward_lower_bound = {}
                 feature_idx = self.whole_feature_names.index(feature_name)
+                feature_splitt
+
                 for feature_value in self.feature_values[feature_name]:
+                    print(f"Evaluating {feature_value}")
                     # Computing the number of samples when splitting on the feature with feature_name and considering
                     # to take the samples with value of feature_name equal to the value feature_value
-                    feature_values_to_num_samples[feature_value] = sum(observation[3] for key in self.feature_to_observation.keys() for observation in self.feature_to_observation.get(key) if key[feature_idx] == feature_value)
+                    feature_values_to_num_samples[feature_value] = sum(len(self.feature_to_observation[key]) for key in self.feature_to_observation.keys() if key[feature_idx] == feature_value)
 
                     # Computing the lower bound of the reward given by the context obtained splitting on the feature
                     # with feature_name and considering to take the samples with value of feature_name equal to the
@@ -219,6 +226,8 @@ class ContextNode:
                     child_observations = {key: self.feature_to_observation.get(key) for key in self.feature_to_observation.keys() if key[feature_idx] == feature_value}
                     child = ContextNode(self.prices, self.bids, self.whole_feature_names, self.feature_names, self.feature_values,
                                         child_observations, self.confidence, self)
+
+                    feature_split_to_children[feature_name][feature_value] = child
 
                     feature_values_to_reward_lower_bound[feature_value] = child.aggregate_reward
                     # feature_values_to_reward_lower_bound[feature_value] = np.mean([observation[-1] for key in self.feature_to_observation.keys() for observation in self.feature_to_observation.get(key) if key[feature_idx] == feature_value]) - lower_bound(self.confidence, feature_values_to_num_samples[feature_value])
@@ -230,7 +239,7 @@ class ContextNode:
 
                 # Computing the lower bound of the reward given by splitting on the feature with name feature_name as
                 # the sum of the product between the reward of a context and the probability of that context
-                feature_values_to_reward[feature_name] = sum([feature_values_to_reward_lower_bound[feature_value] * feature_values_to_reward_probability_split[feature_value] for feature_value in self.feature_values[feature_name]])
+                feature_values_to_reward[feature_name] = sum([feature_values_to_reward_lower_bound[feature_value] for feature_value in self.feature_values[feature_name]])
 
             # Finding the name of the feature with the highest lower bound of the reward (feature on which the node
             # should possibly split)
@@ -238,7 +247,7 @@ class ContextNode:
 
             # If the lower bound of the reward given by splitting in disaggregate context is higher than the reward of
             # the aggregate model in the node the context is split on the found feature
-            print(f"Feature values to reward: {feature_values_to_reward}\n{name_feature_max_reward}\nAggregate reward: {self.aggregate_reward}")
+            print(f"Feature values to reward: {feature_values_to_reward}\n{name_feature_max_reward}\nAggregate reward: {self.aggregate_reward}\nMax means rewards: {np.max(self.mr)}")
             if feature_values_to_reward[name_feature_max_reward] > self.aggregate_reward:
                 # Setting the feature to use to separate the contexts
                 self.choice = name_feature_max_reward
@@ -256,8 +265,9 @@ class ContextNode:
                     # key_of_dictionary_of_observation[name_feature_max_reward] == feature_value
                     new_feature_to_observation = {key: self.feature_to_observation[key] for key in self.feature_to_observation if key[chosen_feature_idx] == feature_value}
 
-                    # Creating ContextNode children and initializing them
-                    self.children[feature_value] = ContextNode(self.prices, self.bids, self.whole_feature_names, new_feature_names, new_feature_values, new_feature_to_observation, self.confidence, self)
+                    # Setting the children of the node to the ones that guarantee a higher reward
+                    #self.children[feature_value] = feature_split_to_children[name_feature_max_reward][feature_value]
+                    self.children[feature_value] = feature_split_to_children[name_feature_max_reward][feature_value]#ContextNode(self.prices, self.bids, self.whole_feature_names, new_feature_names, new_feature_values, new_feature_to_observation, self.confidence, self)
 
                 # Running the creation of the subtree also on the children of the current node
                 for child_key in self.children:

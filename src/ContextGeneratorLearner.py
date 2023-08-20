@@ -86,7 +86,7 @@ class ContextGeneratorLearner:
                 new_learner_feature_to_obs = {tuple(context): {}}
                 # Iterating on the tuples of features of the user in the context
                 for feature_tuple in context:
-                    reward_of_context = []
+                    reward_of_context = [] # {((0,1), (0,0)) : {(0,1): [1,2,3,4], (0,0): [1,2,3,4]}}
                     # Iterating on the observation regarding the user with the chosen values of features
                     new_learner_feature_to_obs[tuple(context)][feature_tuple] = self.feature_to_observation.get(feature_tuple)
                     # for element in self.feature_to_observation.get(feature_tuple):
