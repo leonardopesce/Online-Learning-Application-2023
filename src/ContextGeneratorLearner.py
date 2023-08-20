@@ -65,6 +65,8 @@ class ContextGeneratorLearner:
         return result_set
 
     def update_context(self):
+        print("Updating the context")
+
         old_context = None
         if self.context_tree is None:
             self.context_tree = ContextTree(self.prices, self.bids, self.feature_names, self.feature_values, self.feature_to_observation, 0.05)
@@ -102,6 +104,8 @@ class ContextGeneratorLearner:
 
             # Setting the new learners into the context generator learner
             self.context_learners = new_learners
+        else:
+            print("No changes in the context structure")
 
     def get_flattened_obs(self, feature_to_obs, num_obs):
         # feature_to_obs is a dictionary of the form {context: {feature_tuple: [observation]}} where observation is a
