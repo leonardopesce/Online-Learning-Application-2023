@@ -74,8 +74,8 @@ class ContextNode:
 
         self.prices = prices
         self.bids = bids
-        self.whole_feature_names = whole_feature_names
-        self.feature_names = feature_names
+        self.whole_feature_names = whole_feature_names # ['age', 'sex']
+        self.feature_names = feature_names # ['age', 'sex'] --> ['age'] / ['sex']
         self.feature_values = feature_values
         self.feature_to_observation = feature_to_observation
         self.confidence = confidence
@@ -85,12 +85,22 @@ class ContextNode:
         self.choice = None
 
         kernel = ScaleKernel(RBFKernel())
-        likelihood = GaussianLikelihood()
+        likelihood = GaussianLikelihood() # [[[5, [1,0,1,1,0], 3, 45, 5,4]], ...14..., []]
 
         self.gp_reward = BaseGaussianProcess(likelihood=likelihood, kernel=kernel)
 
         # Note that price_obs and bids_obs are the indices of the prices and bids that are used in the GP.
         # They need to be converted to the actual prices and bids.
+        self.flattened_obs = self.get_flattened_observations()
+        self.means_rewards = None
+        self.sigmas_rewards = None
+        self.lower_bounds_rewards = None
+        self.upper_bounds_rewards = None
+
+        num_samples = sum(len(key) for key in self.feature_to_observation.values())
+        self.update_gp()
+
+    def update_gp(self):
         self.flattened_obs = self.get_flattened_observations()
         price_obs = np.array([obs[0][0] for obs in self.flattened_obs])
         bids_obs = np.array([obs[0][2] for obs in self.flattened_obs])
@@ -100,44 +110,27 @@ class ContextNode:
         y = torch.Tensor([obs[0][-1] for obs in self.flattened_obs])
         # y = (y - y.min()) / (y.max() - y.min())
         self.gp_reward.fit(x, y)
-        
+
         # Create a vector with 2 columns such that the first column is the price and the second column is the bid.
         # Create all the possible combinations of price and bid.
         price_bids = torch.Tensor(np.array(np.meshgrid(self.prices, self.bids)).T.reshape(-1, 2))
-        # print(price_bids, price_bids.shape)
-
         # x = torch.Tensor(np.block([self.prices[:, None], self.bids[:, None]]))
-        means_rewards, sigmas_rewards, lower_bounds_rewards, upper_bounds_rewards = self.gp_reward.predict(price_bids)
+        self.means_rewards, self.sigmas_rewards, self.lower_bounds_rewards, self.upper_bounds_rewards = self.gp_reward.predict(price_bids)
 
-        # Plot the surface of rewards given all the combinations of prices and bids.
-        if self.father is not None and False:
-            fig, axs = plt.subplots(1, 2)
-            axs[0].scatter(price_bids[:, 0], means_rewards)
-            axs[0].set_title(f'{self.father.choice} = {[key for key in self.father.children.keys() if self.father.children.get(key) is self]} {self.feature_names}')
-            # axs[0].fill_between(price_bids[:, 0], means_rewards - sigmas_rewards, means_rewards + sigmas_rewards, alpha=0.5)
-            axs[1].scatter(price_bids[:, 1], means_rewards)
-            axs[1].set_title(f'{self.father.choice} = {[key for key in self.father.children.keys() if self.father.children.get(key) == self]} {self.feature_names}')
-            # axs[1].set_title(f'{self.feature_names}')
-            # axs[1].fill_between(price_bids[:, 1], means_rewards - sigmas_rewards, means_rewards + sigmas_rewards, alpha=0.5)
-            #axs[2].plot_trisurf(price_bids[:, 0], price_bids[:, 1], means_rewards, linewidth=0.2, antialiased=True)
-            plt.show()
+        best_reward_idx = np.argmax(self.means_rewards)
+        best_reward = self.means_rewards[best_reward_idx]
 
-        num_samples = sum(len(key) for key in self.feature_to_observation.values())
-        #idx = np.argmax(means_rewards - sigmas_rewards)
-        #self.aggregate_reward = np.max(means_rewards - sigmas_rewards)
-        #print(lower_bounds_rewards)
-        #self.aggregate_reward = np.max(lower_bounds_rewards)
+        print(f"Maximum of the means rewards: {max(self.means_rewards)}")
+        print(f"Sigma of the maximum of the means rewards: {self.sigmas_rewards[best_reward_idx]}")
 
-        self.mr = means_rewards
-        best_reward_idx = np.argmax(means_rewards)
-        best_reward = means_rewards[best_reward_idx]
+        # print(f'Lower bound {lower_bound1(self.confidence, num_samples, np.max(means_rewards) - np.min(means_rewards))}')
 
-        print(f"Maximum of the means rewards: {max(means_rewards)}")
-        print(f"Sigma of the maximum of the means rewards: {sigmas_rewards[best_reward_idx]}")
+        self.aggregate_reward = best_reward - 2.5 * self.sigmas_rewards[best_reward_idx]
 
-        #print(f'Lower bound {lower_bound1(self.confidence, num_samples, np.max(means_rewards) - np.min(means_rewards))}')
-
-        self.aggregate_reward = best_reward - 2.5 * sigmas_rewards[best_reward_idx]
+        # idx = np.argmax(means_rewards - sigmas_rewards)
+        # self.aggregate_reward = np.max(means_rewards - sigmas_rewards)
+        # print(lower_bounds_rewards)
+        # self.aggregate_reward = np.max(lower_bounds_rewards)
         # self.aggregate_reward = np.max(means_rewards - lower_bound1(0.01, num_samples, 1)) # np.max(means_rewards - lower_bound1(self.confidence, num_samples, 1)) #np.max(means_rewards) - np.min(means_rewards)))
 
     def get_flattened_observations(self, fto=None):
@@ -241,7 +234,7 @@ class ContextNode:
                     child = ContextNode(self.prices, self.bids, self.whole_feature_names, new_feature_names,
                                         new_feature_values, child_observations, self.confidence, self)
 
-                    feature_split_to_children[feature_name][feature_value] = child
+                    feature_split_to_children[feature_name][feature_value] = child # {sex : { 0 : nodo femmine, 1 : nodo maschi }, age : { 0 : nodo giovani, 1 : nodo vecchi }}
 
                     feature_values_to_reward_lower_bound[feature_value] = child.aggregate_reward
                     # feature_values_to_reward_lower_bound[feature_value] = np.mean([observation[-1] for key in self.feature_to_observation.keys() for observation in self.feature_to_observation.get(key) if key[feature_idx] == feature_value]) - lower_bound(self.confidence, feature_values_to_num_samples[feature_value])
