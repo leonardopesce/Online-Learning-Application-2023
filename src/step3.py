@@ -65,7 +65,7 @@ for e in tqdm(range(0, n_experiments)):
         for algorithm in algorithms:
             price_idx, bid_idx = learners[algorithm].pull_arm(environments[algorithm].other_costs)
             bernoulli_realizations, n_clicks, cum_daily_cost = environments[algorithm].round(category, price_idx, bid_idx)
-            reward = env.get_reward(category, price_idx, np.mean(bernoulli_realizations), n_clicks, cum_daily_cost)
+            reward = environments[algorithm].get_reward(category, price_idx, np.mean(bernoulli_realizations), n_clicks, cum_daily_cost)
             learners[algorithm].update(price_idx, bernoulli_realizations, bid_idx, n_clicks, cum_daily_cost, reward)
 
     # Store the most played prices and bids, the values of the collected rewards of the learners and the learners
@@ -81,7 +81,7 @@ def iterate_over_counter(counter, reference_array):
         print(f"{reference_array[key]}, index {key}, is the best in {value} experiments")
 
 
-# Print occurrences of best arm in TS
+# Print occurrences of best arm
 for algorithm in algorithms:
     print('Best price found in the experiments by ' + algorithm)
     print('The format is price: number of experiments in which it is the most played price')

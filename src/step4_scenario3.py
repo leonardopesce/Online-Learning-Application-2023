@@ -1,5 +1,3 @@
-from matplotlib import pyplot as plt
-
 from Environment import Environment
 from tqdm import tqdm
 from Clairvoyant import Clairvoyant
@@ -7,8 +5,11 @@ from TSPricingAdvertising import TSLearnerPricingAdvertising
 from UCBPricingAdvertising import UCBLearnerPricingAdvertising
 from collections import Counter
 import numpy as np
+from plots import plot_single_algorithm, plot_all_algorithms
+import settings
 
 """
+Step 4: Contexts and their generation
 Consider the case in which there are three classes of users (C1, C2, and C3), 
 and no information about the advertising and pricing curves is known beforehand. 
 
@@ -35,250 +36,73 @@ for the second scenario.
 # Defining the 3 categories
 categories = ['C1', 'C2', 'C3']
 
-# Setting the environment parameters
-n_prices = 5
-prices = {'C1': np.array([500, 550, 600, 650, 700]),
-          'C2': np.array([500, 550, 600, 650, 700]),
-          'C3': np.array([500, 550, 600, 650, 700])}
-probabilities = {'C1': np.array([0.05, 0.05, 0.2, 0.1, 0.05]),
-                 'C2': np.array([0.05, 0.05, 0.1, 0.2, 0.1]),
-                 'C3': np.array([0.1, 0.2, 0.25, 0.05, 0.05])}
-bids_to_clicks = {'C1': np.array([100, 2]),
-                  'C2': np.array([90, 2]),
-                  'C3': np.array([80, 3])}
-bids_to_cum_costs = {'C1': np.array([400, 0.035]),
-                     'C2': np.array([200, 0.07]),
-                     'C3': np.array([300, 0.04])}
-other_costs = 400
-
-# Bids setup
-n_bids = 100
-min_bid = 0.5
-max_bid = 15.0
-bids = np.linspace(min_bid, max_bid, n_bids)
-sigma = 2
-
+bids = np.linspace(settings.min_bid, settings.max_bid, settings.n_bids)
 # Time horizon of the experiment
 T = 365
 
 # Since the reward functions are stochastic to better visualize the results and remove the noise
 # we have to perform a sufficiently large number experiments
-n_experiments = 30
+n_experiments = 10
 
-# To evaluate which are the most played prices and bids by the TS learner
-ts_best_price = []
-ts_best_bid = []
-# To evaluate which are the most played prices and bids by the UCB learner
-ucb_best_price = []
-ucb_best_bid = []
+algorithms = ['UCB', 'TS']
+
+# To store the learners, environments and rewards for each experiment for the learners
+learners = dict()
+environments = dict()
+rewards = {algorithm: [] for algorithm in algorithms}
+best_rewards = np.array([])
+
+# To evaluate which are the most played prices and bids
+best_prices = {algorithm: [] for algorithm in algorithms}
+best_bids = {algorithm: [] for algorithm in algorithms}
 
 # Define the environment
-env = Environment(n_prices, prices, probabilities, bids_to_clicks, bids_to_cum_costs, other_costs)
+env = Environment(settings.n_prices, settings.prices, settings.probabilities, settings.bids_to_clicks, settings.bids_to_cum_costs, settings.other_costs)
 # Define the clairvoyant
 clairvoyant = {category: Clairvoyant(env) for category in categories}
-# Optimize the problem TODO massimizzare l'aggregate model
-#best_price_idx, best_price, best_bid_idx, best_bid, best_reward = clairvoyant.maximize_reward(category)
+
 # Optimizing the problem for all the classes separately
 best_price_idx, best_price, best_bid_idx, best_bid, best_reward = {cl: [] for cl in categories}, {cl: [] for cl in categories}, {cl: [] for cl in categories}, {cl: [] for cl in categories}, {cl: [] for cl in categories}
 for category in categories:
     best_price_idx[category], best_price[category], best_bid_idx[category], best_bid[category], best_reward[category] = clairvoyant[category].maximize_reward(category)
 best_reward = np.sum(np.array([best_reward[category] for category in categories]))
-# Store the rewards for each experiment for the learners
-ts_reward_per_experiment = []
-ucb_reward_per_experiment = []
-
-# Store some features for each experiment for the learners
-gpts_clicks_per_experiment = []
-gpts_mean_clicks_per_experiment = []
-gpts_sigmas_clicks_per_experiment = []
-gpts_cum_costs_per_experiment = []
-gpts_mean_cum_costs_per_experiment = []
-gpts_sigmas_cum_costs_per_experiment = []
-gpts_pulled_bids_per_experiment = []
+best_rewards = np.append(best_rewards, np.ones((T,)) * best_reward)
 
 # Each iteration simulates the learner-environment interaction
 for e in tqdm(range(0, n_experiments)):
-    # Define the learners
-    # TS learners
-    # TODO prices uguali per tutti??? qua altrimenti che priceses scelgo, per ora scelgo quelli della classe 1
-    ts_learner = TSLearnerPricingAdvertising(env.prices['C1'], env.bids)
-    # UCB learners
-    ucb_learner = UCBLearnerPricingAdvertising(env.prices['C1'], env.bids)
+    # Define the environments
+    environments = {algorithm: Environment(settings.n_prices, settings.prices, settings.probabilities, settings.bids_to_clicks, settings.bids_to_cum_costs, settings.other_costs) for algorithm in algorithms}
+
+    # Define the learners, the prices are the same for all categories, so I can pass C1
+    learners['UCB'] = UCBLearnerPricingAdvertising(settings.prices['C1'], env.bids)
+    learners['TS'] = TSLearnerPricingAdvertising(settings.prices['C1'], env.bids)
 
     # Iterate over the number of rounds
     for t in range(0, T):
-        # Simulate the interaction learner-environment
-        # TS Learner
-        price_idx, bid_idx = ts_learner.pull_arm(env.other_costs)
-        # Simulating the environment with 3 classes unknown to the learner
-        bernoulli_realizations, n_clicks, cum_daily_cost = env.round_all_categories_merged(price_idx, bid_idx)
-        reward = env.get_reward('C1', price_idx, np.mean(bernoulli_realizations), n_clicks, cum_daily_cost)
-        ts_learner.update(price_idx, bernoulli_realizations, bid_idx, n_clicks, cum_daily_cost, reward)
+        for algorithm in algorithms:
+            price_idx, bid_idx = learners[algorithm].pull_arm(environments[algorithm].other_costs)
+            # Simulating the environment with 3 classes unknown to the learner
+            bernoulli_realizations, n_clicks, cum_daily_cost = environments[algorithm].round_all_categories_merged(price_idx, bid_idx)
+            reward = environments[algorithm].get_reward('C1', price_idx, np.mean(bernoulli_realizations), n_clicks, cum_daily_cost)
+            learners[algorithm].update(price_idx, bernoulli_realizations, bid_idx, n_clicks, cum_daily_cost, reward)
 
-        # UCB Learner
-        price_idx, bid_idx = ucb_learner.pull_arm(env.other_costs)
-        # Simulating the environment with 3 classes unknown to the learner
-        bernoulli_realizations, n_clicks, cum_daily_cost = env.round_all_categories_merged(price_idx, bid_idx)
-        reward = env.get_reward('C1', price_idx, np.mean(bernoulli_realizations), n_clicks, cum_daily_cost)
-        ucb_learner.update(price_idx, bernoulli_realizations, bid_idx, n_clicks, cum_daily_cost, reward)
+    # Store the most played prices and bids, the values of the collected rewards of the learners and the learners
+    for algorithm in algorithms:
+        best_prices[algorithm].append(Counter(learners[algorithm].get_pulled_prices()).most_common(1)[0][0])
+        best_bids[algorithm].append(Counter(learners[algorithm].get_pulled_bids()).most_common(1)[0][0])
+        rewards[algorithm].append(learners[algorithm].learner_pricing.collected_rewards)
 
-    # Store the most played prices and bids by TS
-    ts_best_price.append(Counter(ts_learner.get_pulled_prices()).most_common(1)[0][0])
-    ts_best_bid.append(Counter(ts_learner.get_pulled_bids()).most_common(1)[0][0])
+# Print occurrences of best arm
+for algorithm in algorithms:
+    print('Best price found in the experiments by ' + algorithm)
+    print('The format is price: number of experiments in which it is the most played price')
+    print(Counter(best_prices[algorithm]))
+    print('Best bid found in the experiments by ' + algorithm)
+    print('The format is bid: number of experiments in which it is the most bid price')
+    print(Counter(best_bids[algorithm]))
 
-    # Store the most played prices and bids by UCB1
-    ucb_best_price.append(Counter(ucb_learner.get_pulled_prices()).most_common(1)[0][0])
-    ucb_best_bid.append(Counter(ucb_learner.get_pulled_bids()).most_common(1)[0][0])
-
-    # Store the values of the collected rewards of the learners
-    ts_reward_per_experiment.append(ts_learner.TS_pricing.collected_rewards)
-    ucb_reward_per_experiment.append(ucb_learner.UCB_pricing.collected_rewards)
-
-    gpts_clicks_per_experiment.append(ts_learner.GPTS_advertising.collected_clicks)
-    gpts_mean_clicks_per_experiment.append(ts_learner.GPTS_advertising.means_clicks)
-    gpts_sigmas_clicks_per_experiment.append(ts_learner.GPTS_advertising.sigmas_clicks)
-    gpts_cum_costs_per_experiment.append(ts_learner.GPTS_advertising.collected_costs)
-    gpts_mean_cum_costs_per_experiment.append(ts_learner.GPTS_advertising.means_costs)
-    gpts_sigmas_cum_costs_per_experiment.append(ts_learner.GPTS_advertising.sigmas_costs)
-    gpts_pulled_bids_per_experiment.append(ts_learner.GPTS_advertising.pulled_bids)
-
-# Print occurrences of best arm in TS
-print('Best price found in the experiments by TS')
-print('The format is price: number of experiments in which it is the most played price')
-print(Counter(ts_best_price))
-print('Best bid found in the experiments by TS')
-print('The format is bid: number of experiments in which it is the most bid price')
-print(Counter(ts_best_bid))
-# Print occurrences of best arm in UCB1
-print('Best price found in the experiments by UCB')
-print('The format is price: number of experiments in which it is the most played price')
-print(Counter(ucb_best_price))
-print('Best bid found in the experiments by UCB')
-print('The format is bid: number of experiments in which it is the most bid price')
-print(Counter(ucb_best_bid))
-
-# Plot the results, comparison TS-UCB
-_, axes = plt.subplots(2, 2, figsize=(20, 20))
-axes = axes.flatten()
-best_rewards = np.ones((T,)) * best_reward
-regret_ts_mean = np.mean(best_reward - ts_reward_per_experiment, axis=0)
-regret_ts_std = np.std(best_reward - ts_reward_per_experiment, axis=0)
-regret_ucb_mean = np.mean(best_reward - ucb_reward_per_experiment, axis=0)
-regret_ucb_std = np.std(best_reward - ucb_reward_per_experiment, axis=0)
-cumulative_regret_ts_mean = np.mean(np.cumsum(best_reward - ts_reward_per_experiment, axis=1), axis=0)
-cumulative_regret_ts_std = np.std(np.cumsum(best_reward - ts_reward_per_experiment, axis=1), axis=0)
-cumulative_regret_ucb_mean = np.mean(np.cumsum(best_reward - ucb_reward_per_experiment, axis=1), axis=0)
-cumulative_regret_ucb_std = np.std(np.cumsum(best_reward - ucb_reward_per_experiment, axis=1), axis=0)
-reward_ts_mean = np.mean(ts_reward_per_experiment, axis=0)
-reward_ts_std = np.std(ts_reward_per_experiment, axis=0)
-reward_ucb_mean = np.mean(ucb_reward_per_experiment, axis=0)
-reward_ucb_std = np.std(ucb_reward_per_experiment, axis=0)
-cumulative_reward_ts_mean = np.mean(np.cumsum(ts_reward_per_experiment, axis=1), axis=0)
-cumulative_reward_ts_std = np.std(np.cumsum(ts_reward_per_experiment, axis=1), axis=0)
-cumulative_reward_ucb_mean = np.mean(np.cumsum(ucb_reward_per_experiment, axis=1), axis=0)
-cumulative_reward_ucb_std = np.std(np.cumsum(ucb_reward_per_experiment, axis=1), axis=0)
-
-axes[0].set_title('Instantaneous regret plot')
-axes[0].plot(regret_ts_mean, 'r')
-axes[0].plot(regret_ucb_mean, 'g')
-axes[0].axhline(y=0, color='b', linestyle='--')
-axes[0].legend(["TS", "UCB"])
-axes[0].set_xlabel("t")
-axes[0].set_ylabel("Instantaneous regret")
-
-axes[1].set_title('Instantaneous reward plot')
-axes[1].plot(reward_ts_mean, 'r')
-axes[1].plot(reward_ucb_mean, 'g')
-axes[1].plot(best_rewards, 'b')
-axes[1].legend(["TS", "UCB", "Clairvoyant"])
-axes[1].set_xlabel("t")
-axes[1].set_ylabel("Instantaneous reward")
-
-axes[2].set_title('Cumulative regret plot')
-axes[2].plot(cumulative_regret_ts_mean, 'r')
-axes[2].plot(cumulative_regret_ucb_mean, 'g')
-axes[2].legend(["TS", "UCB"])
-axes[2].set_xlabel("t")
-axes[2].set_ylabel("Cumulative regret")
-
-axes[3].set_title('Cumulative reward plot')
-axes[3].plot(cumulative_reward_ts_mean, 'r')
-axes[3].plot(cumulative_reward_ucb_mean, 'g')
-axes[3].plot(np.cumsum(best_rewards), 'b')
-axes[3].legend(["TS", "UCB", "Clairvoyant"])
-axes[3].set_xlabel("t")
-axes[3].set_ylabel("Cumulative reward")
-plt.show()
-
-# Plot the results for TS with std
-_, axes = plt.subplots(2, 2, figsize=(20, 20))
-axes = axes.flatten()
-
-axes[0].set_title('Instantaneous regret plot for TS')
-axes[0].plot(regret_ts_mean, 'r')
-axes[0].fill_between(range(0, T), regret_ts_mean - regret_ts_std, regret_ts_mean + regret_ts_std, color='r', alpha=0.4)
-axes[0].axhline(y=0, color='b', linestyle='--')
-axes[0].legend(["TS mean", "TS std"])
-axes[0].set_xlabel("t")
-axes[0].set_ylabel("Instantaneous regret")
-
-axes[1].set_title('Instantaneous reward plot for TS')
-axes[1].plot(reward_ts_mean, 'r')
-axes[1].fill_between(range(0, T), reward_ts_mean - reward_ts_std, reward_ts_mean + reward_ts_std, color='r', alpha=0.4)
-axes[1].plot(best_rewards, 'b')
-axes[1].legend(["TS mean", "TS std", "Clairvoyant"])
-axes[1].set_xlabel("t")
-axes[1].set_ylabel("Instantaneous reward")
-
-axes[2].set_title('Cumulative regret plot for TS')
-axes[2].plot(cumulative_regret_ts_mean, 'r')
-axes[2].fill_between(range(0, T), cumulative_regret_ts_mean - cumulative_regret_ts_std, cumulative_regret_ts_mean + cumulative_regret_ts_std, color='r', alpha=0.4)
-axes[2].legend(["TS mean", "TS std"])
-axes[2].set_xlabel("t")
-axes[2].set_ylabel("Cumulative regret")
-
-axes[3].set_title('Cumulative reward plot for TS')
-axes[3].plot(cumulative_reward_ts_mean, 'r')
-axes[3].fill_between(range(0, T), cumulative_reward_ts_mean - cumulative_reward_ts_std, cumulative_reward_ts_mean + cumulative_reward_ts_std, color='r', alpha=0.4)
-axes[3].plot(np.cumsum(best_rewards), 'b')
-axes[3].legend(["TS mean", "TS std", "Clairvoyant"])
-axes[3].set_xlabel("t")
-axes[3].set_ylabel("Cumulative reward")
-plt.show()
-
-# Plot the results for UCB with std
-_, axes = plt.subplots(2, 2, figsize=(20, 20))
-axes = axes.flatten()
-
-axes[0].set_title('Instantaneous regret plot for UCB')
-axes[0].plot(regret_ucb_mean, 'g')
-axes[0].fill_between(range(0, T), regret_ucb_mean - regret_ucb_std, regret_ucb_mean + regret_ucb_std, color='g', alpha=0.4)
-axes[0].axhline(y=0, color='b', linestyle='--')
-axes[0].legend(["UCB mean", "UCB std"])
-axes[0].set_xlabel("t")
-axes[0].set_ylabel("Instantaneous regret")
-
-axes[1].set_title('Instantaneous reward plot for UCB')
-axes[1].plot(reward_ucb_mean, 'g')
-axes[1].fill_between(range(0, T), reward_ucb_mean - reward_ucb_std, reward_ucb_mean + reward_ucb_std, color='g', alpha=0.4)
-axes[1].plot(best_rewards, 'b')
-axes[1].legend(["UCB mean", "UCB std", "Clairvoyant"])
-axes[1].set_xlabel("t")
-axes[1].set_ylabel("Instantaneous reward")
-
-axes[2].set_title('Cumulative regret plot for UCB')
-axes[2].plot(cumulative_regret_ucb_mean, 'g')
-axes[2].fill_between(range(0, T), cumulative_regret_ucb_mean - cumulative_regret_ucb_std, cumulative_regret_ucb_mean + cumulative_regret_ucb_std, color='g', alpha=0.4)
-axes[2].legend(["UCB mean", "UCB std"])
-axes[2].set_xlabel("t")
-axes[2].set_ylabel("Cumulative regret")
-
-axes[3].set_title('Cumulative reward plot for UCB')
-axes[3].plot(cumulative_reward_ucb_mean, 'g')
-axes[3].fill_between(range(0, T), cumulative_reward_ucb_mean - cumulative_reward_ucb_std, cumulative_reward_ucb_mean + cumulative_reward_ucb_std, color='g', alpha=0.4)
-axes[3].plot(np.cumsum(best_rewards), 'b')
-axes[3].legend(["UCB mean", "UCB std", "Clairvoyant"])
-axes[3].set_xlabel("t")
-axes[3].set_ylabel("Cumulative reward")
-
-plt.show()
+# Plot the results
+reward_per_algorithm = [rewards[algorithm] for algorithm in algorithms]
+plot_all_algorithms(reward_per_algorithm, best_rewards, algorithms)
+for i, algorithm in enumerate(algorithms):
+    plot_single_algorithm(reward_per_algorithm[i], best_rewards, algorithm, np.arange(0, T, 1))
