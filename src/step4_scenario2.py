@@ -113,16 +113,20 @@ gpts_pulled_bids_per_experiment = 0
 for e in tqdm(range(0, n_experiments)):
     # Define the learners
     ts_context_learner = ContextGeneratorLearner(env.prices['C1'], env.bids, env.feature_name, env.feature_values,
-                                                 time_between_context_generation, "TS")
+                                                 time_between_context_generation, "TS", other_costs)
     ucb_context_learner = ContextGeneratorLearner(env.prices['C1'], env.bids, env.feature_name, env.feature_values,
-                                                  time_between_context_generation, "UCB")
+                                                  time_between_context_generation, "UCB", other_costs)
     context_learners_type = [ts_context_learner, ucb_context_learner]
 
     # Iterate over the number of rounds
     for t in range(0, T):
         # Apply the context generation algorithm offline every 2 weeks (i.e. t multiple of 14).
         if t % time_between_context_generation == 0 and t != 0:
+            print("--------------------------------------------")
+            print("IT'S TIME TO UPDATE THE CONTEXT")
+            print(f"TIME: {t}")
             for clt in context_learners_type:
+                print("--------------------------------------------")
                 clt.update_context()
 
         # Iterate over TS and UCB

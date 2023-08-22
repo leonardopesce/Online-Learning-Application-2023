@@ -20,7 +20,7 @@ class ContextGeneratorLearner:
         feature_values: Dictionary containing the mapping between the features and the values the features
         can assume, the format is {feature_name: [value0, value1, value2, ...]}
     """
-    def __init__(self, prices, bids, feature_names, feature_values, time_between_context_generation, learner_type):
+    def __init__(self, prices, bids, feature_names, feature_values, time_between_context_generation, learner_type, other_costs):
         """
         Initialize the multi-context learner
 
@@ -43,6 +43,7 @@ class ContextGeneratorLearner:
         self.time_between_context_generation = time_between_context_generation
         self.learner_type = learner_type
         self.context_tree = None
+        self.other_costs = other_costs
 
     def create_user_feature_tuples(self, feature_names, feature_values):
         """
@@ -65,6 +66,50 @@ class ContextGeneratorLearner:
         return result_set
 
     def update_context(self):
+        print(f"I'm {self.learner_type} and I'm updating the context")
+
+        old_context = None
+        if self.context_tree is None:
+            self.context_tree = ContextTree(self.prices, self.bids, self.feature_names, self.feature_values, self.feature_to_observation, 0.95, self.other_costs)
+        else:
+            old_context = self.context_tree.get_context_structure()
+            self.context_tree = ContextTree(self.prices, self.bids, self.feature_names, self.feature_values, self.feature_to_observation, 0.95, self.other_costs)
+
+        new_contexts = self.context_tree.get_context_structure()
+        if old_context != new_contexts:
+            print(f"{self.t} - {self.learner_type} - New Context: {new_contexts}")
+            # Redefining the learners to use in the next steps of the learning procedure using the new contexts
+            # Defining the list of the new context learners (learners + contexts)
+            new_learners = []
+            # Iterating on the new contexts
+            for context in new_contexts:
+                # Defining a new learner
+                new_learner = LearnerFactory().get_learner(self.learner_type, self.prices, self.bids)
+                # Refactoring the feature to observations dictionary
+                new_learner_feature_to_obs = {tuple(context): {}}
+                # Iterating on the tuples of features of the user in the context
+                for feature_tuple in context:
+                    reward_of_context = []  # {((0,1), (0,0)) : {(0,1): [1,2,3,4], (0,0): [1,2,3,4]}}
+                    # Iterating on the observation regarding the user with the chosen values of features
+                    new_learner_feature_to_obs[tuple(context)][feature_tuple] = self.feature_to_observation.get(
+                        feature_tuple)
+                    # for element in self.feature_to_observation.get(feature_tuple):
+                    # Updating the new learner using the past observation of the users in the context it has to consider
+                    # new_learner_feature_to_obs.get(context).append([element])
+                    # new_learner.update(element[0], element[1], element[2], element[3], element[4], element[5])
+                flatten_obs = self.get_flattened_obs(new_learner_feature_to_obs, self.t)
+                for day in flatten_obs.get(tuple(context)):
+                    new_learner.update(day[0][0], day[0][1], day[0][2], day[0][3], day[0][4], day[0][5])
+                assert new_learner.t == self.t
+                # Appending a new context learner to the set of the new learner to use in future time steps
+                new_learners.append(ContextLearner(context, new_learner))
+
+            # Setting the new learners into the context generator learner
+            self.context_learners = new_learners
+        else:
+            print("No changes in the context structure")
+
+    def update_context1(self):
         print("Updating the context")
 
         old_context = None
