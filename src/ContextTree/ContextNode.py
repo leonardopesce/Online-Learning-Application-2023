@@ -333,8 +333,7 @@ class ContextNode:
             # the aggregate model in the node the context is split on the found feature
             if feature_values_to_reward[name_feature_max_reward] > self.aggregate_reward:
                 print(f"Splitted on {name_feature_max_reward}" + f" the node with {self.father.choice} equal to {[item[0] for item in self.father.children.items() if item[1] == self][0]}" if self.father is not None else "")
-                mydict = {'george': 16, 'amber': 19}
-                print(list(mydict.keys())[list(mydict.values()).index(16)])  # Prints george
+
                 # Setting the feature to use to separate the contexts
                 self.choice = name_feature_max_reward
 

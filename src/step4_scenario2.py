@@ -49,9 +49,9 @@ n_prices = 5
 prices = {'C1': np.array([500, 550, 600, 650, 700]),
           'C2': np.array([500, 550, 600, 650, 700]),
           'C3': np.array([500, 550, 600, 650, 700])}
-probabilities = {'C1': np.array([0.1, 0.15, 0.93, 0.8, 0.5]),
-                 'C2': np.array([0.05, 0.2, 0.5, 0.8, 0.93]),
-                 'C3': np.array([0.93, 0.9, 0.4, 0.24, 0.01])}
+probabilities = {'C1': np.array([0.1, 0.1, 0.93, 0.1, 0.1]),
+                 'C2': np.array([0.05, 0.1, 0.1, 0.1, 0.93]),
+                 'C3': np.array([0.93, 0.1, 0.1, 0.1, 0.01])}
 bids_to_clicks = {'C1': np.array([100, 2]),
                   'C2': np.array([90, 2]),
                   'C3': np.array([80, 3])}
@@ -68,7 +68,7 @@ bids = np.linspace(min_bid, max_bid, n_bids)
 sigma = 2
 
 # Time horizon of the experiment
-T = 365
+T = 100
 
 # Since the reward functions are stochastic to better visualize the results and remove the noise
 # we have to perform a sufficiently large number experiments
