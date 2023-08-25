@@ -54,10 +54,10 @@ probabilities = {'C1': np.array([0.1, 0.1, 0.93, 0.1, 0.1]),
                  'C3': np.array([0.93, 0.1, 0.1, 0.1, 0.01])}
 bids_to_clicks = {'C1': np.array([100, 2]),
                   'C2': np.array([90, 2]),
-                  'C3': np.array([80, 3])}
+                  'C3': np.array([200, 3])}
 bids_to_cum_costs = {'C1': np.array([400, 0.035]),
                      'C2': np.array([200, 0.07]),
-                     'C3': np.array([300, 0.04])}
+                     'C3': np.array([600, 0.04])}
 other_costs = 400
 
 # Bids setup

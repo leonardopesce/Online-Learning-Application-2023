@@ -92,11 +92,8 @@ class ContextNode:
         bernoulli_distributions_lower_bound = []
         for price in bernoulli_distributions_lists.keys():
             mean = np.mean(bernoulli_distributions_lists[price]) if len(bernoulli_distributions_lists[price]) != 0 else 0.0
-            #mean = np.mean(bernoulli_distributions_lists[price])
-            #mean = np.nan_to_num(mean, nan=0.0)
             bernoulli_distributions_est.append(mean)
             lower_bound = np.sqrt(-np.log(self.confidence) / 2 / len(bernoulli_distributions_lists[price])) if len(bernoulli_distributions_lists[price]) != 0 else 0.0
-            #lower_bound = np.nan_to_num(lower_bound, nan=0.0)
             bernoulli_distributions_lower_bound.append(lower_bound)
 
         bids_obs = [] # [1, 4, 5]
@@ -332,7 +329,7 @@ class ContextNode:
             # If the lower bound of the reward given by splitting in disaggregate context is higher than the reward of
             # the aggregate model in the node the context is split on the found feature
             if feature_values_to_reward[name_feature_max_reward] > self.aggregate_reward:
-                print(f"Splitted on {name_feature_max_reward}" + f" the node with {self.father.choice} equal to {[item[0] for item in self.father.children.items() if item[1] == self][0]}" if self.father is not None else "")
+                print(f"Splitted on {name_feature_max_reward}" + f" the node with {self.father.choice} equal to {[item[0] for item in self.father.children.items() if item[1] == self][0]}" if self.father is not None else f"Splitted on {name_feature_max_reward}")
 
                 # Setting the feature to use to separate the contexts
                 self.choice = name_feature_max_reward
