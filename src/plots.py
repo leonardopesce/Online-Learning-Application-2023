@@ -163,7 +163,7 @@ def plot_all_algorithms(reward_per_algorithm, best_rewards, labels):
     plt.show()
 
 
-def plot_clicks_curve(bids, learners, labels, original):
+def plot_clicks_curve(bids, learners, labels, original, additional_label=''):
     """
     Plot the estimate of the number of daily clicks curve
 
@@ -171,6 +171,7 @@ def plot_clicks_curve(bids, learners, labels, original):
     :param dict learners: Dictionary with arrays with the GP learners
     :param list labels: List of names of algorithms plotted
     :param ndarray original: y-values of the original curve
+    :param str additional_label: Additional label to add to the label of the algorithms
     """
 
     plt.figure(0)
@@ -180,18 +181,18 @@ def plot_clicks_curve(bids, learners, labels, original):
         lower_bounds_clicks_per_experiment = np.mean(np.array([learner.lower_bounds_clicks for learner in learners[label]]), axis=0)
         upper_bounds_clicks_per_experiment = np.mean(np.array([learner.upper_bounds_clicks for learner in learners[label]]), axis=0)
 
-        plt.plot(bids, mean_clicks_per_experiment, label='GP-'+label)
+        plt.plot(bids, mean_clicks_per_experiment, label='GP-'+label+additional_label)
         plt.fill_between(bids, lower_bounds_clicks_per_experiment, upper_bounds_clicks_per_experiment, alpha=0.2)
 
     plt.plot(bids, original, label='Original curve')
-    plt.title('Clicks given the bid - GP')
+    plt.title('Clicks given the bid - GP' + additional_label)
     plt.xlabel('Bids')
     plt.ylabel('Number of clicks')
     plt.legend()
     plt.show()
 
 
-def plot_costs_curve(bids, learners, labels, original):
+def plot_costs_curve(bids, learners, labels, original, additional_label=''):
     """
     Plot the estimate of the cumulative daily cost of the clicks curve
 
@@ -199,6 +200,7 @@ def plot_costs_curve(bids, learners, labels, original):
     :param dict learners: Dictionary with arrays with the GP learners
     :param list labels: List of names of algorithms plotted
     :param ndarray original: y-values of the original curve
+    :param str additional_label: Additional label to add to the label of the algorithms
     """
 
     plt.figure(1)
@@ -208,11 +210,11 @@ def plot_costs_curve(bids, learners, labels, original):
         lower_bounds_costs_per_experiment = np.mean(np.array([learner.lower_bounds_costs for learner in learners[label]]), axis=0)
         upper_bounds_costs_per_experiment = np.mean(np.array([learner.upper_bounds_costs for learner in learners[label]]), axis=0)
 
-        plt.plot(bids, mean_cum_costs_per_experiment, label='GP-'+label)
+        plt.plot(bids, mean_cum_costs_per_experiment, label='GP-'+label+additional_label)
         plt.fill_between(bids, lower_bounds_costs_per_experiment, upper_bounds_costs_per_experiment, alpha=0.2)
 
     plt.plot(bids, original, label='Original curve')
-    plt.title('Cost of the clicks given the bid - GP')
+    plt.title('Cost of the clicks given the bid - GP' + additional_label)
     plt.xlabel('Bids')
     plt.ylabel('Cumulative cost')
     plt.legend()

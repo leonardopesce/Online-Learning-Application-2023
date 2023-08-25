@@ -75,20 +75,14 @@ for e in tqdm(range(0, n_experiments)):
         rewards[algorithm].append(learners[algorithm].learner_pricing.collected_rewards)
         gp_learners[algorithm].append(learners[algorithm].GP_advertising)
 
-
-def iterate_over_counter(counter, reference_array):
-    for key, value in counter.items():
-        print(f"{reference_array[key]}, index {key}, is the best in {value} experiments")
-
-
 # Print occurrences of best arm
 for algorithm in algorithms:
     print('Best price found in the experiments by ' + algorithm)
     print('The format is price: number of experiments in which it is the most played price')
-    iterate_over_counter(Counter(best_prices[algorithm]), env.prices[category])
+    settings.iterate_over_counter(Counter(best_prices[algorithm]), env.prices[category])
     print('Best bid found in the experiments by ' + algorithm)
     print('The format is bid: number of experiments in which it is the most bid price')
-    iterate_over_counter(Counter(best_bids[algorithm]), env.bids)
+    settings.iterate_over_counter(Counter(best_bids[algorithm]), env.bids)
 
 # Plot the results
 reward_per_algorithm = [rewards[algorithm] for algorithm in algorithms]

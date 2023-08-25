@@ -71,3 +71,8 @@ bids_to_cum_costs_cost_step6 = {'C1': np.array([20, 0.5]),  # this curve doesn't
                                 'C3': np.array([20, 0.5]),
                                 'C4': np.array([20, 0.5]),
                                 'C5': np.array([20, 0.5])}
+
+
+def iterate_over_counter(counter, reference_array):
+    for key, value in counter.items():
+        print(f"{reference_array[key]}, index {key}, is the best in {value} experiments")
