@@ -69,7 +69,7 @@ class ContextGeneratorLearner:
         # To comment for run everything
         ###########
         for learner in self.context_learners:
-            learner.get_learner().GPTS_advertising.plot_clicks()
+            learner.get_learner().advertising_learner.plot_clicks()
         ###########
         print(f"I'm {self.learner_type} and I'm updating the context")
 

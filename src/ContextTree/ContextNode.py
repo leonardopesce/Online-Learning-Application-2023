@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 
 from gpytorch.kernels import RBFKernel, ScaleKernel
 from gpytorch.likelihoods import GaussianLikelihood
+from gpytorch.priors import NormalPrior
 
 from GPs import BaseGaussianProcess
 
@@ -108,8 +109,8 @@ class ContextNode:
 
         kernel_clicks = ScaleKernel(RBFKernel())
         kernel_costs = ScaleKernel(RBFKernel())
-        likelihood_clicks = GaussianLikelihood()
-        likelihood_costs = GaussianLikelihood()
+        likelihood_clicks = GaussianLikelihood(noise_prior=NormalPrior(0, 1000))
+        likelihood_costs = GaussianLikelihood(noise_prior=NormalPrior(0, 1000))
         self.gp_clicks = BaseGaussianProcess(likelihood=likelihood_clicks, kernel=kernel_clicks)
         self.gp_costs = BaseGaussianProcess(likelihood=likelihood_costs, kernel=kernel_costs)
 
@@ -155,7 +156,7 @@ class ContextNode:
         self.choice = None
 
         kernel = ScaleKernel(RBFKernel())
-        likelihood = GaussianLikelihood() # [[[5, [1,0,1,1,0], 3, 45, 5,4]], ...14..., []]
+        likelihood = GaussianLikelihood(noise_prior=NormalPrior(0, 1000)) # [[[5, [1,0,1,1,0], 3, 45, 5,4]], ...14..., []]
 
         self.gp_reward = BaseGaussianProcess(likelihood=likelihood, kernel=kernel)
 

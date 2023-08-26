@@ -5,6 +5,7 @@ import torch
 
 from gpytorch.kernels import RBFKernel, ScaleKernel
 from gpytorch.likelihoods import GaussianLikelihood
+from gpytorch.priors import NormalPrior
 from Learner import Learner
 from GPs import BaseGaussianProcess
 
@@ -56,8 +57,8 @@ class GPUCB_Learner(Learner):
 
         kernel_clicks = ScaleKernel(RBFKernel())
         kernel_costs = ScaleKernel(RBFKernel())
-        likelihood_clicks = GaussianLikelihood()
-        likelihood_costs = GaussianLikelihood()
+        likelihood_clicks = GaussianLikelihood(noise_prior=NormalPrior(0, 1000))
+        likelihood_costs = GaussianLikelihood(noise_prior=NormalPrior(0, 1000))
 
         self.gp_clicks = BaseGaussianProcess(likelihood=likelihood_clicks, kernel=kernel_clicks)
         self.gp_costs = BaseGaussianProcess(likelihood=likelihood_costs, kernel=kernel_costs)
@@ -141,3 +142,13 @@ class GPUCB_Learner(Learner):
             upper confidence bound for all the arms
         """
         return self.empirical_means_clicks + self.confidence_clicks, self.empirical_means_costs - self.confidence_costs
+
+    def plot_clicks(self) -> None:
+        """Plot the clicks curve and the confidence interval together with the data points."""
+        plt.figure(0)
+        plt.scatter(self.pulled_bids, self.collected_clicks, color='r', label = 'clicks per bid')
+        plt.plot(self.arms_values, self.empirical_means_clicks, color='r', label = 'mean clicks')
+        plt.fill_between(self.arms_values, self.lower_bounds_clicks, self.upper_bounds_clicks, alpha=0.2, color='r')
+        plt.title('Clicks UCB')
+        plt.legend()
+        plt.show()

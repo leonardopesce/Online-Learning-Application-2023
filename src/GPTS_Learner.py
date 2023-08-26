@@ -5,6 +5,7 @@ import torch
 
 from gpytorch.kernels import RBFKernel, ScaleKernel
 from gpytorch.likelihoods import GaussianLikelihood
+from gpytorch.priors import NormalPrior
 
 from Learner import Learner
 from GPs import BaseGaussianProcess
@@ -47,8 +48,8 @@ class GPTS_Learner(Learner):
 
         kernel_clicks = ScaleKernel(RBFKernel())
         kernel_costs = ScaleKernel(RBFKernel())
-        likelihood_clicks = GaussianLikelihood()
-        likelihood_costs = GaussianLikelihood()
+        likelihood_clicks = GaussianLikelihood(noise_prior=NormalPrior(0, 1000))
+        likelihood_costs = GaussianLikelihood(noise_prior=NormalPrior(0, 1000))
         
         self.gp_clicks = BaseGaussianProcess(likelihood=likelihood_clicks, kernel=kernel_clicks)
         self.gp_costs = BaseGaussianProcess(likelihood=likelihood_costs, kernel=kernel_costs)
@@ -134,6 +135,7 @@ class GPTS_Learner(Learner):
         plt.scatter(self.pulled_bids, self.collected_clicks, color='r', label = 'clicks per bid')
         plt.plot(self.arms, self.means_clicks, color='r', label = 'mean clicks')
         plt.fill_between(self.arms, self.lower_bounds_clicks, self.upper_bounds_clicks, alpha=0.2, color='r')
+        plt.title('Clicks TS')
         plt.legend()
         plt.show()
 
