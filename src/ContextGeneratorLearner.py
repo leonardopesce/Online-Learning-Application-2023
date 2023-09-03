@@ -108,9 +108,10 @@ class ContextGeneratorLearner:
                     context_copy.remove(key)
                     mean_clicks = np.sum([np.mean([observation[3] for observation in new_learner_feature_to_obs.get(sub_context)]) for sub_context in context_copy])
                     mean_costs = np.sum([np.mean([observation[4] for observation in new_learner_feature_to_obs.get(sub_context)]) for sub_context in context_copy])
-
-                    for observation in new_learner_feature_to_obs.get(key):
-                        new_learner.update(observation[0], observation[1], observation[2], observation[3] + mean_clicks, observation[4] + mean_costs, observation[5])
+                    # mean_rewards = np.sum([np.mean([observation[5] for observation in new_learner_feature_to_obs.get(sub_context)]) for sub_context in context_copy])
+                    # rewards = np.sum(np.array([[observation[5] for observation in new_learner_feature_to_obs.get(key)] for key in new_learner_feature_to_obs.keys()]), axis=0)
+                    for idx, observation in enumerate(new_learner_feature_to_obs.get(key)):
+                        new_learner.update(observation[0], observation[1], observation[2], observation[3] + mean_clicks, observation[4] + mean_costs, observation[5]) # rewards[idx])
 
 
                 #flatten_obs = self.get_flattened_obs(new_learner_feature_to_obs, self.t)

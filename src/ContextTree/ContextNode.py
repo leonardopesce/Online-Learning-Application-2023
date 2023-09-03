@@ -2,12 +2,17 @@ import numpy as np
 import torch
 import matplotlib.pyplot as plt
 
+from sklearn.gaussian_process import GaussianProcessRegressor
+from sklearn.gaussian_process.kernels import RBF, WhiteKernel, Product, ConstantKernel
 from gpytorch.kernels import RBFKernel, ScaleKernel
 from gpytorch.likelihoods import GaussianLikelihood
 from gpytorch.priors import NormalPrior
 
 from GPs import BaseGaussianProcess
 
+from warnings import simplefilter
+from sklearn.exceptions import ConvergenceWarning
+simplefilter("ignore", category=ConvergenceWarning)
 
 def lower_bound1(delta, num_samples, interval):
     return np.sqrt((-np.log(delta) * (interval ** 2)) / (2 * num_samples))
@@ -58,7 +63,7 @@ class ContextNode:
         None if no context disaggregation is done
     """
 
-    def __init__(self, prices, bids, whole_feature_names, feature_names, feature_values, feature_to_observation, confidence, father, other_costs):
+    def __init__(self, prices, bids, whole_feature_names, feature_names, feature_values, feature_to_observation, confidence, father, other_costs, sklearn=True):
         """
         Initializes the node of the context tree
         :param list feature_names: List containing the name of the features used to index the feature_values parameter
@@ -107,17 +112,28 @@ class ContextNode:
                 clicks_obs.append(observation[3])
                 costs_obs.append(observation[4])
 
-        kernel_clicks = ScaleKernel(RBFKernel())
-        kernel_costs = ScaleKernel(RBFKernel())
-        likelihood_clicks = GaussianLikelihood(noise_prior=NormalPrior(0, 1000))
-        likelihood_costs = GaussianLikelihood(noise_prior=NormalPrior(0, 1000))
-        self.gp_clicks = BaseGaussianProcess(likelihood=likelihood_clicks, kernel=kernel_clicks)
-        self.gp_costs = BaseGaussianProcess(likelihood=likelihood_costs, kernel=kernel_costs)
-
-        self.gp_clicks.fit(torch.Tensor(bids_obs), torch.Tensor(clicks_obs))
-        self.gp_costs.fit(torch.Tensor(bids_obs), torch.Tensor(costs_obs))
-        self.means_clicks, self.variance_clicks, self.lower_bounds_clicks, self.upper_bounds_clicks = self.gp_clicks.predict(torch.Tensor(self.bids))
-        self.means_costs, self.variance_costs, self.lower_bounds_costs, self.upper_bounds_costs = self.gp_costs.predict(torch.Tensor(self.bids))
+        if sklearn:
+            kernel_clicks = Product(ConstantKernel(), RBF()) + WhiteKernel()
+            kernel_costs = Product(ConstantKernel(), RBF()) + WhiteKernel()
+            self.gp_clicks = GaussianProcessRegressor(kernel=kernel_clicks)
+            self.gp_costs = GaussianProcessRegressor(kernel=kernel_costs)
+            self.gp_clicks.fit(np.array(bids_obs).reshape(-1, 1),
+                               np.array(clicks_obs).reshape(-1, 1))
+            self.gp_costs.fit(np.array(bids_obs).reshape(-1, 1),
+                              np.array(costs_obs).reshape(-1, 1))
+            self.means_clicks, self.variance_clicks = self.gp_clicks.predict(self.bids.reshape(-1, 1), return_std=True)
+            self.means_costs, self.variance_costs = self.gp_costs.predict(self.bids.reshape(-1, 1), return_std=True)
+        else:
+            kernel_clicks = ScaleKernel(RBFKernel())
+            kernel_costs = ScaleKernel(RBFKernel())
+            likelihood_clicks = GaussianLikelihood(noise_prior=NormalPrior(0, 100))
+            likelihood_costs = GaussianLikelihood(noise_prior=NormalPrior(0, 300))
+            self.gp_clicks = BaseGaussianProcess(likelihood=likelihood_clicks, kernel=kernel_clicks)
+            self.gp_costs = BaseGaussianProcess(likelihood=likelihood_costs, kernel=kernel_costs)
+            self.gp_clicks.fit(torch.Tensor(bids_obs), torch.Tensor(clicks_obs))
+            self.gp_costs.fit(torch.Tensor(bids_obs), torch.Tensor(costs_obs))
+            self.means_clicks, self.variance_clicks, self.lower_bounds_clicks, self.upper_bounds_clicks = self.gp_clicks.predict(torch.Tensor(self.bids))
+            self.means_costs, self.variance_costs, self.lower_bounds_costs, self.upper_bounds_costs = self.gp_costs.predict(torch.Tensor(self.bids))
 
         # Note that price_obs and bids_obs are the indices of the prices and bids that are used in the GP.
         # They need to be converted to the actual prices and bids.
