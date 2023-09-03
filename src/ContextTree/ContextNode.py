@@ -121,8 +121,10 @@ class ContextNode:
                                np.array(clicks_obs).reshape(-1, 1))
             self.gp_costs.fit(np.array(bids_obs).reshape(-1, 1),
                               np.array(costs_obs).reshape(-1, 1))
-            self.means_clicks, self.variance_clicks = self.gp_clicks.predict(self.bids.reshape(-1, 1), return_std=True)
-            self.means_costs, self.variance_costs = self.gp_costs.predict(self.bids.reshape(-1, 1), return_std=True)
+            self.means_clicks, self.std_clicks = self.gp_clicks.predict(self.bids.reshape(-1, 1), return_std=True)
+            self.variance_clicks = self.std_clicks ** 2
+            self.means_costs, self.std_costs = self.gp_costs.predict(self.bids.reshape(-1, 1), return_std=True)
+            self.variance_costs = self.std_costs ** 2
         else:
             kernel_clicks = ScaleKernel(RBFKernel())
             kernel_costs = ScaleKernel(RBFKernel())
