@@ -40,11 +40,11 @@ class GPTS_Learner(Learner):
         super().__init__(arms)
         self.arms = arms
         self.means_clicks = np.zeros(self.n_arms)
-        self.sigmas_clicks = np.ones(self.n_arms)*10
+        self.sigmas_clicks = np.ones(self.n_arms) * np.sqrt(10)
         self.lower_bounds_clicks = np.zeros(self.n_arms)
         self.upper_bounds_clicks = np.zeros(self.n_arms)
         self.means_costs = np.zeros(self.n_arms)
-        self.sigmas_costs = np.ones(self.n_arms) * 10
+        self.sigmas_costs = np.ones(self.n_arms) * np.sqrt(10)
         self.lower_bounds_costs = np.zeros(self.n_arms)
         self.upper_bounds_costs = np.zeros(self.n_arms)
         self.pulled_bids = []
@@ -53,10 +53,10 @@ class GPTS_Learner(Learner):
         self.sklearn = sklearn
 
         if sklearn:
-            kernel_clicks = ConstantKernel() * RBF() #+ WhiteKernel() # ScaleKernel(RBFKernel())
-            kernel_costs = ConstantKernel() * RBF() #+ WhiteKernel() # ScaleKernel(RBFKernel())
-            self.gp_clicks = GaussianProcessRegressor(kernel=kernel_clicks, alpha=1000, n_restarts_optimizer=10)
-            self.gp_costs = GaussianProcessRegressor(kernel=kernel_costs, alpha=300, n_restarts_optimizer=10)
+            kernel_clicks = ConstantKernel() * RBF() + WhiteKernel() # ScaleKernel(RBFKernel())
+            kernel_costs = ConstantKernel() * RBF() + WhiteKernel() # ScaleKernel(RBFKernel())
+            self.gp_clicks = GaussianProcessRegressor(kernel=kernel_clicks, alpha=10, n_restarts_optimizer=2)
+            self.gp_costs = GaussianProcessRegressor(kernel=kernel_costs, alpha=30, n_restarts_optimizer=2)
         else:
             kernel_clicks = ScaleKernel(RBFKernel())
             kernel_costs = ScaleKernel(RBFKernel())
@@ -115,7 +115,7 @@ class GPTS_Learner(Learner):
         self.sigmas_clicks = np.maximum(self.sigmas_clicks, 1e-2)
         self.sigmas_costs = np.maximum(self.sigmas_costs, 1e-2)
 
-    def update(self, pulled_arm : int, reward) -> None:
+    def update(self, pulled_arm : int, reward, model_update = True) -> None:
         """Updates the timestep, the observations and the model of the thompson sampling algorithm.
 
         Args:
@@ -161,7 +161,7 @@ class GPTS_Learner(Learner):
         plt.fill(np.concatenate([self.arms, self.arms[::-1]]),
                  np.concatenate([self.means_clicks - 1.96 * self.sigmas_clicks,
                                  (self.means_clicks + 1.96 * self.sigmas_clicks)[::-1]]),
-                 alpha=.5, fc='b', ec='None', label='95% confidence interval')
+                 alpha=.3, fc='orange', ec='None', label='95% confidence interval')
         # plt.fill_between(self.arms, self.means_clicks - 1.96 * self.sigmas_clicks, self.means_clicks + 1.96 * self.sigmas_clicks, alpha=0.2, color='r')
         plt.title('Clicks TS')
         plt.legend()
@@ -172,7 +172,7 @@ class GPTS_Learner(Learner):
         plt.figure(1)
         plt.scatter(self.pulled_bids, self.collected_costs, color='b', label = 'costs per bid')
         plt.plot(self.arms, self.means_costs, color='b', label = 'mean costs')
-        plt.fill_between(self.arms, self.lower_bounds_costs, self.upper_bounds_costs, alpha=0.2, color='b')
+        # plt.fill_between(self.arms, self.lower_bounds_costs, self.upper_bounds_costs, alpha=0.2, color='b')
         plt.legend()
         plt.show()
 

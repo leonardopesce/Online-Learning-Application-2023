@@ -48,10 +48,10 @@ class GPUCB_Learner(Learner):
         self.empirical_means_costs = np.zeros(self.n_arms)
         self.confidence_costs = np.array([np.inf] * self.n_arms)
 
-        self.sigmas_clicks = np.ones(self.n_arms) * 10
+        self.sigmas_clicks = np.ones(self.n_arms) * np.sqrt(10)
         self.lower_bounds_clicks = np.zeros(self.n_arms)
         self.upper_bounds_clicks = np.zeros(self.n_arms)
-        self.sigmas_costs = np.ones(self.n_arms) * 10
+        self.sigmas_costs = np.ones(self.n_arms) * np.sqrt(10)
         self.lower_bounds_costs = np.zeros(self.n_arms)
         self.upper_bounds_costs = np.zeros(self.n_arms)
         self.pulled_bids = []
@@ -64,8 +64,8 @@ class GPUCB_Learner(Learner):
         if sklearn:
             kernel_clicks = ConstantKernel() * RBF() + WhiteKernel() # Product(ConstantKernel(), RBF()) + WhiteKernel()
             kernel_costs = ConstantKernel() * RBF() + WhiteKernel() # Product(ConstantKernel(), RBF()) + WhiteKernel()
-            self.gp_clicks = GaussianProcessRegressor(kernel=kernel_clicks, alpha=100)
-            self.gp_costs = GaussianProcessRegressor(kernel=kernel_costs, alpha=300)
+            self.gp_clicks = GaussianProcessRegressor(kernel=kernel_clicks, alpha=10, n_restarts_optimizer=2)
+            self.gp_costs = GaussianProcessRegressor(kernel=kernel_costs, alpha=30, n_restarts_optimizer=2)
         else:
             kernel_clicks = ScaleKernel(RBFKernel())
             kernel_costs = ScaleKernel(RBFKernel())
@@ -150,7 +150,7 @@ class GPUCB_Learner(Learner):
         self.collected_clicks = np.append(self.collected_clicks, reward[1])
         self.collected_costs = np.append(self.collected_costs, reward[2])
 
-    def update(self, pulled_arm : int, reward) -> None:
+    def update(self, pulled_arm : int, reward, model_update = True) -> None:
         """
         Updating the attributes given the observations of the results obtained by playing the
         pulled arm in the environment
@@ -177,7 +177,11 @@ class GPUCB_Learner(Learner):
         plt.figure(0)
         plt.scatter(self.pulled_bids, self.collected_clicks, color='r', label = 'clicks per bid')
         plt.plot(self.arms_values, self.empirical_means_clicks, color='r', label = 'mean clicks')
-        plt.fill_between(self.arms_values, self.empirical_means_clicks - self.sigmas_clicks, self.empirical_means_clicks + self.sigmas_clicks, alpha=0.2, color='r')
+        # plt.fill_between(self.arms_values, self.empirical_means_clicks - self.sigmas_clicks, self.empirical_means_clicks + self.sigmas_clicks, alpha=0.2, color='r')
+        plt.fill(np.concatenate([self.arms_values, self.arms_values[::-1]]),
+                 np.concatenate([self.empirical_means_clicks - 1.96 * self.sigmas_clicks,
+                                 (self.empirical_means_clicks + 1.96 * self.sigmas_clicks)[::-1]]),
+                 alpha=.3, fc='orange', ec='None', label='95% confidence interval')
         plt.title('Clicks UCB')
         plt.legend()
         plt.show()
