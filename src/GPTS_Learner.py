@@ -53,14 +53,14 @@ class GPTS_Learner(Learner):
         self.sklearn = sklearn
 
         if sklearn:
-            kernel_clicks = Product(ConstantKernel(), RBF()) + WhiteKernel() # ScaleKernel(RBFKernel())
-            kernel_costs = Product(ConstantKernel(), RBF()) + WhiteKernel() # ScaleKernel(RBFKernel())
-            self.gp_clicks = GaussianProcessRegressor(kernel=kernel_clicks)
-            self.gp_costs = GaussianProcessRegressor(kernel=kernel_costs)
+            kernel_clicks = ConstantKernel() * RBF() #+ WhiteKernel() # ScaleKernel(RBFKernel())
+            kernel_costs = ConstantKernel() * RBF() #+ WhiteKernel() # ScaleKernel(RBFKernel())
+            self.gp_clicks = GaussianProcessRegressor(kernel=kernel_clicks, alpha=1000, n_restarts_optimizer=10)
+            self.gp_costs = GaussianProcessRegressor(kernel=kernel_costs, alpha=300, n_restarts_optimizer=10)
         else:
             kernel_clicks = ScaleKernel(RBFKernel())
             kernel_costs = ScaleKernel(RBFKernel())
-            likelihood_clicks = GaussianLikelihood(noise_prior=NormalPrior(0, 100))
+            likelihood_clicks = GaussianLikelihood(noise_prior=NormalPrior(0, 1000))
             likelihood_costs = GaussianLikelihood(noise_prior=NormalPrior(0, 300))
             self.gp_clicks = BaseGaussianProcess(likelihood=likelihood_clicks, kernel=kernel_clicks)
             self.gp_costs = BaseGaussianProcess(likelihood=likelihood_costs, kernel=kernel_costs)
@@ -158,7 +158,11 @@ class GPTS_Learner(Learner):
         plt.figure(0)
         plt.scatter(self.pulled_bids, self.collected_clicks, color='r', label = 'clicks per bid')
         plt.plot(self.arms, self.means_clicks, color='r', label = 'mean clicks')
-        plt.fill_between(self.arms, self.means_clicks - self.sigmas_clicks, self.means_clicks + self.sigmas_clicks, alpha=0.2, color='r')
+        plt.fill(np.concatenate([self.arms, self.arms[::-1]]),
+                 np.concatenate([self.means_clicks - 1.96 * self.sigmas_clicks,
+                                 (self.means_clicks + 1.96 * self.sigmas_clicks)[::-1]]),
+                 alpha=.5, fc='b', ec='None', label='95% confidence interval')
+        # plt.fill_between(self.arms, self.means_clicks - 1.96 * self.sigmas_clicks, self.means_clicks + 1.96 * self.sigmas_clicks, alpha=0.2, color='r')
         plt.title('Clicks TS')
         plt.legend()
         plt.show()

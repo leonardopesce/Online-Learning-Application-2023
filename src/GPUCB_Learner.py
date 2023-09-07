@@ -62,10 +62,10 @@ class GPUCB_Learner(Learner):
         self.sklearn = sklearn
 
         if sklearn:
-            kernel_clicks = Product(ConstantKernel(), RBF()) + WhiteKernel()
-            kernel_costs = Product(ConstantKernel(), RBF()) + WhiteKernel()
-            self.gp_clicks = GaussianProcessRegressor(kernel=kernel_clicks)
-            self.gp_costs = GaussianProcessRegressor(kernel=kernel_costs)
+            kernel_clicks = ConstantKernel() * RBF() + WhiteKernel() # Product(ConstantKernel(), RBF()) + WhiteKernel()
+            kernel_costs = ConstantKernel() * RBF() + WhiteKernel() # Product(ConstantKernel(), RBF()) + WhiteKernel()
+            self.gp_clicks = GaussianProcessRegressor(kernel=kernel_clicks, alpha=100)
+            self.gp_costs = GaussianProcessRegressor(kernel=kernel_costs, alpha=300)
         else:
             kernel_clicks = ScaleKernel(RBFKernel())
             kernel_costs = ScaleKernel(RBFKernel())

@@ -108,7 +108,7 @@ class ContextGeneratorLearner:
                     context_copy.remove(key)
                     mean_clicks = np.sum([np.mean([observation[3] for observation in new_learner_feature_to_obs.get(sub_context)]) for sub_context in context_copy])
                     mean_costs = np.sum([np.mean([observation[4] for observation in new_learner_feature_to_obs.get(sub_context)]) for sub_context in context_copy])
-                    # mean_rewards = np.sum([np.mean([observation[5] for observation in new_learner_feature_to_obs.get(sub_context)]) for sub_context in context_copy])
+                    mean_rewards = np.sum([np.mean([observation[5] for observation in new_learner_feature_to_obs.get(sub_context)]) for sub_context in context_copy])
                     # rewards = np.sum(np.array([[observation[5] for observation in new_learner_feature_to_obs.get(key)] for key in new_learner_feature_to_obs.keys()]), axis=0)
                     for idx, observation in enumerate(new_learner_feature_to_obs.get(key)):
                         new_learner.update(observation[0], observation[1], observation[2], observation[3] + mean_clicks, observation[4] + mean_costs, observation[5]) # rewards[idx])
@@ -117,7 +117,6 @@ class ContextGeneratorLearner:
                 #flatten_obs = self.get_flattened_obs(new_learner_feature_to_obs, self.t)
                 #for day in flatten_obs.get(tuple(context)):
                 #    new_learner.update(day[0][0], day[0][1], day[0][2], day[0][3], day[0][4], day[0][5])
-
 
                 new_learner.t == self.t
                 # Appending a new context learner to the set of the new learner to use in future time steps
