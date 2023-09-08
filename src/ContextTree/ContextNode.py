@@ -88,7 +88,7 @@ class ContextNode:
         self.children = {}
         self.choice = None
 
-        # 
+        # Aggregating the Bernoulli observations contained in feature_to_observation based on the price of the observation
         bernoulli_distributions_lists = {}
         for idx in range(len(prices)):
             bernoulli_distributions_lists[idx] = []
@@ -96,14 +96,18 @@ class ContextNode:
             for observation in self.feature_to_observation[key]:
                 bernoulli_distributions_lists[observation[0]].extend(observation[1])
 
+        # Computing the mean and the lower bound of the Bernoulli distributions for each price
+        # The lower bound is based on the Hoeffding bound
         bernoulli_distributions_est = []
         bernoulli_distributions_lower_bound = []
         for price in bernoulli_distributions_lists.keys():
             mean = np.mean(bernoulli_distributions_lists[price]) if len(bernoulli_distributions_lists[price]) != 0 else 0.0
             bernoulli_distributions_est.append(mean)
-            lower_bound = np.sqrt(-np.log(self.confidence) / 2 / len(bernoulli_distributions_lists[price])) if len(bernoulli_distributions_lists[price]) != 0 else 0.0
+            lower_bound = np.sqrt(-np.log(self.confidence) / (2 * len(bernoulli_distributions_lists[price]))) if len(bernoulli_distributions_lists[price]) != 0 else 0.0
             bernoulli_distributions_lower_bound.append(lower_bound)
 
+        # Aggregating the played bids and the observations of the clicks and costs based on the bid in three arrays
+        # indexed by the time
         bids_obs = [] # [1, 4, 5]
         clicks_obs = [] # [3235434243, 23423424, 24324234]
         costs_obs = [] # [4234243, 61423424, 122423.31]
@@ -114,6 +118,7 @@ class ContextNode:
                 clicks_obs.append(observation[3])
                 costs_obs.append(observation[4])
 
+        # Fitting the Gaussian Processes for the clicks and costs given the observations
         if sklearn:
             kernel_clicks = ConstantKernel() * RBF() + WhiteKernel() #Product(ConstantKernel(), RBF()) + WhiteKernel()
             kernel_costs = ConstantKernel() * RBF() + WhiteKernel() #Product(ConstantKernel(), RBF()) + WhiteKernel()
@@ -146,9 +151,17 @@ class ContextNode:
         self.lower_bounds_rewards = None
         self.upper_bounds_rewards = None
 
+        # Defining the other costs
         self.other_costs = other_costs
-        rewards = (self.means_clicks[:, None] - np.sqrt(self.variance_clicks)[:, None]) * (np.array(bernoulli_distributions_est)[None, :] - np.array(bernoulli_distributions_lower_bound)[None, :]) * (self.prices - self.other_costs) - (self.means_costs[:, None] + np.sqrt(self.variance_costs)[:, None])
+
+        # Computing the aggregate reward for all the possible prices and bids given the estimated Bernoulli
+        # distributions and the estimated number of clicks and costs
+        a = np.array(bernoulli_distributions_est)[None, :] - np.array(bernoulli_distributions_lower_bound)[None, :]
+        aa = self.means_clicks[:, None]
+        rewards = (self.means_clicks[:, None] - 1.96 * np.sqrt(self.variance_clicks)[:, None]) * (np.array(bernoulli_distributions_est)[None, :] - np.array(bernoulli_distributions_lower_bound)[None, :]) * (self.prices - self.other_costs) - (self.means_costs[:, None] + 1.96 * np.sqrt(self.variance_costs)[:, None])
         #print(np.max(rewards))
+        # Setting the reward of the node to the maximum reward achievable among all the possible prices and bids in the
+        # context of the node
         self.aggregate_reward = np.max(rewards)
 
     def __init__2(self, prices, bids, whole_feature_names, feature_names, feature_values, feature_to_observation, confidence, father):
@@ -315,7 +328,7 @@ class ContextNode:
                     #print(f"Evaluating {feature_value}")
                     # Computing the number of samples when splitting on the feature with feature_name and considering
                     # to take the samples with value of feature_name equal to the value feature_value
-                    feature_values_to_num_samples[feature_value] = sum([observation[3] for key in self.feature_to_observation.keys()  for observation in self.feature_to_observation.get(key) if key[feature_idx] == feature_value])
+                    feature_values_to_num_samples[feature_value] = sum([observation[3] for key in self.feature_to_observation.keys() for observation in self.feature_to_observation.get(key) if key[feature_idx] == feature_value])
 
                     # Computing the lower bound of the reward given by the context obtained splitting on the feature
                     # with feature_name and considering to take the samples with value of feature_name equal to the
@@ -333,12 +346,13 @@ class ContextNode:
                     # Computing the lower bound of the probability of having the context obtained by splitting on the
                     # feature with feature_name and considering to take the samples with value of feature_name equal to
                     # the value feature_value
-                    feature_values_to_reward_probability_split[feature_value] = (feature_values_to_num_samples[feature_value] / total_num_samples) - np.sqrt(-np.log(self.confidence) / 2 / feature_values_to_num_samples[feature_value]) #- lower_bound(self.confidence, feature_values_to_num_samples[feature_value])
+                    feature_values_to_reward_probability_split[feature_value] = (feature_values_to_num_samples[feature_value] / total_num_samples) - np.sqrt(-np.log(self.confidence) / (2 * feature_values_to_num_samples[feature_value])) #- lower_bound(self.confidence, feature_values_to_num_samples[feature_value])
 
                 # Computing the lower bound of the reward given by splitting on the feature with name feature_name as
                 # the sum of the product between the reward of a context and the probability of that context
                 feature_values_to_reward[feature_name] = sum([feature_values_to_reward_lower_bound[feature_value] * feature_values_to_reward_probability_split[feature_value] for feature_value in self.feature_values[feature_name]])
-                #print(f"The reward coming from the split on {feature_name} is {feature_values_to_reward[feature_name]}")
+                print(f"Aggregate : {self.aggregate_reward}")
+                print(f"The reward coming from the split on {feature_name} is {feature_values_to_reward[feature_name]}")
 
 
             # Finding the name of the feature with the highest lower bound of the reward (feature on which the node

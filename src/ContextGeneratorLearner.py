@@ -75,10 +75,10 @@ class ContextGeneratorLearner:
 
         old_context = None
         if self.context_tree is None:
-            self.context_tree = ContextTree(self.prices, self.bids, self.feature_names, self.feature_values, self.feature_to_observation, 0.95, self.other_costs)
+            self.context_tree = ContextTree(self.prices, self.bids, self.feature_names, self.feature_values, self.feature_to_observation, 0.05, self.other_costs)
         else:
             old_context = self.context_tree.get_context_structure()
-            self.context_tree = ContextTree(self.prices, self.bids, self.feature_names, self.feature_values, self.feature_to_observation, 0.95, self.other_costs)
+            self.context_tree = ContextTree(self.prices, self.bids, self.feature_names, self.feature_values, self.feature_to_observation, 0.05, self.other_costs)
 
         new_contexts = self.context_tree.get_context_structure()
         if old_context != new_contexts:

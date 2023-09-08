@@ -49,15 +49,15 @@ n_prices = 5
 prices = {'C1': np.array([500, 550, 600, 650, 700]),
           'C2': np.array([500, 550, 600, 650, 700]),
           'C3': np.array([500, 550, 600, 650, 700])}
-probabilities = {'C1': np.array([0.1, 0.1, 0.93, 0.1, 0.1]),
-                 'C2': np.array([0.05, 0.1, 0.1, 0.1, 0.93]),
-                 'C3': np.array([0.93, 0.1, 0.1, 0.1, 0.01])}
+probabilities = {'C1': np.array([0.1, 0.1, 0.3, 0.2, 0.1]),
+                 'C2': np.array([0.05, 0.1, 0.1, 0.1, 0.3]),
+                 'C3': np.array([0.3, 0.2, 0.1, 0.05, 0.01])}
 bids_to_clicks = {'C1': np.array([100, 2]),
                   'C2': np.array([90, 2]),
-                  'C3': np.array([200, 3])}
-bids_to_cum_costs = {'C1': np.array([400, 0.035]),
-                     'C2': np.array([200, 0.07]),
-                     'C3': np.array([600, 0.04])}
+                  'C3': np.array([100, 3])}
+bids_to_cum_costs = {'C1': np.array([200, 0.035]),
+                     'C2': np.array([100, 0.07]),
+                     'C3': np.array([200, 0.04])}
 other_costs = 400
 
 # Bids setup
