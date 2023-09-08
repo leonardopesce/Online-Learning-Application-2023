@@ -75,6 +75,7 @@ class ContextNode:
         :param ContextNode father: Father node
         """
 
+        # Setting the attributes of the node
         self.prices = prices
         self.bids = bids
         self.whole_feature_names = whole_feature_names # ['age', 'sex']
@@ -87,6 +88,7 @@ class ContextNode:
         self.children = {}
         self.choice = None
 
+        # 
         bernoulli_distributions_lists = {}
         for idx in range(len(prices)):
             bernoulli_distributions_lists[idx] = []

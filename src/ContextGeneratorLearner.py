@@ -106,19 +106,52 @@ class ContextGeneratorLearner:
                 for key in new_learner_feature_to_obs.keys():
                     context_copy = context.copy()
                     context_copy.remove(key)
+                    #mean_clicks = np.sum([np.mean([observation[3] for observation in new_learner_feature_to_obs.get(sub_context)]) for sub_context in context_copy])
+                    #mean_costs = np.sum([np.mean([observation[4] for observation in new_learner_feature_to_obs.get(sub_context)]) for sub_context in context_copy])
+
+                    #mean_rewards = np.sum([np.mean([observation[5] for observation in new_learner_feature_to_obs.get(sub_context)]) for sub_context in context_copy])
+                    # rewards = np.sum(np.array([[observation[5] for observation in new_learner_feature_to_obs.get(key)] for key in new_learner_feature_to_obs.keys()]), axis=0)
+
+                    mean_clicks_per_feature_tuple = np.array([np.mean([observation[3] for observation in new_learner_feature_to_obs.get(sub_context)]) for sub_context in context_copy])
+                    #mean_costs_per_feature_tuple = np.array([np.mean([observation[4] for observation in new_learner_feature_to_obs.get(sub_context)]) for sub_context in context_copy])
                     mean_clicks = np.sum([np.mean([observation[3] for observation in new_learner_feature_to_obs.get(sub_context)]) for sub_context in context_copy])
                     mean_costs = np.sum([np.mean([observation[4] for observation in new_learner_feature_to_obs.get(sub_context)]) for sub_context in context_copy])
-                    mean_rewards = np.sum([np.mean([observation[5] for observation in new_learner_feature_to_obs.get(sub_context)]) for sub_context in context_copy])
-                    # rewards = np.sum(np.array([[observation[5] for observation in new_learner_feature_to_obs.get(key)] for key in new_learner_feature_to_obs.keys()]), axis=0)
+
+                    bernoulli_means_per_feature_tuple = np.zeros((len(mean_clicks_per_feature_tuple), len(self.prices)))
+
+                    for sub_context_idx, sub_context in enumerate(context_copy):
+                        observation_list = new_learner_feature_to_obs.get(sub_context)
+                        bernoulli_obs_per_price = [np.array([]) for price in self.prices]
+
+                        for observation in observation_list:
+                            bernoulli_obs_per_price[observation[0]] = np.concatenate((bernoulli_obs_per_price[observation[0]], observation[1]))
+
+                        bernoulli_means_per_price = np.array([np.mean(bernoulli_price_aggregated) for bernoulli_price_aggregated in bernoulli_obs_per_price])
+                        bernoulli_means_per_price = np.nan_to_num(bernoulli_means_per_price)
+
+                        bernoulli_means_per_feature_tuple[sub_context_idx, :] = bernoulli_means_per_price[:]
+
+                    number_of_ones = np.floor(mean_clicks_per_feature_tuple[None, :] @ bernoulli_means_per_feature_tuple).astype(int)
+                    number_of_zeros = np.ceil(mean_clicks_per_feature_tuple[None, :] @ (1 - bernoulli_means_per_feature_tuple)).astype(int)
+
                     for idx, observation in enumerate(new_learner_feature_to_obs.get(key)):
-                        new_learner.update(observation[0], observation[1], observation[2], observation[3] + mean_clicks, observation[4] + mean_costs, observation[5]) # rewards[idx])
+                        bernoulli_obs_other_classes = np.ones(number_of_ones[0, observation[0]])
+                        bernoulli_obs_other_classes = np.concatenate((bernoulli_obs_other_classes, np.zeros(number_of_zeros[0, observation[0]])))
+                        #print(idx)
+                        #print(observation[1])
+                        #print()
+                        #print(bernoulli_obs_other_classes)
+                        #print()
+                        #print(np.concatenate((observation[1], bernoulli_obs_other_classes)))
+                        #print("------------------------------------------------------------------------------------------------------------------")
+                        new_learner.update(observation[0], np.concatenate((observation[1], bernoulli_obs_other_classes)), observation[2], observation[3] + mean_clicks, observation[4] + mean_costs, observation[5]) # rewards[idx])
 
 
                 #flatten_obs = self.get_flattened_obs(new_learner_feature_to_obs, self.t)
                 #for day in flatten_obs.get(tuple(context)):
                 #    new_learner.update(day[0][0], day[0][1], day[0][2], day[0][3], day[0][4], day[0][5])
 
-                new_learner.t == self.t
+                new_learner.t = self.t
                 # Appending a new context learner to the set of the new learner to use in future time steps
                 new_learners.append(ContextLearner(context, new_learner))
 
