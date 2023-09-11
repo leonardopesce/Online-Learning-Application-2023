@@ -1,12 +1,13 @@
 import numpy as np
 
+from PricingAdvertisingLearner import PricingAdvertisingLearner
 from GPTS_Learner import GPTS_Learner
 from TSReward import TSRewardLearner
 
 # TODO This learner maximize the reward given prices and bids in a joint way. Do we what this?
 
 
-class TSLearnerPricingAdvertising:
+class TSLearnerPricingAdvertising(PricingAdvertisingLearner):
     """
     Learner that applies the Thompson Sampling(TS) algorithm to the problem of advertising and pricing
 
@@ -28,8 +29,8 @@ class TSLearnerPricingAdvertising:
 
     def pull_arm(self, other_costs):
         """
-        Chooses the price to play based on the TS algorithm, therefore it samples the Beta distribution and the Gaussian
-        processes of the advertising problem and then it chooses the price and the bid that maximize the reward
+        Chooses the price and bid to play based on the TS algorithm, therefore it samples the Beta distribution and the
+        Gaussian processes of the advertising problem and then it chooses the price and the bid that maximize the reward
 
         :param float other_costs: Know costs of the product, used to compute the margin
 
@@ -92,3 +93,21 @@ class TSLearnerPricingAdvertising:
         """
 
         return self.GP_advertising.pulled_arms
+
+    def get_reward(self):
+        return self.TS_pricing.collected_rewards
+
+    @property
+    def t(self):
+        if self.TS_pricing.t != self.GPTS_advertising.t:
+            raise ValueError("TS and GPTS have different time steps")
+        return self.TS_pricing.t
+
+    @t.setter
+    def t(self, t):
+        self.TS_pricing.t = t
+        self.GPTS_advertising.t = t
+
+    @property
+    def advertising_learner(self):
+        return self.GPTS_advertising

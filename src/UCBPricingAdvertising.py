@@ -1,12 +1,13 @@
 import numpy as np
 
+from PricingAdvertisingLearner import PricingAdvertisingLearner
 from GPUCB_Learner import GPUCB_Learner
 from UCB import UCBLearner
 
 # TODO This learner maximize the reward given prices and bids in a joint way
 
 
-class UCBLearnerPricingAdvertising:
+class UCBLearnerPricingAdvertising(PricingAdvertisingLearner):
     """
     Learner that applies the Upper Confidence Bound 1(UCB1) algorithm to the problem of advertising and pricing
 
@@ -90,3 +91,21 @@ class UCBLearnerPricingAdvertising:
         """
 
         return self.GP_advertising.pulled_arms
+
+    def get_reward(self):
+        return self.UCB_pricing.collected_rewards
+
+    @property
+    def t(self):
+        if self.UCB_pricing.t != self.GPUCB_advertising.t:
+            raise ValueError("The two learners have different time steps")
+        return self.UCB_pricing.t
+
+    @t.setter
+    def t(self, value):
+        self.UCB_pricing.t = value
+        self.GPUCB_advertising.t = value
+
+    @property
+    def advertising_learner(self):
+        return self.GPUCB_advertising
