@@ -3,11 +3,17 @@ import numpy as np
 import matplotlib.pyplot as plt
 import torch
 
+from sklearn.gaussian_process import GaussianProcessRegressor
+from sklearn.gaussian_process.kernels import RBF, WhiteKernel, Product, ConstantKernel
 from gpytorch.kernels import RBFKernel, ScaleKernel
 from gpytorch.likelihoods import GaussianLikelihood
+from gpytorch.priors import NormalPrior
 from Learner import Learner
 from GPs import BaseGaussianProcess
 
+from warnings import simplefilter
+from sklearn.exceptions import ConvergenceWarning
+simplefilter("ignore", category=ConvergenceWarning)
 
 class GPUCB_Learner(Learner):
     """
@@ -35,17 +41,17 @@ class GPUCB_Learner(Learner):
     :param BaseGaussianProcess gp_costs: Gaussian Process Regressor for the costs
     """
 
-    def __init__(self, arms_values, confidence_level=0.95):
+    def __init__(self, arms_values, confidence_level=0.95, sklearn=True):
         super().__init__(arms_values)
         self.empirical_means_clicks = np.zeros(self.n_arms)
         self.confidence_clicks = np.array([np.inf] * self.n_arms)
         self.empirical_means_costs = np.zeros(self.n_arms)
         self.confidence_costs = np.array([np.inf] * self.n_arms)
 
-        self.sigmas_clicks = np.ones(self.n_arms) * 10
+        self.sigmas_clicks = np.ones(self.n_arms) * np.sqrt(10)
         self.lower_bounds_clicks = np.zeros(self.n_arms)
         self.upper_bounds_clicks = np.zeros(self.n_arms)
-        self.sigmas_costs = np.ones(self.n_arms) * 10
+        self.sigmas_costs = np.ones(self.n_arms) * np.sqrt(10)
         self.lower_bounds_costs = np.zeros(self.n_arms)
         self.upper_bounds_costs = np.zeros(self.n_arms)
         self.pulled_bids = []
@@ -53,37 +59,61 @@ class GPUCB_Learner(Learner):
         self.collected_costs = np.array([])
         self.confidence_level = confidence_level
         self.delta = 1 - confidence_level
+        self.sklearn = sklearn
 
-        kernel_clicks = ScaleKernel(RBFKernel())
-        kernel_costs = ScaleKernel(RBFKernel())
-        likelihood_clicks = GaussianLikelihood()
-        likelihood_costs = GaussianLikelihood()
-
-        self.gp_clicks = BaseGaussianProcess(likelihood=likelihood_clicks, kernel=kernel_clicks)
-        self.gp_costs = BaseGaussianProcess(likelihood=likelihood_costs, kernel=kernel_costs)
+        if sklearn:
+            kernel_clicks = ConstantKernel() * RBF() + WhiteKernel() # Product(ConstantKernel(), RBF()) + WhiteKernel()
+            kernel_costs = ConstantKernel() * RBF() + WhiteKernel() # Product(ConstantKernel(), RBF()) + WhiteKernel()
+            self.gp_clicks = GaussianProcessRegressor(kernel=kernel_clicks, alpha=10, n_restarts_optimizer=2)
+            self.gp_costs = GaussianProcessRegressor(kernel=kernel_costs, alpha=30, n_restarts_optimizer=2)
+        else:
+            kernel_clicks = ScaleKernel(RBFKernel())
+            kernel_costs = ScaleKernel(RBFKernel())
+            likelihood_clicks = GaussianLikelihood(noise_prior=NormalPrior(0, 100))
+            likelihood_costs = GaussianLikelihood(noise_prior=NormalPrior(0, 300))
+            self.gp_clicks = BaseGaussianProcess(likelihood=likelihood_clicks, kernel=kernel_clicks)
+            self.gp_costs = BaseGaussianProcess(likelihood=likelihood_costs, kernel=kernel_costs)
 
     def update_model(self) -> None:
         """Updates the means and standard deviations of the Gaussian distributions of the clicks and costs curves fitting a Gaussian process model."""
-        x = torch.Tensor(self.pulled_bids)            # Bids previously pulled.
+        if self.sklearn:
+            x = np.array(self.pulled_bids).reshape(-1, 1) # torch.Tensor(self.pulled_bids)            # Bids previously pulled.
 
-        # Fitting the Gaussian Process Regressor relative to clicks and making a prediction for the current round.
-        y = torch.Tensor(self.collected_clicks)       # Clicks previously collected.
-        self.gp_clicks.fit(x, y)
-        self.empirical_means_clicks, self.sigmas_clicks, self.lower_bounds_clicks, self.upper_bounds_clicks = self.gp_clicks.predict(torch.Tensor(self.arms_values))
-        self.sigmas_clicks = np.sqrt(self.sigmas_clicks)
+            # Fitting the Gaussian Process Regressor relative to clicks and making a prediction for the current round.
+            y = self.collected_clicks.reshape(-1, 1) # torch.Tensor(self.collected_clicks)       # Clicks previously collected.
+            self.gp_clicks.fit(x, y)
+            self.empirical_means_clicks, self.sigmas_clicks = self.gp_clicks.predict(self.get_arms().reshape(-1 ,1), return_std=True)
+        
+            beta = 2 * np.log((self.n_arms * (self.t ** 2) * (np.pi ** 2)) / (6 * self.delta)) # https://arxiv.org/pdf/0912.3995.pdf
+            self.confidence_clicks = np.sqrt(beta) * self.sigmas_clicks
+
+            # Fitting the Gaussian Process Regressor relative to costs and making a prediction for the current round.
+            y = self.collected_costs.reshape(-1 ,1)        # Daily costs previously collected.
+            self.gp_costs.fit(x, y)
+            self.empirical_means_costs, self.sigmas_costs = self.gp_costs.predict(self.get_arms().reshape(-1 ,1), return_std=True)
+
+            self.confidence_costs = np.sqrt(beta) * self.sigmas_costs
+        else:
+            x = torch.Tensor(self.pulled_bids)            # Bids previously pulled.
+
+            # Fitting the Gaussian Process Regressor relative to clicks and making a prediction for the current round.
+            y = torch.Tensor(self.collected_clicks)       # Clicks previously collected.
+            self.gp_clicks.fit(x, y)
+            self.empirical_means_clicks, self.sigmas_clicks, self.lower_bounds_clicks, self.upper_bounds_clicks = self.gp_clicks.predict(torch.Tensor(self.arms_values))
+            self.sigmas_clicks = np.sqrt(self.sigmas_clicks)
+
+            beta = 2 * np.log((self.n_arms * (self.t ** 2) * (np.pi ** 2)) / (6 * self.delta))  # https://arxiv.org/pdf/0912.3995.pdf
+            self.confidence_clicks = np.sqrt(beta) * self.sigmas_clicks
+
+            # Fitting the Gaussian Process Regressor relative to costs and making a prediction for the current round.
+            y = torch.Tensor(self.collected_costs)        # Daily costs previously collected.
+            self.gp_costs.fit(x, y)
+            self.empirical_means_costs, self.sigmas_costs, self.lower_bounds_costs, self.upper_bounds_costs = self.gp_costs.predict(torch.Tensor(self.get_arms()))
+            self.sigmas_costs = np.sqrt(self.sigmas_costs)
+
+            self.confidence_costs = np.sqrt(beta) * self.sigmas_costs
         self.sigmas_clicks = np.maximum(self.sigmas_clicks, 1e-2)
-        
-        beta = 2 * np.log((self.n_arms * (self.t ** 2) * (np.pi ** 2)) / (6 * self.delta)) # https://arxiv.org/pdf/0912.3995.pdf
-        self.confidence_clicks = np.sqrt(beta) * self.sigmas_clicks
-
-        # Fitting the Gaussian Process Regressor relative to costs and making a prediction for the current round.
-        y = torch.Tensor(self.collected_costs)        # Daily costs previously collected.
-        self.gp_costs.fit(x, y)
-        self.empirical_means_costs, self.sigmas_costs, self.lower_bounds_costs, self.upper_bounds_costs = self.gp_costs.predict(torch.Tensor(self.get_arms()))
-        self.sigmas_costs = np.sqrt(self.sigmas_costs)
         self.sigmas_costs = np.maximum(self.sigmas_costs, 1e-2)
-        
-        self.confidence_costs = np.sqrt(beta) * self.sigmas_costs
 
     def pull_arm_GPs(self, prob_margin : float) -> int:
         """
@@ -120,7 +150,7 @@ class GPUCB_Learner(Learner):
         self.collected_clicks = np.append(self.collected_clicks, reward[1])
         self.collected_costs = np.append(self.collected_costs, reward[2])
 
-    def update(self, pulled_arm : int, reward) -> None:
+    def update(self, pulled_arm : int, reward, model_update = True) -> None:
         """
         Updating the attributes given the observations of the results obtained by playing the
         pulled arm in the environment
@@ -141,3 +171,17 @@ class GPUCB_Learner(Learner):
             upper confidence bound for all the arms
         """
         return self.empirical_means_clicks + self.confidence_clicks, self.empirical_means_costs - self.confidence_costs
+
+    def plot_clicks(self) -> None:
+        """Plot the clicks curve and the confidence interval together with the data points."""
+        plt.figure(0)
+        plt.scatter(self.pulled_bids, self.collected_clicks, color='r', label = 'clicks per bid')
+        plt.plot(self.arms_values, self.empirical_means_clicks, color='r', label = 'mean clicks')
+        # plt.fill_between(self.arms_values, self.empirical_means_clicks - self.sigmas_clicks, self.empirical_means_clicks + self.sigmas_clicks, alpha=0.2, color='r')
+        plt.fill(np.concatenate([self.arms_values, self.arms_values[::-1]]),
+                 np.concatenate([self.empirical_means_clicks - 1.96 * self.sigmas_clicks,
+                                 (self.empirical_means_clicks + 1.96 * self.sigmas_clicks)[::-1]]),
+                 alpha=.3, fc='orange', ec='None', label='95% confidence interval')
+        plt.title('Clicks UCB')
+        plt.legend()
+        plt.show()

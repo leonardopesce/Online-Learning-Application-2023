@@ -47,28 +47,28 @@ probability_feature_values_in_categories = {'C1': {(0, 1): 1}, 'C2': {(1, 1): 1}
 # Setting the environment parameters
 n_prices = 5
 prices = {'C1': np.array([500, 550, 600, 650, 700]),
-              'C2': np.array([500, 550, 600, 650, 700]),
-              'C3': np.array([500, 550, 600, 650, 700])}
-probabilities = {'C1': np.array([0.05, 0.05, 0.3, 0.1, 0.05]),
-                 'C2': np.array([0.05, 0.05, 0.1, 0.1, 0.3]),
-                 'C3': np.array([0.3, 0.1, 0.1, 0.05, 0.05])}
+          'C2': np.array([500, 550, 600, 650, 700]),
+          'C3': np.array([500, 550, 600, 650, 700])}
+probabilities = {'C1': np.array([0.1, 0.1, 0.3, 0.2, 0.1]),
+                 'C2': np.array([0.05, 0.1, 0.1, 0.1, 0.3]),
+                 'C3': np.array([0.3, 0.2, 0.1, 0.05, 0.01])}
 bids_to_clicks = {'C1': np.array([100, 2]),
                   'C2': np.array([90, 2]),
-                  'C3': np.array([80, 3])}
-bids_to_cum_costs = {'C1': np.array([400, 0.035]),
-                     'C2': np.array([200, 0.07]),
-                     'C3': np.array([300, 0.04])}
+                  'C3': np.array([100, 3])}
+bids_to_cum_costs = {'C1': np.array([200, 0.035]),
+                     'C2': np.array([100, 0.07]),
+                     'C3': np.array([200, 0.04])}
 other_costs = 400
 
 # Bids setup
 n_bids = 100
 min_bid = 0.5
-max_bid = 20.0
+max_bid = 15.0
 bids = np.linspace(min_bid, max_bid, n_bids)
 sigma = 2
 
 # Time horizon of the experiment
-T = 365
+T = 100
 
 # Since the reward functions are stochastic to better visualize the results and remove the noise
 # we have to perform a sufficiently large number experiments
@@ -113,16 +113,20 @@ gpts_pulled_bids_per_experiment = 0
 for e in tqdm(range(0, n_experiments)):
     # Define the learners
     ts_context_learner = ContextGeneratorLearner(env.prices['C1'], env.bids, env.feature_name, env.feature_values,
-                                                 time_between_context_generation, "TS")
+                                                 time_between_context_generation, "TS", other_costs)
     ucb_context_learner = ContextGeneratorLearner(env.prices['C1'], env.bids, env.feature_name, env.feature_values,
-                                                  time_between_context_generation, "UCB")
+                                                  time_between_context_generation, "UCB", other_costs)
     context_learners_type = [ts_context_learner, ucb_context_learner]
 
     # Iterate over the number of rounds
     for t in range(0, T):
         # Apply the context generation algorithm offline every 2 weeks (i.e. t multiple of 14).
         if t % time_between_context_generation == 0 and t != 0:
+            print("--------------------------------------------")
+            print("IT'S TIME TO UPDATE THE CONTEXT")
+            print(f"TIME: {t}")
             for clt in context_learners_type:
+                print("--------------------------------------------")
                 clt.update_context()
 
         # Iterate over TS and UCB

@@ -107,3 +107,7 @@ class TSLearnerPricingAdvertising(PricingAdvertisingLearner):
     def t(self, t):
         self.TS_pricing.t = t
         self.GPTS_advertising.t = t
+
+    @property
+    def advertising_learner(self):
+        return self.GPTS_advertising

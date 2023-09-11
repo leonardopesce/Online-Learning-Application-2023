@@ -17,7 +17,7 @@ class ContextTree:
         requested
     """
 
-    def __init__(self, prices: dict, bids, feature_names: list, feature_values: dict, feature_to_observation: dict, confidence: float):
+    def __init__(self, prices: dict, bids, feature_names: list, feature_values: dict, feature_to_observation: dict, confidence: float, other_costs : int):
         """
         Initialize the data structure
 
@@ -29,11 +29,12 @@ class ContextTree:
         :param float confidence: Confidence to use in the lower bound used in the context generation algorithm
         """
 
-        self.root = ContextNode(prices, bids, feature_names, feature_names, feature_values, feature_to_observation, confidence, None)
+        self.root = ContextNode(prices, bids, feature_names, feature_names, feature_values, feature_to_observation, confidence, None, other_costs)
         self.feature_names = feature_names
         self.feature_values = feature_values
         self.confidence = confidence
         self.context_structure = None
+        self.other_costs = other_costs
         self.create_context_structure()
 
     def create_context_structure(self):
@@ -61,7 +62,8 @@ class ContextTree:
 
         for i, leaf in enumerate(leaves):
             new_feature_to_observation = {key: feature_to_obs.get(key) for key in feature_to_obs.keys() if key in context_structure[i]}
-            leaf.set_feature_to_observation(new_feature_to_observation)
+            leaf.set_feature_to_observation(new_feature_to_observation) # TODO: check for error: the observation must be aggregated again
+            leaf.update_gp()
             leaf.split()
 
 

@@ -106,3 +106,6 @@ class UCBLearnerPricingAdvertising(PricingAdvertisingLearner):
         self.UCB_pricing.t = value
         self.GPUCB_advertising.t = value
 
+    @property
+    def advertising_learner(self):
+        return self.GPUCB_advertising
