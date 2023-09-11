@@ -351,8 +351,8 @@ class ContextNode:
                 # Computing the lower bound of the reward given by splitting on the feature with name feature_name as
                 # the sum of the product between the reward of a context and the probability of that context
                 feature_values_to_reward[feature_name] = sum([feature_values_to_reward_lower_bound[feature_value] * feature_values_to_reward_probability_split[feature_value] for feature_value in self.feature_values[feature_name]])
-                print(f"Aggregate : {self.aggregate_reward}")
-                print(f"The reward coming from the split on {feature_name} is {feature_values_to_reward[feature_name]}")
+                #print(f"Aggregate : {self.aggregate_reward}")
+                #print(f"The reward coming from the split on {feature_name} is {feature_values_to_reward[feature_name]}")
 
 
             # Finding the name of the feature with the highest lower bound of the reward (feature on which the node

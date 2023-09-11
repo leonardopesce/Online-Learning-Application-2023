@@ -49,16 +49,15 @@ n_prices = 5
 prices = {'C1': np.array([500, 550, 600, 650, 700]),
           'C2': np.array([500, 550, 600, 650, 700]),
           'C3': np.array([500, 550, 600, 650, 700])}
-probabilities = {'C1': np.array([0.1, 0.1, 0.3, 0.2, 0.1]),
-                 'C2': np.array([0.05, 0.1, 0.1, 0.1, 0.3]),
-                 'C3': np.array([0.3, 0.2, 0.1, 0.05, 0.01])}
+probabilities = {'C1': np.array([0.15, 0.05, 0.12, 0.03, 0.03]),  # best arm is 2 (starting from 0)
+                 'C2': np.array([0.07, 0.10, 0.10, 0.20, 0.10]),  # best arm is 3
+                 'C3': np.array([0.10, 0.30, 0.20, 0.05, 0.05])}  # best arm is 1
 bids_to_clicks = {'C1': np.array([100, 2]),
                   'C2': np.array([90, 2]),
-                  'C3': np.array([100, 3])}
-bids_to_cum_costs = {'C1': np.array([200, 0.035]),
-                     'C2': np.array([100, 0.07]),
-                     'C3': np.array([200, 0.04])}
-other_costs = 400
+                  'C3': np.array([80, 3])}
+bids_to_cum_costs = {'C1': np.array([400, 0.08]),  # 0.035 instead of 0.08, old value Enri
+                     'C2': np.array([200, 0.07]),
+                     'C3': np.array([300, 0.04])}
 
 # Bids setup
 n_bids = 100
@@ -68,11 +67,11 @@ bids = np.linspace(min_bid, max_bid, n_bids)
 sigma = 2
 
 # Time horizon of the experiment
-T = 100
+T = 365
 
 # Since the reward functions are stochastic to better visualize the results and remove the noise
 # we have to perform a sufficiently large number experiments
-n_experiments = 2
+n_experiments = 5
 time_between_context_generation = 14
 
 

@@ -58,7 +58,7 @@ class Environment:
         self.bids_to_clicks = bids_to_clicks
         self.bids_to_clicks_variance = 10
         self.bids_to_cum_costs = bids_to_cum_costs
-        self.bids_to_cum_costs_variance = 30
+        self.bids_to_cum_costs_variance = 90
         self.other_costs = other_costs
 
     def round_pricing(self, category, price_idx, n_clicks=1):

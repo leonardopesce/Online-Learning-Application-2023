@@ -125,7 +125,9 @@ class GPTS_Learner(Learner):
         """
         self.t += 1
         self.update_observations(pulled_arm, reward)
-        self.update_model()
+
+        if model_update:
+            self.update_model()
 
     def pull_arm_GPs(self, prob_margin : float) -> int:
         """Decides which arm to pull based on the current estimations of the clicks and cumulative daily costs.

@@ -68,8 +68,8 @@ class ContextGeneratorLearner:
     def update_context(self):
         # To comment for run everything
         ###########
-        for learner in self.context_learners:
-            learner.get_learner().advertising_learner.plot_clicks()
+        # for learner in self.context_learners:
+        #     learner.get_learner().advertising_learner.plot_clicks()
         ###########
         print(f"I'm {self.learner_type} and I'm updating the context")
 
@@ -144,9 +144,9 @@ class ContextGeneratorLearner:
                         #print()
                         #print(np.concatenate((observation[1], bernoulli_obs_other_classes)))
                         #print("------------------------------------------------------------------------------------------------------------------")
-                        new_learner.update(observation[0], np.concatenate((observation[1], bernoulli_obs_other_classes)), observation[2], observation[3] + mean_clicks, observation[4] + mean_costs, observation[5]) # rewards[idx])
+                        new_learner.update(observation[0], np.concatenate((observation[1], bernoulli_obs_other_classes)), observation[2], observation[3] + mean_clicks, observation[4] + mean_costs, observation[5], False) # rewards[idx])
 
-
+                    new_learner.GP_advertising.update_model()
                 #flatten_obs = self.get_flattened_obs(new_learner_feature_to_obs, self.t)
                 #for day in flatten_obs.get(tuple(context)):
                 #    new_learner.update(day[0][0], day[0][1], day[0][2], day[0][3], day[0][4], day[0][5])

@@ -58,7 +58,7 @@ class TSLearnerPricingAdvertising(PricingAdvertisingLearner):
 
         return best_price_idx, best_bid_idx
 
-    def update(self, pulled_price, bernoulli_realizations, pulled_bid, n_clicks, costs_adv, reward):
+    def update(self, pulled_price, bernoulli_realizations, pulled_bid, n_clicks, costs_adv, reward, model_update = True):
         """
         Updating the parameters of the learners based on the observations obtained by playing the chosen price and bid
         in the environment
@@ -72,7 +72,7 @@ class TSLearnerPricingAdvertising(PricingAdvertisingLearner):
         """
 
         self.learner_pricing.update(pulled_price, reward, bernoulli_realizations)
-        self.GP_advertising.update(pulled_bid, (reward, n_clicks, costs_adv))
+        self.GP_advertising.update(pulled_bid, (reward, n_clicks, costs_adv), model_update)
 
     def get_pulled_prices(self):
         """

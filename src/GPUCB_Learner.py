@@ -161,7 +161,9 @@ class GPUCB_Learner(Learner):
 
         self.t += 1
         self.update_observations(pulled_arm, reward)
-        self.update_model()
+
+        if model_update:
+            self.update_model()
 
     def get_confidence_bounds(self):
         """
