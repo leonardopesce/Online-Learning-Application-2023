@@ -60,8 +60,10 @@ class GPTS_Learner(Learner):
         else:
             kernel_clicks = ScaleKernel(RBFKernel())
             kernel_costs = ScaleKernel(RBFKernel())
-            likelihood_clicks = GaussianLikelihood(noise_prior=NormalPrior(0, 1000))
-            likelihood_costs = GaussianLikelihood(noise_prior=NormalPrior(0, 300))
+            likelihood_clicks = GaussianLikelihood(noise_prior=NormalPrior(0, 50))
+            likelihood_costs = GaussianLikelihood(noise_prior=NormalPrior(0, 100))
+            #likelihood_clicks = GaussianLikelihood()
+            #likelihood_costs = GaussianLikelihood()
             self.gp_clicks = BaseGaussianProcess(likelihood=likelihood_clicks, kernel=kernel_clicks)
             self.gp_costs = BaseGaussianProcess(likelihood=likelihood_costs, kernel=kernel_costs)
 

@@ -16,7 +16,7 @@ class UCBLearnerPricingAdvertising(PricingAdvertisingLearner):
         GP_advertising: Learner that applies the Upper Confidence Bound 1(UCB1) algorithm to the advertising problem
     """
 
-    def __init__(self, prices, bids):
+    def __init__(self, prices, bids, sklearn=True):
         """
         Initializes the learner
 
@@ -25,7 +25,7 @@ class UCBLearnerPricingAdvertising(PricingAdvertisingLearner):
         """
 
         self.learner_pricing = UCBLearner(prices)
-        self.GP_advertising = GPUCB_Learner(bids)
+        self.GP_advertising = GPUCB_Learner(bids, sklearn=sklearn)
 
     def pull_arm(self, other_costs):
         """

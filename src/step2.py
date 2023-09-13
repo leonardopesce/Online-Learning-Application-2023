@@ -53,8 +53,8 @@ for e in tqdm(range(0, n_experiments)):
     environments = {algorithm: Environment(settings.n_prices, settings.prices, settings.probabilities, settings.bids_to_clicks, settings.bids_to_cum_costs, settings.other_costs) for algorithm in algorithms}
 
     # Define the GP learners
-    learners['UCB'] = GPUCB_Learner(arms_values=bids)
-    learners['TS'] = GPTS_Learner(arms=bids)
+    learners['UCB'] = GPUCB_Learner(arms_values=bids, sklearn=False)
+    learners['TS'] = GPTS_Learner(arms=bids, sklearn=False)
 
     # Iterate over the number of rounds
     for t in range(0, T):

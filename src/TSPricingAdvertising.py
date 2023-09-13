@@ -16,7 +16,7 @@ class TSLearnerPricingAdvertising(PricingAdvertisingLearner):
         GP_advertising: Learner that applies the Gaussian Process Thompson Sampling(GPTS) algorithm to the advertising problem
     """
 
-    def __init__(self, prices, bids):
+    def __init__(self, prices, bids, sklearn=True):
         """
         Initializes the learner
 
@@ -25,7 +25,7 @@ class TSLearnerPricingAdvertising(PricingAdvertisingLearner):
         """
 
         self.learner_pricing = TSRewardLearner(prices)
-        self.GP_advertising = GPTS_Learner(bids)
+        self.GP_advertising = GPTS_Learner(bids, sklearn=sklearn)
 
     def pull_arm(self, other_costs):
         """

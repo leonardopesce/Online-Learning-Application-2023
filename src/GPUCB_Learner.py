@@ -69,8 +69,10 @@ class GPUCB_Learner(Learner):
         else:
             kernel_clicks = ScaleKernel(RBFKernel())
             kernel_costs = ScaleKernel(RBFKernel())
-            likelihood_clicks = GaussianLikelihood(noise_prior=NormalPrior(0, 100))
-            likelihood_costs = GaussianLikelihood(noise_prior=NormalPrior(0, 300))
+            likelihood_clicks = GaussianLikelihood(noise_prior=NormalPrior(0, 50))
+            likelihood_costs = GaussianLikelihood(noise_prior=NormalPrior(0, 100))
+            #likelihood_clicks = GaussianLikelihood()
+            #likelihood_costs = GaussianLikelihood()
             self.gp_clicks = BaseGaussianProcess(likelihood=likelihood_clicks, kernel=kernel_clicks)
             self.gp_costs = BaseGaussianProcess(likelihood=likelihood_costs, kernel=kernel_costs)
 
@@ -88,7 +90,7 @@ class GPUCB_Learner(Learner):
             self.confidence_clicks = np.sqrt(beta) * self.sigmas_clicks
 
             # Fitting the Gaussian Process Regressor relative to costs and making a prediction for the current round.
-            y = self.collected_costs.reshape(-1 ,1)        # Daily costs previously collected.
+            y = self.collected_costs.reshape(-1, 1)        # Daily costs previously collected.
             self.gp_costs.fit(x, y)
             self.empirical_means_costs, self.sigmas_costs = self.gp_costs.predict(self.get_arms().reshape(-1 ,1), return_std=True)
 
@@ -99,7 +101,7 @@ class GPUCB_Learner(Learner):
             # Fitting the Gaussian Process Regressor relative to clicks and making a prediction for the current round.
             y = torch.Tensor(self.collected_clicks)       # Clicks previously collected.
             self.gp_clicks.fit(x, y)
-            self.empirical_means_clicks, self.sigmas_clicks, self.lower_bounds_clicks, self.upper_bounds_clicks = self.gp_clicks.predict(torch.Tensor(self.arms_values))
+            self.means_clicks, self.sigmas_clicks, self.lower_bounds_clicks, self.upper_bounds_clicks = self.gp_clicks.predict(torch.Tensor(self.arms_values))
             self.sigmas_clicks = np.sqrt(self.sigmas_clicks)
 
             beta = 2 * np.log((self.n_arms * (self.t ** 2) * (np.pi ** 2)) / (6 * self.delta))  # https://arxiv.org/pdf/0912.3995.pdf
@@ -108,7 +110,7 @@ class GPUCB_Learner(Learner):
             # Fitting the Gaussian Process Regressor relative to costs and making a prediction for the current round.
             y = torch.Tensor(self.collected_costs)        # Daily costs previously collected.
             self.gp_costs.fit(x, y)
-            self.empirical_means_costs, self.sigmas_costs, self.lower_bounds_costs, self.upper_bounds_costs = self.gp_costs.predict(torch.Tensor(self.get_arms()))
+            self.means_costs, self.sigmas_costs, self.lower_bounds_costs, self.upper_bounds_costs = self.gp_costs.predict(torch.Tensor(self.get_arms()))
             self.sigmas_costs = np.sqrt(self.sigmas_costs)
 
             self.confidence_costs = np.sqrt(beta) * self.sigmas_costs
