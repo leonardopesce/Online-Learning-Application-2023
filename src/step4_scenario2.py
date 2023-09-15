@@ -59,6 +59,8 @@ bids_to_cum_costs = {'C1': np.array([400, 0.08]),  # 0.035 instead of 0.08, old 
                      'C2': np.array([200, 0.07]),
                      'C3': np.array([300, 0.04])}
 
+other_costs = 400
+
 # Bids setup
 n_bids = 100
 min_bid = 0.5
