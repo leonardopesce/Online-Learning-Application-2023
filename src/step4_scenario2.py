@@ -49,15 +49,15 @@ n_prices = 5
 prices = {'C1': np.array([500, 550, 600, 650, 700]),
           'C2': np.array([500, 550, 600, 650, 700]),
           'C3': np.array([500, 550, 600, 650, 700])}
-probabilities = {'C1': np.array([0.15, 0.05, 0.12, 0.03, 0.03]),  # best arm is 2 (starting from 0)
-                 'C2': np.array([0.07, 0.10, 0.10, 0.20, 0.10]),  # best arm is 3
-                 'C3': np.array([0.10, 0.30, 0.20, 0.05, 0.05])}  # best arm is 1
+probabilities = {'C1': np.array([0.10, 0.12, 0.20, 0.04, 0.03]),  # best arm is 2 (starting from 0) young who clicked
+                 'C2': np.array([0.05, 0.10, 0.12, 0.13, 0.18]),  # best arm is 4 old who clicked
+                 'C3': np.array([0.20, 0.09, 0.07, 0.05, 0.01])}  # best arm is 0 no clicks
 bids_to_clicks = {'C1': np.array([100, 2]),
                   'C2': np.array([90, 2]),
-                  'C3': np.array([80, 3])}
+                  'C3': np.array([70, 3])}
 bids_to_cum_costs = {'C1': np.array([400, 0.08]),  # 0.035 instead of 0.08, old value Enri
-                     'C2': np.array([200, 0.07]),
-                     'C3': np.array([300, 0.04])}
+                     'C2': np.array([300, 0.07]),
+                     'C3': np.array([200, 0.04])}
 
 other_costs = 400
 
