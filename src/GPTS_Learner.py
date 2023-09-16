@@ -55,8 +55,8 @@ class GPTS_Learner(Learner):
         if sklearn:
             kernel_clicks = ConstantKernel() * RBF() + WhiteKernel() # ScaleKernel(RBFKernel())
             kernel_costs = ConstantKernel() * RBF() + WhiteKernel() # ScaleKernel(RBFKernel())
-            self.gp_clicks = GaussianProcessRegressor(kernel=kernel_clicks, alpha=10, n_restarts_optimizer=2)
-            self.gp_costs = GaussianProcessRegressor(kernel=kernel_costs, alpha=30, n_restarts_optimizer=2)
+            self.gp_clicks = GaussianProcessRegressor(kernel=kernel_clicks, alpha=10, n_restarts_optimizer=5)
+            self.gp_costs = GaussianProcessRegressor(kernel=kernel_costs, alpha=30, n_restarts_optimizer=5)
         else:
             kernel_clicks = ScaleKernel(RBFKernel())
             kernel_costs = ScaleKernel(RBFKernel())
