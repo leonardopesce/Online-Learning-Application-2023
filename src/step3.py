@@ -26,7 +26,7 @@ T = 365
 
 # Since the reward functions are stochastic to better visualize the results and remove the noise
 # we have to perform a sufficiently large number experiments
-n_experiments = 10
+n_experiments = 20
 
 algorithms = ['UCB', 'TS']
 

@@ -43,7 +43,7 @@ T = 365
 
 # Since the reward functions are stochastic to better visualize the results and remove the noise
 # we have to perform a sufficiently large number experiments
-n_experiments = 1
+n_experiments = 20
 
 algorithms = ['UCB', 'TS']
 
@@ -76,8 +76,10 @@ for e in tqdm(range(0, n_experiments)):
     environments = {algorithm: Environment(settings.n_prices, settings.prices, settings.probabilities, settings.bids_to_clicks, settings.bids_to_cum_costs, settings.other_costs) for algorithm in algorithms}
 
     # Define the learners
-    learners['UCB'] = {category: UCBLearnerPricingAdvertising(settings.prices[category], env.bids, sklearn=False) for category in categories}
-    learners['TS'] = {category: TSLearnerPricingAdvertising(settings.prices[category], env.bids, sklearn=False) for category in categories}
+    learners['UCB'] = {category: UCBLearnerPricingAdvertising(settings.prices[category], env.bids, sklearn=False) for
+                       category in categories}
+    learners['TS'] = {category: TSLearnerPricingAdvertising(settings.prices[category], env.bids, sklearn=False) for
+                      category in categories}
 
     # Iterate over the number of rounds
     for t in range(0, T):
