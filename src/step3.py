@@ -5,7 +5,7 @@ from TSPricingAdvertising import TSLearnerPricingAdvertising
 from UCBPricingAdvertising import UCBLearnerPricingAdvertising
 from collections import Counter
 import numpy as np
-from plots import plot_single_algorithm, plot_all_algorithms, plot_clicks_curve, plot_costs_curve
+from plots import plot_single_algorithm, plot_all_algorithms, plot_clicks_curve, plot_costs_curve, plot_all_algorithms_divided
 import settings
 
 """
@@ -86,8 +86,9 @@ for algorithm in algorithms:
 
 # Plot the results
 reward_per_algorithm = [rewards[algorithm] for algorithm in algorithms]
-plot_clicks_curve(bids, gp_learners, algorithms, original=env.get_clicks_curve(bids, category))
-plot_costs_curve(bids, gp_learners, algorithms, original=env.get_costs_curve(bids, category))
-plot_all_algorithms(reward_per_algorithm, best_rewards, algorithms)
-for i, algorithm in enumerate(algorithms):
-    plot_single_algorithm(reward_per_algorithm[i], best_rewards, algorithm, np.arange(0, T, 1))
+plot_clicks_curve(bids, gp_learners, algorithms, original=env.get_clicks_curve(bids, category), step_name="step3")
+plot_costs_curve(bids, gp_learners, algorithms, original=env.get_costs_curve(bids, category), step_name="step3")
+plot_all_algorithms(reward_per_algorithm, best_rewards, np.arange(0, T, 1), algorithms, step_name="step3")
+plot_all_algorithms_divided(reward_per_algorithm, best_rewards, np.arange(0, T, 1), algorithms, step_name="step3")
+#for i, algorithm in enumerate(algorithms):
+#    plot_single_algorithm(reward_per_algorithm[i], best_rewards, algorithm, np.arange(0, T, 1))

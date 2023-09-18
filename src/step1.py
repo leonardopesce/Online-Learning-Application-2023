@@ -3,7 +3,7 @@ from Clairvoyant import *
 from UCB import *
 from TSReward import *
 from collections import Counter
-from plots import plot_single_algorithm, plot_all_algorithms
+from plots import plot_single_algorithm, plot_all_algorithms, plot_all_algorithms_divided
 import settings
 
 """
@@ -23,7 +23,7 @@ T = 365
 
 # Since the reward functions are stochastic to better visualize the results and remove the noise
 # we have to perform a sufficiently large number experiments
-n_experiments = 50
+n_experiments = 100
 
 algorithms = ['UCB', 'TS']
 
@@ -83,6 +83,7 @@ print(Counter(ucb_best))
 
 # Plot the results
 reward_per_algorithm = [rewards[algorithm] for algorithm in algorithms]
-plot_all_algorithms(reward_per_algorithm, best_rewards, algorithms)
-for i, algorithm in enumerate(algorithms):
-    plot_single_algorithm(reward_per_algorithm[i], best_rewards, algorithm, np.arange(0, T, 1))
+plot_all_algorithms(reward_per_algorithm, best_rewards, np.arange(0, T, 1), algorithms, step_name="step1")
+plot_all_algorithms_divided(reward_per_algorithm, best_rewards, np.arange(0, T, 1), algorithms, step_name="step1")
+#for i, algorithm in enumerate(algorithms):
+ #   plot_single_algorithm(reward_per_algorithm[i], best_rewards, algorithm, np.arange(0, T, 1))

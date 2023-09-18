@@ -5,7 +5,7 @@ from NonStationaryEnvironment import *
 from SWUCB import SWUCBLearner
 from CUSUMUCBLearner import CUSUMUCBLearner
 from EXP3 import EXP3Learner
-from plots import plot_single_algorithm, plot_all_algorithms
+from plots import plot_single_algorithm, plot_all_algorithms, plot_all_algorithms_divided
 import settings
 
 """
@@ -82,6 +82,7 @@ for e in tqdm(range(0, n_experiments)):
 
 # Plot the results
 reward_per_algorithm = [rewards[algorithm] for algorithm in algorithms]
-plot_all_algorithms(reward_per_algorithm, best_rewards, algorithms)
-for algorithm in algorithms:
-    plot_single_algorithm(rewards[algorithm], best_rewards, algorithm, np.arange(0, T, 1))
+plot_all_algorithms(reward_per_algorithm, best_rewards, np.arange(0, T, 1), algorithms, step_name="step6_1")
+plot_all_algorithms_divided(reward_per_algorithm, best_rewards, np.arange(0, T, 1), algorithms, step_name="step6_1")
+#for algorithm in algorithms:
+#    plot_single_algorithm(rewards[algorithm], best_rewards, algorithm, np.arange(0, T, 1))

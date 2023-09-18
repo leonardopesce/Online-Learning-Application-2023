@@ -4,7 +4,7 @@ import numpy as np
 from MultiContextEnvironment import MultiContextEnvironment
 from ContextGeneratorLearner import ContextGeneratorLearner
 import settings
-from plots import plot_single_algorithm, plot_all_algorithms
+from plots import plot_single_algorithm, plot_all_algorithms, plot_all_algorithms_divided
 
 """
 Consider the case in which there are three classes of users (C1, C2, and C3), 
@@ -169,6 +169,7 @@ for e in tqdm(range(0, n_experiments)):
 
 # Plot the results
 reward_per_algorithm = [rewards_per_algorithm[algorithm] for algorithm in algorithms]
-plot_all_algorithms(reward_per_algorithm, best_rewards, algorithms)
-for i, algorithm in enumerate(algorithms):
-    plot_single_algorithm(reward_per_algorithm[i], best_rewards, algorithm, np.arange(0, T, 1))
+plot_all_algorithms(reward_per_algorithm, best_rewards, np.arange(0, T, 1), algorithms, step_name="step4_2")
+plot_all_algorithms_divided(reward_per_algorithm, best_rewards, np.arange(0, T, 1), algorithms, step_name="step4_2")
+#for i, algorithm in enumerate(algorithms):
+#    plot_single_algorithm(reward_per_algorithm[i], best_rewards, algorithm, np.arange(0, T, 1))

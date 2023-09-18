@@ -6,7 +6,7 @@ from TSPricingAdvertising import TSLearnerPricingAdvertising
 from UCBPricingAdvertising import UCBLearnerPricingAdvertising
 from collections import Counter
 import numpy as np
-from plots import plot_single_algorithm, plot_all_algorithms, plot_clicks_curve, plot_costs_curve
+from plots import plot_single_algorithm, plot_all_algorithms, plot_clicks_curve, plot_costs_curve, plot_all_algorithms_divided
 import settings
 
 """
@@ -124,6 +124,7 @@ for category in categories:
 # Plot the aggregated results
 total_best_rewards = np.sum(np.array([best_rewards[category] for category in categories]), axis=0)
 total_reward_per_algorithm = [np.sum(np.array([rewards[algorithm][category] for category in categories]), axis=0) for algorithm in algorithms]
-plot_all_algorithms(total_reward_per_algorithm, total_best_rewards, algorithms)
-for i, algorithm in enumerate(algorithms):
-    plot_single_algorithm(total_reward_per_algorithm[i], total_best_rewards, f'Aggregated {algorithm}', np.arange(0, T, 1))
+plot_all_algorithms(total_reward_per_algorithm, total_best_rewards, np.arange(0, T, 1), algorithms, step_name="step4_1")
+plot_all_algorithms_divided(reward_per_algorithm, best_rewards, np.arange(0, T, 1), algorithms, step_name="step4_1")
+#for i, algorithm in enumerate(algorithms):
+#    plot_single_algorithm(total_reward_per_algorithm[i], total_best_rewards, f'Aggregated {algorithm}', np.arange(0, T, 1))

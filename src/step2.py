@@ -3,7 +3,7 @@ from GPTS_Learner import *
 from GPUCB_Learner import *
 from tqdm import tqdm
 from Clairvoyant import Clairvoyant
-from plots import plot_single_algorithm, plot_all_algorithms, plot_clicks_curve, plot_costs_curve
+from plots import plot_single_algorithm, plot_all_algorithms, plot_clicks_curve, plot_costs_curve, plot_all_algorithms_divided
 import settings
 import os
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
@@ -76,8 +76,9 @@ for e in tqdm(range(0, n_experiments)):
 
 # Plot the results
 reward_per_algorithm = [rewards[algorithm] for algorithm in algorithms]
-plot_clicks_curve(bids, gp_learners, algorithms, original=env.get_clicks_curve(bids, category))
-plot_costs_curve(bids, gp_learners, algorithms, original=env.get_costs_curve(bids, category))
-plot_all_algorithms(reward_per_algorithm, best_rewards, algorithms)
-for i, algorithm in enumerate(algorithms):
-    plot_single_algorithm(reward_per_algorithm[i], best_rewards, algorithm, np.arange(0, T, 1))
+plot_clicks_curve(bids, gp_learners, algorithms, original=env.get_clicks_curve(bids, category), step_name="step2")
+plot_costs_curve(bids, gp_learners, algorithms, original=env.get_costs_curve(bids, category), step_name="step2")
+plot_all_algorithms(reward_per_algorithm, best_rewards, np.arange(0, T, 1), algorithms, "step2")
+plot_all_algorithms_divided(reward_per_algorithm, best_rewards, np.arange(0, T, 1), algorithms, "step2")
+#for i, algorithm in enumerate(algorithms):
+#    plot_single_algorithm(reward_per_algorithm[i], best_rewards, algorithm, np.arange(0, T, 1))
