@@ -1,15 +1,11 @@
-from matplotlib import pyplot as plt
-
-from Environment import Environment
 from tqdm import tqdm
 from Clairvoyant import Clairvoyant
-from TSPricingAdvertising import TSLearnerPricingAdvertising
-from UCBPricingAdvertising import UCBLearnerPricingAdvertising
-from collections import Counter
 import numpy as np
-
 from MultiContextEnvironment import MultiContextEnvironment
 from ContextGeneratorLearner import ContextGeneratorLearner
+import settings
+from plots import plot_single_algorithm, plot_all_algorithms
+
 """
 Consider the case in which there are three classes of users (C1, C2, and C3), 
 and no information about the advertising and pricing curves is known beforehand. 
@@ -36,37 +32,16 @@ for the second scenario.
 
 # Considered categories
 categories = ['C1', 'C2', 'C3']
+
 # Considered features and values (binary)
 feature_names = ['age', 'sex']
 feature_values = {'age': [0, 1], 'sex': [0, 1]}
-# age: 0 -> young, 1 -> old; sex: 0 -> woman, 1 -> man
+# age: 0 -> young, 1 -> old; sex: 0 -> not clicked, 1 -> clicked
 feature_values_to_categories = {(0, 0): 'C3', (0, 1): 'C1', (1, 0): 'C3', (1, 1): 'C2'}
 probability_feature_values_in_categories = {'C1': {(0, 1): 1}, 'C2': {(1, 1): 1}, 'C3': {(0, 0): 0.5, (1, 0): 0.5}}
 
-
-# Setting the environment parameters
-n_prices = 5
-prices = {'C1': np.array([500, 550, 600, 650, 700]),
-          'C2': np.array([500, 550, 600, 650, 700]),
-          'C3': np.array([500, 550, 600, 650, 700])}
-probabilities = {'C1': np.array([0.10, 0.12, 0.20, 0.04, 0.03]),  # best arm is 2 (starting from 0) young who clicked
-                 'C2': np.array([0.05, 0.10, 0.12, 0.13, 0.18]),  # best arm is 4 old who clicked
-                 'C3': np.array([0.20, 0.09, 0.07, 0.05, 0.01])}  # best arm is 0 no clicks
-bids_to_clicks = {'C1': np.array([100, 2]),
-                  'C2': np.array([90, 2]),
-                  'C3': np.array([70, 3])}
-bids_to_cum_costs = {'C1': np.array([400, 0.08]),  # 0.035 instead of 0.08, old value Enri
-                     'C2': np.array([300, 0.07]),
-                     'C3': np.array([200, 0.04])}
-
-other_costs = 400
-
 # Bids setup
-n_bids = 100
-min_bid = 0.5
-max_bid = 15.0
-bids = np.linspace(min_bid, max_bid, n_bids)
-sigma = 2
+bids = np.linspace(settings.min_bid, settings.max_bid, settings.n_bids)
 
 # Time horizon of the experiment
 T = 365
@@ -76,13 +51,30 @@ T = 365
 n_experiments = 5
 time_between_context_generation = 14
 
+algorithms = ['UCB', 'TS']
+
+# To store the learners, environments and rewards for each experiment for the learners
+learners = dict()
+rewards_per_algorithm = {algorithm: [] for algorithm in algorithms}
+best_rewards = np.array([])
+
+"""
+# Store some features for each experiment for the learners
+gpts_clicks_per_experiment = 0
+gpts_mean_clicks_per_experiment = 0
+gpts_sigmas_clicks_per_experiment = 0
+gpts_cum_costs_per_experiment = 0
+gpts_mean_cum_costs_per_experiment = 0
+gpts_sigmas_cum_costs_per_experiment = 0
+gpts_pulled_bids_per_experiment = 0
+"""
 
 # To evaluate which are the most played prices and bids
-ts_best_price, ts_best_bid, ucb_best_price, ucb_best_bid = [], [], [], []
-TS, UCB = 0, 1
+#ts_best_price, ts_best_bid, ucb_best_price, ucb_best_bid = [], [], [], []
+#TS, UCB = 0, 1
 
 # Define the environment
-env = MultiContextEnvironment(n_prices, prices, probabilities, bids_to_clicks, bids_to_cum_costs, other_costs,
+env = MultiContextEnvironment(settings.n_prices, settings.prices, settings.probabilities, settings.bids_to_clicks, settings.bids_to_cum_costs, settings.other_costs,
                               categories, feature_names, feature_values, feature_values_to_categories,
                               probability_feature_values_in_categories)
 
@@ -94,30 +86,16 @@ clairvoyant = Clairvoyant(env)
 
 best_reward = 0
 for category in categories:
-    _, _, _, _, a = clairvoyant.maximize_reward(category)
-    best_reward += a
-
-# Store the rewards for each experiment for the learners
-ts_reward_per_experiment = []
-ucb_reward_per_experiment = []
-
-# Store some features for each experiment for the learners
-gpts_clicks_per_experiment = 0
-gpts_mean_clicks_per_experiment = 0
-gpts_sigmas_clicks_per_experiment = 0
-gpts_cum_costs_per_experiment = 0
-gpts_mean_cum_costs_per_experiment = 0
-gpts_sigmas_cum_costs_per_experiment = 0
-gpts_pulled_bids_per_experiment = 0
+    _, _, _, _, best_reward_category = clairvoyant.maximize_reward(category)
+    best_reward += best_reward_category
+best_rewards = np.append(best_rewards, np.ones((T,)) * best_reward)
 
 # Each iteration simulates the learner-environment interaction
 for e in tqdm(range(0, n_experiments)):
     # Define the learners
-    ts_context_learner = ContextGeneratorLearner(env.prices['C1'], env.bids, env.feature_name, env.feature_values,
-                                                 time_between_context_generation, "TS", other_costs)
-    ucb_context_learner = ContextGeneratorLearner(env.prices['C1'], env.bids, env.feature_name, env.feature_values,
-                                                  time_between_context_generation, "UCB", other_costs)
-    context_learners_type = [ts_context_learner, ucb_context_learner]
+    for algorithm in algorithms:
+        learners[algorithm] = ContextGeneratorLearner(settings.prices['C1'], env.bids, env.feature_name, env.feature_values,
+                                                 time_between_context_generation, algorithm, settings.other_costs)
 
     # Iterate over the number of rounds
     for t in range(0, T):
@@ -126,19 +104,19 @@ for e in tqdm(range(0, n_experiments)):
             print("--------------------------------------------")
             print("IT'S TIME TO UPDATE THE CONTEXT")
             print(f"TIME: {t}")
-            for clt in context_learners_type:
+            for context_learner in learners.values():
                 print("--------------------------------------------")
-                clt.update_context()
+                context_learner.update_context()
 
         # Iterate over TS and UCB
-        for clt in context_learners_type:
-            # pull all the arm of the context generator
-            context_price_bid_learners = clt.pull_arm(env.other_costs)
-            # create variable to update the context learner
+        for context_learner in learners.values():
+            # Pull all the arm of the context generator
+            context_price_bid_learners = context_learner.pull_arm(settings.other_costs)
+            # Create variable to update the context learner
             features_list, pulled_price_list, bernoulli_realizations_list, pulled_bid_list = [], [], [], []
             clicks_given_bid_list, cost_given_bid_list, rewards = [], [], []
 
-            # iterate over the generated contexts
+            # Iterate over the generated contexts
             for context, price_idx, bid_idx in context_price_bid_learners:
                 feature_list, bernoulli_realizations, n_clicks, cum_daily_cost = env.round(price_idx, bid_idx, context)
 
@@ -147,7 +125,7 @@ for e in tqdm(range(0, n_experiments)):
                 for i, feature in enumerate(feature_list):
                     reward.append(env.get_reward(feature, price_idx, float(np.mean(bernoulli_realizations[i])), n_clicks[i], cum_daily_cost[i]))
 
-                # prepare data for update of context learner
+                # Prepare data for update of context learner
                 features_list.append(feature_list)
                 bernoulli_realizations_list.append(bernoulli_realizations)
                 pulled_price_list.append(price_idx)
@@ -156,10 +134,11 @@ for e in tqdm(range(0, n_experiments)):
                 cost_given_bid_list.append(cum_daily_cost)
                 rewards.append(reward)
 
-            clt.update(pulled_price_list=pulled_price_list, bernoulli_realizations_list=bernoulli_realizations_list,
+            context_learner.update(pulled_price_list=pulled_price_list, bernoulli_realizations_list=bernoulli_realizations_list,
                        features_list=features_list, pulled_bid_list=pulled_bid_list,
                        clicks_given_bid_list=clicks_given_bid_list, cost_given_bid_list=cost_given_bid_list,
                        rewards=rewards)
+
 
     # Store the most played prices and bids by TS
     #ts_best_price.append(Counter(context_learners_type[TS].get_pulled_prices()).most_common(1)[0])
@@ -170,8 +149,8 @@ for e in tqdm(range(0, n_experiments)):
     #ucb_best_bid.append(Counter(context_learners_type[UCB].get_pulled_bids()).most_common(1)[0])
 
     # Store the values of the collected rewards of the learners
-    ts_reward_per_experiment.append(np.array(context_learners_type[TS].get_collective_reward()))
-    ucb_reward_per_experiment.append(np.array(context_learners_type[UCB].get_collective_reward()))
+    for algorithm in algorithms:
+        rewards_per_algorithm[algorithm].append(learners[algorithm].get_collective_reward())
 
     """gpts_clicks_per_experiment[category].append(ts_learner[category].GPTS_advertising.collected_clicks)
     gpts_mean_clicks_per_experiment[category].append(ts_learner[category].GPTS_advertising.means_clicks)
@@ -188,129 +167,8 @@ for e in tqdm(range(0, n_experiments)):
 #print(Counter(ucb_best_price))
 #print(Counter(ucb_best_bid))
 
-#plot data
-best_rewards = np.ones((T,)) * best_reward
-regret_ts_mean = np.mean(best_rewards - ts_reward_per_experiment, axis=0)
-regret_ts_std = np.std(best_rewards - ts_reward_per_experiment, axis=0)
-regret_ucb_mean = np.mean(best_reward - ucb_reward_per_experiment, axis=0)
-regret_ucb_std = np.std(best_rewards - ucb_reward_per_experiment, axis=0)
-cumulative_regret_ts_mean = np.mean(np.cumsum(best_reward - ts_reward_per_experiment, axis=1), axis=0)
-cumulative_regret_ts_std = np.std(np.cumsum(best_reward - ts_reward_per_experiment, axis=1), axis=0)
-cumulative_regret_ucb_mean = np.mean(np.cumsum(best_reward - ucb_reward_per_experiment, axis=1), axis=0)
-cumulative_regret_ucb_std = np.std(np.cumsum(best_reward - ucb_reward_per_experiment, axis=1), axis=0)
-reward_ts_mean = np.mean(ts_reward_per_experiment, axis=0)
-reward_ts_std = np.std(ts_reward_per_experiment, axis=0)
-reward_ucb_mean = np.mean(ucb_reward_per_experiment, axis=0)
-reward_ucb_std = np.std(ucb_reward_per_experiment, axis=0)
-cumulative_reward_ts_mean = np.mean(np.cumsum(ts_reward_per_experiment, axis=1), axis=0)
-cumulative_reward_ts_std = np.std(np.cumsum(ts_reward_per_experiment, axis=1), axis=0)
-cumulative_reward_ucb_mean = np.mean(np.cumsum(ucb_reward_per_experiment, axis=1), axis=0)
-cumulative_reward_ucb_std = np.std(np.cumsum(ucb_reward_per_experiment, axis=1), axis=0)
-
-# Plot the results, comparison TS-UCB
-_, axes = plt.subplots(2, 2, figsize=(20, 20))
-axes = axes.flatten()
-axes[0].set_title(f'Instantaneous regret plot')
-axes[0].plot(regret_ts_mean, 'r')
-axes[0].plot(regret_ucb_mean, 'g')
-axes[0].axhline(y=0, color='b', linestyle='--')
-axes[0].legend(["TS", "UCB"])
-axes[0].set_xlabel("t")
-axes[0].set_ylabel("Instantaneous regret")
-
-axes[1].set_title(f'Instantaneous reward plot')
-axes[1].plot(reward_ts_mean, 'r')
-axes[1].plot(reward_ucb_mean, 'g')
-axes[1].plot(best_rewards, 'b')
-axes[1].legend(["TS", "UCB", "Clairvoyant"])
-axes[1].set_xlabel("t")
-axes[1].set_ylabel("Instantaneous reward")
-
-axes[2].set_title(f'Cumulative regret plot')
-axes[2].plot(cumulative_regret_ts_mean, 'r')
-axes[2].plot(cumulative_regret_ucb_mean, 'g')
-axes[2].legend(["TS", "UCB"])
-axes[2].set_xlabel("t")
-axes[2].set_ylabel("Cumulative regret")
-
-axes[3].set_title(f'Cumulative reward plot')
-axes[3].plot(cumulative_reward_ts_mean, 'r')
-axes[3].plot(cumulative_reward_ucb_mean, 'g')
-axes[3].plot(np.cumsum(best_rewards), 'b')
-axes[3].legend(["TS", "UCB", "Clairvoyant"])
-axes[3].set_xlabel("t")
-axes[3].set_ylabel("Cumulative reward")
-plt.show()
-
-# Plot the results for TS with std
-_, axes = plt.subplots(2, 2, figsize=(20, 20))
-axes = axes.flatten()
-
-axes[0].set_title(f'Instantaneous regret plot for TS')
-axes[0].plot(regret_ts_mean, 'r')
-axes[0].fill_between(range(0, T), regret_ts_mean - regret_ts_std, regret_ts_mean + regret_ts_std, color='r', alpha=0.4)
-axes[0].axhline(y=0, color='b', linestyle='--')
-axes[0].legend(["TS mean", "TS std"])
-axes[0].set_xlabel("t")
-axes[0].set_ylabel("Instantaneous regret")
-
-axes[1].set_title(f'Instantaneous reward plot for TS')
-axes[1].plot(reward_ts_mean, 'r')
-axes[1].fill_between(range(0, T), reward_ts_mean - reward_ts_std, reward_ts_mean + reward_ts_std, color='r', alpha=0.4)
-axes[1].plot(best_rewards, 'b')
-axes[1].legend(["TS mean", "TS std", "Clairvoyant"])
-axes[1].set_xlabel("t")
-axes[1].set_ylabel("Instantaneous reward")
-
-axes[2].set_title(f'Cumulative regret plot for TS')
-axes[2].plot(cumulative_regret_ts_mean, 'r')
-axes[2].fill_between(range(0, T), cumulative_regret_ts_mean - cumulative_regret_ts_std, cumulative_regret_ts_mean + cumulative_regret_ts_std, color='r', alpha=0.4)
-axes[2].legend(["TS mean", "TS std"])
-axes[2].set_xlabel("t")
-axes[2].set_ylabel("Cumulative regret")
-
-axes[3].set_title(f'Cumulative reward plot for TS')
-axes[3].plot(cumulative_reward_ts_mean, 'r')
-axes[3].fill_between(range(0, T), cumulative_reward_ts_mean - cumulative_reward_ts_std, cumulative_reward_ts_mean + cumulative_reward_ts_std, color='r', alpha=0.4)
-axes[3].plot(np.cumsum(best_rewards), 'b')
-axes[3].legend(["TS mean", "TS std", "Clairvoyant"])
-axes[3].set_xlabel("t")
-axes[3].set_ylabel("Cumulative reward")
-plt.show()
-
-# Plot the results for UCB with std
-_, axes = plt.subplots(2, 2, figsize=(20, 20))
-axes = axes.flatten()
-
-axes[0].set_title(f'Instantaneous regret plot for UCB')
-axes[0].plot(regret_ucb_mean, 'g')
-axes[0].fill_between(range(0, T), regret_ucb_mean - regret_ucb_std, regret_ucb_mean + regret_ucb_std, color='g', alpha=0.4)
-axes[0].axhline(y=0, color='b', linestyle='--')
-axes[0].legend(["UCB mean", "UCB std"])
-axes[0].set_xlabel("t")
-axes[0].set_ylabel("Instantaneous regret")
-
-axes[1].set_title(f'Instantaneous reward plot for UCB')
-axes[1].plot(reward_ucb_mean, 'g')
-axes[1].fill_between(range(0, T), reward_ucb_mean - reward_ucb_std, reward_ucb_mean + reward_ucb_std, color='g', alpha=0.4)
-axes[1].plot(best_rewards, 'b')
-axes[1].legend(["UCB mean", "UCB std", "Clairvoyant"])
-axes[1].set_xlabel("t")
-axes[1].set_ylabel("Instantaneous reward")
-
-axes[2].set_title(f'Cumulative regret plot for UCB')
-axes[2].plot(cumulative_regret_ucb_mean, 'g')
-axes[2].fill_between(range(0, T), cumulative_regret_ucb_mean - cumulative_regret_ucb_std, cumulative_regret_ucb_mean + cumulative_regret_ucb_std, color='g', alpha=0.4)
-axes[2].legend(["UCB mean", "UCB std"])
-axes[2].set_xlabel("t")
-axes[2].set_ylabel("Cumulative regret")
-
-axes[3].set_title(f'Cumulative reward plot for UCB')
-axes[3].plot(cumulative_reward_ucb_mean, 'g')
-axes[3].fill_between(range(0, T), cumulative_reward_ucb_mean - cumulative_reward_ucb_std, cumulative_reward_ucb_mean + cumulative_reward_ucb_std, color='g', alpha=0.4)
-axes[3].plot(np.cumsum(best_rewards), 'b')
-axes[3].legend(["UCB mean", "UCB std", "Clairvoyant"])
-axes[3].set_xlabel("t")
-axes[3].set_ylabel("Cumulative reward")
-
-plt.show()
+# Plot the results
+reward_per_algorithm = [rewards_per_algorithm[algorithm] for algorithm in algorithms]
+plot_all_algorithms(reward_per_algorithm, best_rewards, algorithms)
+for i, algorithm in enumerate(algorithms):
+    plot_single_algorithm(reward_per_algorithm[i], best_rewards, algorithm, np.arange(0, T, 1))

@@ -59,13 +59,13 @@ best_bids = {algorithm: [] for algorithm in algorithms}
 # Define the environment
 env = Environment(settings.n_prices, settings.prices, settings.probabilities, settings.bids_to_clicks, settings.bids_to_cum_costs, settings.other_costs)
 # Define the clairvoyant
-clairvoyant = {category: Clairvoyant(env) for category in categories}
+clairvoyant = Clairvoyant(env)
 
 # Optimizing the problem for all the classes separately
-best_price_idx, best_price, best_bid_idx, best_bid, best_reward = {cl: [] for cl in categories}, {cl: [] for cl in categories}, {cl: [] for cl in categories}, {cl: [] for cl in categories}, {cl: [] for cl in categories}
+best_reward = 0
 for category in categories:
-    best_price_idx[category], best_price[category], best_bid_idx[category], best_bid[category], best_reward[category] = clairvoyant[category].maximize_reward(category)
-best_reward = np.sum(np.array([best_reward[category] for category in categories]))
+    _, _, _, _, best_reward_category = clairvoyant.maximize_reward(category)
+    best_reward += best_reward_category
 best_rewards = np.append(best_rewards, np.ones((T,)) * best_reward)
 
 # Each iteration simulates the learner-environment interaction
@@ -74,8 +74,8 @@ for e in tqdm(range(0, n_experiments)):
     environments = {algorithm: Environment(settings.n_prices, settings.prices, settings.probabilities, settings.bids_to_clicks, settings.bids_to_cum_costs, settings.other_costs) for algorithm in algorithms}
 
     # Define the learners, the prices are the same for all categories, so I can pass C1
-    learners['UCB'] = UCBLearnerPricingAdvertising(settings.prices['C1'], env.bids)
-    learners['TS'] = TSLearnerPricingAdvertising(settings.prices['C1'], env.bids)
+    learners['UCB'] = UCBLearnerPricingAdvertising(settings.prices['C1'], env.bids, sklearn=False)
+    learners['TS'] = TSLearnerPricingAdvertising(settings.prices['C1'], env.bids, sklearn=False)
 
     # Iterate over the number of rounds
     for t in range(0, T):

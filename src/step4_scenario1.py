@@ -76,8 +76,8 @@ for e in tqdm(range(0, n_experiments)):
     environments = {algorithm: Environment(settings.n_prices, settings.prices, settings.probabilities, settings.bids_to_clicks, settings.bids_to_cum_costs, settings.other_costs) for algorithm in algorithms}
 
     # Define the learners
-    learners['UCB'] = {category: UCBLearnerPricingAdvertising(settings.prices[category], env.bids) for category in categories}
-    learners['TS'] = {category: TSLearnerPricingAdvertising(settings.prices[category], env.bids) for category in categories}
+    learners['UCB'] = {category: UCBLearnerPricingAdvertising(settings.prices[category], env.bids, sklearn=False) for category in categories}
+    learners['TS'] = {category: TSLearnerPricingAdvertising(settings.prices[category], env.bids, sklearn=False) for category in categories}
 
     # Iterate over the number of rounds
     for t in range(0, T):
