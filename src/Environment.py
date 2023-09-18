@@ -58,7 +58,7 @@ class Environment:
         self.bids_to_clicks = bids_to_clicks
         self.bids_to_clicks_variance = 5
         self.bids_to_cum_costs = bids_to_cum_costs
-        self.bids_to_cum_costs_variance = 90
+        self.bids_to_cum_costs_variance = 5
         self.other_costs = other_costs
 
     def round_pricing(self, category, price_idx, n_clicks=1):
@@ -327,7 +327,7 @@ class Environment:
         x = np.linspace(0, xlim, 100)
         y = fun(x, *self.bids_to_clicks[category]) * x - fun(x, *self.bids_to_cum_costs[category])
         if any(y < 0):
-            print(f'For the category {category} some bids do not respect the consistency check (Number of clicks times bid > cumulative daily cost)')
+            print(f'For the category {category} some bids do not respect the consistency check (Number of clicks times bid > cumulative daily cost) - {y[y<0]}')
         axes[2].plot(x, y, color=color, label=category)
         axes[2].set_title('Number of clicks times bid minus daily cost (Consistency check)')
         axes[2].set_xlabel('Value of the bid')

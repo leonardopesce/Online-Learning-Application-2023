@@ -122,8 +122,8 @@ class ContextNode:
         if sklearn:
             kernel_clicks = ConstantKernel() * RBF() + WhiteKernel() #Product(ConstantKernel(), RBF()) + WhiteKernel()
             kernel_costs = ConstantKernel() * RBF() + WhiteKernel() #Product(ConstantKernel(), RBF()) + WhiteKernel()
-            self.gp_clicks = GaussianProcessRegressor(kernel=kernel_clicks, alpha=10, n_restarts_optimizer=5)
-            self.gp_costs = GaussianProcessRegressor(kernel=kernel_costs, alpha=30, n_restarts_optimizer=5)
+            self.gp_clicks = GaussianProcessRegressor(kernel=kernel_clicks, alpha=5, n_restarts_optimizer=5)
+            self.gp_costs = GaussianProcessRegressor(kernel=kernel_costs, alpha=5, n_restarts_optimizer=5)
             self.gp_clicks.fit(np.array(bids_obs).reshape(-1, 1),
                                np.array(clicks_obs).reshape(-1, 1))
             self.gp_costs.fit(np.array(bids_obs).reshape(-1, 1),
