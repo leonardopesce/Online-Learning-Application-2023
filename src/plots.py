@@ -199,6 +199,8 @@ def plot_clicks_curve(bids, learners, labels, original, additional_label='', ste
     :param str additional_label: Additional label to add to the label of the algorithms
     :param str step_name: Name of the step of the project
     """
+    if not os.path.exists('../img'):
+        os.makedirs('../img')
 
     plt.figure(0)
 
@@ -231,6 +233,8 @@ def plot_costs_curve(bids, learners, labels, original, additional_label='', step
     :param str additional_label: Additional label to add to the label of the algorithms
     :param str step_name: Name of the step of the project
     """
+    if not os.path.exists('../img'):
+        os.makedirs('../img')
 
     plt.figure(1)
 
