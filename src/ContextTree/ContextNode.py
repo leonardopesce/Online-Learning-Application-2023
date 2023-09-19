@@ -78,12 +78,12 @@ class ContextNode:
         # Setting the attributes of the node
         self.prices = prices
         self.bids = bids
-        self.whole_feature_names = whole_feature_names # ['age', 'sex']
-        self.feature_names = feature_names # ['age', 'sex'] --> ['age'] / ['sex']
+        self.whole_feature_names = whole_feature_names # ['age', 'has searched technology terms']
+        self.feature_names = feature_names # ['age', 'has searched technology terms'] --> ['age'] / ['has searched technology terms']
         self.feature_values = feature_values
         self.feature_to_observation = feature_to_observation
         self.confidence = confidence
-        self.aggregate_reward = 0  # self.compute_aggregate_reward()
+        self.aggregate_reward = 0
         self.father = father
         self.children = {}
         self.choice = None
@@ -108,9 +108,9 @@ class ContextNode:
 
         # Aggregating the played bids and the observations of the clicks and costs based on the bid in three arrays
         # indexed by the time
-        bids_obs = [] # [1, 4, 5]
-        clicks_obs = [] # [3235434243, 23423424, 24324234]
-        costs_obs = [] # [4234243, 61423424, 122423.31]
+        bids_obs = []
+        clicks_obs = []
+        costs_obs = []
 
         for key in self.feature_to_observation.keys():
             for observation in self.feature_to_observation[key]:
@@ -156,53 +156,11 @@ class ContextNode:
 
         # Computing the aggregate reward for all the possible prices and bids given the estimated Bernoulli
         # distributions and the estimated number of clicks and costs
-        a = np.array(bernoulli_distributions_est)[None, :] - np.array(bernoulli_distributions_lower_bound)[None, :]
-        aa = self.means_clicks[:, None]
         rewards = (self.means_clicks[:, None] - 1.96 * np.sqrt(self.variance_clicks)[:, None]) * (np.array(bernoulli_distributions_est)[None, :] - np.array(bernoulli_distributions_lower_bound)[None, :]) * (self.prices - self.other_costs) - (self.means_costs[:, None] + 1.96 * np.sqrt(self.variance_costs)[:, None])
-        #print(np.max(rewards))
+
         # Setting the reward of the node to the maximum reward achievable among all the possible prices and bids in the
         # context of the node
         self.aggregate_reward = np.max(rewards)
-
-    def __init__2(self, prices, bids, whole_feature_names, feature_names, feature_values, feature_to_observation, confidence, father):
-        """
-        Initializes the node of the context tree
-        :param list feature_names: List containing the name of the features used to index the feature_values parameter
-        :param dict feature_values: Dictionary containing the mapping between the features and the values the features
-        can assume, the format is {feature_name: [value0, value1, value2, ...]}
-        feature_to_observation: Dictionary of the observations divided by tuples of features, the format is
-        {tuple_of_features: [observation_list_1, observation_list_2, ...]}
-        :param float confidence: Confidence to use in the lower bound used in the context generation algorithm
-        :param ContextNode father: Father node
-        """
-
-        self.prices = prices
-        self.bids = bids
-        self.whole_feature_names = whole_feature_names # ['age', 'sex']
-        self.feature_names = feature_names # ['age', 'sex'] --> ['age'] / ['sex']
-        self.feature_values = feature_values
-        self.feature_to_observation = feature_to_observation
-        self.confidence = confidence
-        self.aggregate_reward = 0  # self.compute_aggregate_reward()
-        self.father = father
-        self.children = {}
-        self.choice = None
-
-        kernel = ScaleKernel(RBFKernel())
-        likelihood = GaussianLikelihood(noise_prior=NormalPrior(0, 1000)) # [[[5, [1,0,1,1,0], 3, 45, 5,4]], ...14..., []]
-
-        self.gp_reward = BaseGaussianProcess(likelihood=likelihood, kernel=kernel)
-
-        # Note that price_obs and bids_obs are the indices of the prices and bids that are used in the GP.
-        # They need to be converted to the actual prices and bids.
-        self.flattened_obs = self.get_flattened_observations()
-        self.means_rewards = None
-        self.sigmas_rewards = None
-        self.lower_bounds_rewards = None
-        self.upper_bounds_rewards = None
-
-        num_samples = sum(len(key) for key in self.feature_to_observation.values())
-        self.update_gp()
 
     def update_gp(self):
         self.flattened_obs = self.get_flattened_observations()
@@ -274,22 +232,6 @@ class ContextNode:
             result.append(new_obs)
 
         return result
-
-
-
-    def compute_aggregate_reward(self):
-        """
-        Computes the aggregate reward given the context of the current node
-
-        :return: Value of the reward of the current aggregate context
-        :rtype: float
-        """
-
-        # Computing the total number of observations considered in the node
-        total_num_samples = sum(observation[3] for key in self.feature_to_observation.keys() for observation in self.feature_to_observation.get(key))
-
-        # Computing the lower bound of the reward of the aggregate context
-        return np.mean([observation[-1] for key in self.feature_to_observation.keys() for observation in self.feature_to_observation.get(key)]) - lower_bound(0.05, total_num_samples)
 
     def split(self):
         """

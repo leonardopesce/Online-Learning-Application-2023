@@ -14,11 +14,19 @@ class ContextGeneratorLearner:
     context generation algorithm
 
     Attributes:
-        contexts: List containing the contexts the learner is using in the current time step
-        learners: List containing a learner for each context that is applied to the relative context in the context list
-        feature_name: List containing the name of the features used to index the feature_values parameter
+        t: Time step of the learning procedure
+        prices: Prices in the pricing problem
+        bids: Bids in the advertising problem
+        context_learners: List containing the contexts learners is using in the current time step
+        feature_to_observation: Dictionary of the observations divided by tuples of features, the format is
+        {tuple_of_features: [observation_list_1, observation_list_2, ...]}
+        feature_names: List containing the name of the features used to index the feature_values parameter
         feature_values: Dictionary containing the mapping between the features and the values the features
         can assume, the format is {feature_name: [value0, value1, value2, ...]}
+        time_between_context_generation: Number of time steps between the application of the context generation algorithm
+        learner_type: Type of learner to use in the pricing and advertising problem
+        context_tree: Context tree used to apply the context generation algorithm
+        other_costs: Know costs of the product, used to compute the margin
     """
     def __init__(self, prices, bids, feature_names, feature_values, time_between_context_generation, learner_type, other_costs):
         """
@@ -29,7 +37,9 @@ class ContextGeneratorLearner:
         :param list feature_names: List containing the name of the features used to index the feature_values parameter
         :param dict feature_values: Dictionary containing the mapping between the features and the values the features
         can assume, the format is {feature_name: [value0, value1, value2, ...]}
-        :param int time_between_context_generation: Number of
+        :param int time_between_context_generation: Number of time steps between the application of the context generation algorithm
+        :param str learner_type: Type of learner to use in the pricing and advertising problem
+        :param float other_costs: Know costs of the product, used to compute the margin
         """
 
         # The Learner starts considering a single context with all the possible users inside
@@ -66,6 +76,11 @@ class ContextGeneratorLearner:
         return result_set
 
     def update_context(self):
+        """
+        Updates the context structure using the context generation algorithm and creates the new context learners to be
+        used in the next time steps
+
+        """
         # To comment for run everything
         ###########
         # for learner in self.context_learners:
@@ -161,105 +176,6 @@ class ContextGeneratorLearner:
         else:
             print("No changes in the context structure")
 
-    def update_context1(self):
-        print("Updating the context")
-
-        old_context = None
-        if self.context_tree is None:
-            self.context_tree = ContextTree(self.prices, self.bids, self.feature_names, self.feature_values, self.feature_to_observation, 0.05)
-        else:
-            old_context = self.context_tree.get_context_structure()
-            self.context_tree.split_leaves(self.feature_to_observation)
-
-        new_contexts = self.context_tree.get_context_structure()
-        if old_context != new_contexts:
-            print(f"{self.t} - {self.learner_type} - New Context: {new_contexts}")
-            # Redefining the learners to use in the next steps of the learning procedure using the new contexts
-            # Defining the list of the new context learners (learners + contexts)
-            new_learners = []
-            # Iterating on the new contexts
-            for context in new_contexts:
-                # Defining a new learner
-                new_learner = LearnerFactory().get_learner(self.learner_type, self.prices, self.bids)
-                # Refactoring the feature to observations dictionary
-                new_learner_feature_to_obs = {tuple(context): {}}
-                # Iterating on the tuples of features of the user in the context
-                for feature_tuple in context:
-                    reward_of_context = [] # {((0,1), (0,0)) : {(0,1): [1,2,3,4], (0,0): [1,2,3,4]}}
-                    # Iterating on the observation regarding the user with the chosen values of features
-                    new_learner_feature_to_obs[tuple(context)][feature_tuple] = self.feature_to_observation.get(feature_tuple)
-                    # for element in self.feature_to_observation.get(feature_tuple):
-                        # Updating the new learner using the past observation of the users in the context it has to consider
-                        # new_learner_feature_to_obs.get(context).append([element])
-                        # new_learner.update(element[0], element[1], element[2], element[3], element[4], element[5])
-                flatten_obs = self.get_flattened_obs(new_learner_feature_to_obs, self.t)
-                for day in flatten_obs.get(tuple(context)):
-                    new_learner.update(day[0][0], day[0][1], day[0][2], day[0][3], day[0][4], day[0][5])
-                assert new_learner.t == self.t
-                # Appending a new context learner to the set of the new learner to use in future time steps
-                new_learners.append(ContextLearner(context, new_learner))
-
-            # Setting the new learners into the context generator learner
-            self.context_learners = new_learners
-        else:
-            print("No changes in the context structure")
-
-    def get_flattened_obs(self, feature_to_obs, num_obs):
-        # feature_to_obs is a dictionary of the form {context: {feature_tuple: [observation]}} where observation is a
-        # list itself with 6 elements. We can have multiple observation for each feature_tuple but the list of
-        # observation is the same for each feature_tuple in the context. We want to flatten the list of observation
-        # in a single list of observation for each context.
-        # For each observation of each tuple of features in the context, the function builds a combined observation
-        # by doing the following operations:
-        # 1. the first element of the new observation is exactly one of the two elements of the parent observations
-        # 2. the second element of the new observation is the concatenation of the second elements of the parent observations
-        # 3. the third element of the new observation is exactly one of the third elements of the parent observations
-        # 4. the fourth element of the new observation is the sum of the fourth elements of the parent observations
-        # 5. the fifth element of the new observation is the sum of the fifth elements of the parent observations
-        # 6. the sixth element of the new observation is the sum of the sixth elements of the parent observations.
-        # The function returns a dictionary of the form {context: [observation]} where observation is a list of 6 elements
-        # with the observation being the one just built.
-
-        # Defining the dictionary to return
-        result = {}
-        # Iterating on the contexts
-        for context in feature_to_obs.keys():
-            # Defining the list of observations to return
-            obs_list = []
-            # Iterating on the tuples of features in the context
-            grouped_obs = []
-            for i in range(num_obs):
-                obs_of_day = []
-                for feature_tuple in feature_to_obs.get(context).keys():
-                    # Iterating on the observations of the tuple of features
-                    obs_of_day.append(feature_to_obs.get(context).get(feature_tuple)[i])
-                grouped_obs.append(obs_of_day)
-
-            assert len(grouped_obs) == num_obs
-
-            for daily_obs in grouped_obs:
-                new_obs = []
-                new_pulled_price = None
-                new_bernoulli_realization = np.array([])
-                new_pulled_bid = None
-                new_clicks_given_bid = 0
-                new_cost_given_bid_list = 0
-                new_reward = 0
-
-                for obs in daily_obs:
-                    new_pulled_price = obs[0]
-                    new_bernoulli_realization = np.concatenate((new_bernoulli_realization, obs[1]))
-                    new_pulled_bid = obs[2]
-                    new_clicks_given_bid += obs[3]
-                    new_cost_given_bid_list += obs[4]
-                    new_reward += obs[5]
-
-                new_obs.append([new_pulled_price, new_bernoulli_realization, new_pulled_bid, new_clicks_given_bid, new_cost_given_bid_list, new_reward])
-                obs_list.append(new_obs)
-            # Appending the list of observations to the dictionary to return
-            result[context] = obs_list
-        return result
-
     def pull_arm(self, other_costs: float) -> list[list[set, int, int]]:
         """
         Chooses the price to play and the bid for all the learners based on the learning algorithm of the learner
@@ -302,6 +218,7 @@ class ContextGeneratorLearner:
                 self.feature_to_observation[feature].append([pulled_price_list[idx], bernoulli_realizations_list[idx][i], pulled_bid_list[idx], clicks_given_bid_list[idx][i], cost_given_bid_list[idx][i], rewards[idx][i]])
 
         # rewards = [[1,2,3,4]] ---> [[1,2],[3,4]]
+
     def get_pulled_prices(self):
         """
         Returns the sequence of pulled prices
