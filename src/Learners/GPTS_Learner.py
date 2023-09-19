@@ -4,13 +4,13 @@ import matplotlib.pyplot as plt
 import torch
 
 from sklearn.gaussian_process import GaussianProcessRegressor
-from sklearn.gaussian_process.kernels import RBF, WhiteKernel, Product, ConstantKernel
+from sklearn.gaussian_process.kernels import RBF, WhiteKernel, ConstantKernel
 from gpytorch.kernels import RBFKernel, ScaleKernel
 from gpytorch.likelihoods import GaussianLikelihood
 from gpytorch.priors import NormalPrior
 
-from Learner import Learner
-from GPs import BaseGaussianProcess
+from .Learner import Learner
+from src.Utilities.GPs import BaseGaussianProcess
 
 from warnings import simplefilter
 from sklearn.exceptions import ConvergenceWarning
@@ -36,7 +36,7 @@ class GPTS_Learner(Learner):
         :param BaseGaussianProcess gp_costs: Gaussian Process Regressor for the costs curve.
     """
 
-    def __init__(self, arms, sklearn=True):
+    def __init__(self, arms, sklearn=False):
         super().__init__(arms)
         self.arms = arms
         self.means_clicks = np.zeros(self.n_arms)

@@ -1,11 +1,12 @@
 import numpy as np
+
 from tqdm import tqdm
-from Clairvoyant import *
-from NonStationaryEnvironment import *
-from SWUCB import SWUCBLearner
-from CUSUMUCBLearner import CUSUMUCBLearner
+
 import settings
-from plots import plot_single_algorithm, plot_all_algorithms
+
+from Learners import Clairvoyant, SWUCBLearner, CUSUMUCBLearner
+from Environments import NonStationaryEnvironment
+from Utilities import plot_single_algorithm, plot_all_algorithms
 
 """
 Sensitivity analysis of the parameters employed in the algorithms, evaluating different values of the length of the 

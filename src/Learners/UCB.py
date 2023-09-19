@@ -1,6 +1,6 @@
 import numpy as np
 
-from Learner import *
+from .Learner import *
 
 #TODO funziona se è facile capire quale è il migliore arm
 class UCBLearner(Learner):

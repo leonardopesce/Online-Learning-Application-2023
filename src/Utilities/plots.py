@@ -122,8 +122,8 @@ def plot_all_algorithms(reward_per_algorithm, best_rewards, x_range, labels, ste
     :param list labels: List of names of algorithms plotted
     :param str step_name: Name of the step of the project
     """
-    if not os.path.exists('../img'):
-        os.makedirs('../img')
+    if not os.path.exists('../../img'):
+        os.makedirs('../../img')
 
     _, axes = plt.subplots(2, 2, figsize=(20, 20))
     axes = axes.flatten()
@@ -199,8 +199,8 @@ def plot_clicks_curve(bids, learners, labels, original, additional_label='', ste
     :param str additional_label: Additional label to add to the label of the algorithms
     :param str step_name: Name of the step of the project
     """
-    if not os.path.exists('../img'):
-        os.makedirs('../img')
+    if not os.path.exists('../../img'):
+        os.makedirs('../../img')
 
     plt.figure(0)
 
@@ -233,8 +233,8 @@ def plot_costs_curve(bids, learners, labels, original, additional_label='', step
     :param str additional_label: Additional label to add to the label of the algorithms
     :param str step_name: Name of the step of the project
     """
-    if not os.path.exists('../img'):
-        os.makedirs('../img')
+    if not os.path.exists('../../img'):
+        os.makedirs('../../img')
 
     plt.figure(1)
 
@@ -267,8 +267,8 @@ def plot_all_algorithms_divided(reward_per_algorithm, best_rewards, x_range, lab
     :param str step_name: Name of the step of the project
     """
     # Creating the img folder in the script directory if it doesn't exist
-    if not os.path.exists('../img'):
-        os.makedirs('../img')
+    if not os.path.exists('../../img'):
+        os.makedirs('../../img')
 
     #colors = ['#35879b', '#ba4f35']
     colors = ["#D00000", "#3335FF", "#FFBA08", "#94C9A9", "#372554"]

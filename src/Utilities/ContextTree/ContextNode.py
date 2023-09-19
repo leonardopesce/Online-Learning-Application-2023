@@ -8,7 +8,7 @@ from gpytorch.kernels import RBFKernel, ScaleKernel
 from gpytorch.likelihoods import GaussianLikelihood
 from gpytorch.priors import NormalPrior
 
-from GPs import BaseGaussianProcess
+from ..GPs import BaseGaussianProcess
 
 from warnings import simplefilter
 from sklearn.exceptions import ConvergenceWarning

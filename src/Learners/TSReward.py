@@ -1,4 +1,4 @@
-from Learner import *
+from .Learner import *
 
 
 class TSRewardLearner(Learner):

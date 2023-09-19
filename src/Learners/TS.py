@@ -1,4 +1,4 @@
-from Learner import *
+from src.Learners.Learner import *
 
 
 class TSLearner(Learner):

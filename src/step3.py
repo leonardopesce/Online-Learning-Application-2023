@@ -1,12 +1,14 @@
-from Environment import Environment
-from tqdm import tqdm
-from Clairvoyant import Clairvoyant
-from TSPricingAdvertising import TSLearnerPricingAdvertising
-from UCBPricingAdvertising import UCBLearnerPricingAdvertising
 from collections import Counter
+
 import numpy as np
-from plots import plot_single_algorithm, plot_all_algorithms, plot_clicks_curve, plot_costs_curve, plot_all_algorithms_divided
+
+from tqdm import tqdm
+
 import settings
+
+from Environments import Environment
+from Learners import Clairvoyant, TSLearnerPricingAdvertising, UCBLearnerPricingAdvertising
+from Utilities import plot_all_algorithms, plot_clicks_curve, plot_costs_curve, plot_all_algorithms_divided
 
 """
 Simulation for the step 3: Learning for joint pricing and advertising

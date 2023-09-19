@@ -1,10 +1,14 @@
-from tqdm import tqdm
-from Clairvoyant import *
-from UCB import *
-from TSReward import *
 from collections import Counter
-from plots import plot_single_algorithm, plot_all_algorithms, plot_all_algorithms_divided
+
+import numpy as np
+
+from tqdm import tqdm
+
 import settings
+
+from Environments import Environment
+from Learners import Clairvoyant, UCBLearner, TSRewardLearner
+from Utilities import plot_all_algorithms, plot_all_algorithms_divided
 
 """
 Simulation for the step 1: learning for pricing 

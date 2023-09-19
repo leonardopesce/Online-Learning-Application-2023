@@ -1,4 +1,6 @@
-from Environment import *
+import numpy as np
+
+from src.Environments import Environment, fun
 
 
 class Clairvoyant:
@@ -34,7 +36,8 @@ class Clairvoyant:
 
         values = np.array([])
         for idx, price in enumerate(self.environment.prices[category]):
-            values = np.append(values, self.environment.probabilities[category][idx] * (price - self.environment.other_costs))
+            values = np.append(values,
+                               self.environment.probabilities[category][idx] * (price - self.environment.other_costs))
 
         best_price_idx = np.random.choice(np.where(values == values.max())[0])
 
@@ -79,13 +82,13 @@ class Clairvoyant:
         cum_daily_costs = fun(bid, *self.environment.bids_to_cum_costs[category])
         values = np.array([])
         for idx, price in enumerate(self.environment.prices[category]):
-            conversion_times_margin = self.environment.probabilities[category][idx] * (price - self.environment.other_costs)
+            conversion_times_margin = self.environment.probabilities[category][idx] * (
+                        price - self.environment.other_costs)
             values = np.append(values, n_clicks * conversion_times_margin - cum_daily_costs)
 
         best_price_idx = np.random.choice(np.where(values == values.max())[0])
 
         return best_price_idx, self.environment.prices[category][best_price_idx], values[best_price_idx]
-
 
     def maximize_reward(self, category):
         """
@@ -131,7 +134,8 @@ class Clairvoyant:
         best_price_idx = flat_index_maximum // num_bids
         best_bid_idx = flat_index_maximum % num_bids
 
-        return best_price_idx, prices[best_price_idx], best_bid_idx, bids[best_bid_idx], aggregate_rewards[best_price_idx, best_bid_idx]
+        return best_price_idx, prices[best_price_idx], best_bid_idx, bids[best_bid_idx], aggregate_rewards[
+            best_price_idx, best_bid_idx]
 
     def check(self, category):
         # To check whether all the rewards are positive
@@ -143,7 +147,7 @@ class Clairvoyant:
                 n_clicks = fun(bid, *self.environment.bids_to_clicks[category])
                 cum_daily_costs = fun(bid, *self.environment.bids_to_cum_costs[category])
                 value = n_clicks * margin - cum_daily_costs
-                #print(value)
+                # print(value)
                 values[idx].append(value)
             print(max(values[idx]))
 
@@ -175,7 +179,7 @@ def test():
         print(category)
         clairvoyant.check(category)
 
-#test()
+# test()
 
 # Using the exponential function for number of clicks and cumulative daily cost the best bid is different for each price
 # and the best index is in the middle

@@ -1,4 +1,4 @@
-from Environment import *
+from .Environment import *
 
 
 class MultiContextEnvironment(Environment):

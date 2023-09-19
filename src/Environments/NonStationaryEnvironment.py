@@ -1,6 +1,4 @@
-from Environment import *
-
-
+from .Environment import *
 class NonStationaryEnvironment(Environment):
     """
     Extends the Environment class to consider the situation in which the curves related to pricing are non-stationary

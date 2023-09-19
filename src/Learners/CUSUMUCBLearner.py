@@ -1,6 +1,7 @@
-from UCB import UCBLearner
 import numpy as np
-from CUSUM import CUSUM
+
+from .UCB import UCBLearner
+from .CUSUM import CUSUM
 
 
 class CUSUMUCBLearner(UCBLearner):

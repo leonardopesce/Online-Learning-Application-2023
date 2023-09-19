@@ -1,11 +1,9 @@
 import itertools
 import numpy as np
 
-from PricingAdvertisingLearner import PricingAdvertisingLearner
-from ContextLearner import ContextLearner
-from LearnerFactory import LearnerFactory
-from ContextTree.ContextTree import ContextTree
-
+from .ContextLearner import ContextLearner
+from .LearnerFactory import LearnerFactory
+from src.Utilities.ContextTree import ContextTree
 
 class ContextGeneratorLearner:
 
@@ -94,8 +92,8 @@ class ContextGeneratorLearner:
         else:
             old_context = self.context_tree.get_context_structure()
             self.context_tree = ContextTree(self.prices, self.bids, self.feature_names, self.feature_values, self.feature_to_observation, 0.05, self.other_costs)
-
         new_contexts = self.context_tree.get_context_structure()
+
         if old_context != new_contexts:
             print(f"{self.t} - {self.learner_type} - New Context: {new_contexts}")
             # Redefining the learners to use in the next steps of the learning procedure using the new contexts

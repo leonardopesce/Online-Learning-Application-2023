@@ -1,5 +1,5 @@
-from TSPricingAdvertising import TSLearnerPricingAdvertising
-from UCBPricingAdvertising import UCBLearnerPricingAdvertising
+from .TSPricingAdvertising import TSLearnerPricingAdvertising
+from .UCBPricingAdvertising import UCBLearnerPricingAdvertising
 
 class LearnerFactory:
     def __init__(self) -> None:

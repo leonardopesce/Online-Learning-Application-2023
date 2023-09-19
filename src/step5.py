@@ -1,11 +1,12 @@
+import numpy as np
+
 from tqdm import tqdm
-from Clairvoyant import *
-from UCB import *
-from NonStationaryEnvironment import *
-from SWUCB import SWUCBLearner
-from CUSUMUCBLearner import CUSUMUCBLearner
-from plots import plot_single_algorithm, plot_all_algorithms, plot_all_algorithms_divided
+
 import settings
+
+from Learners import Clairvoyant, UCBLearner, SWUCBLearner, CUSUMUCBLearner
+from Environments import NonStationaryEnvironment
+from Utilities import plot_all_algorithms, plot_all_algorithms_divided
 
 """
 Simulation for the step 5: dealing with non-stationary environments with two abrupt changes 

@@ -1,10 +1,12 @@
-from tqdm import tqdm
-from Clairvoyant import Clairvoyant
 import numpy as np
-from MultiContextEnvironment import MultiContextEnvironment
-from ContextGeneratorLearner import ContextGeneratorLearner
+
+from tqdm import tqdm
+
 import settings
-from plots import plot_single_algorithm, plot_all_algorithms, plot_all_algorithms_divided
+
+from Learners import Clairvoyant, ContextGeneratorLearner
+from Environments import MultiContextEnvironment
+from Utilities import plot_all_algorithms, plot_all_algorithms_divided
 
 """
 Consider the case in which there are three classes of users (C1, C2, and C3), 
@@ -48,7 +50,7 @@ T = 365
 
 # Since the reward functions are stochastic to better visualize the results and remove the noise
 # we have to perform a sufficiently large number experiments
-n_experiments = 5
+n_experiments = 10
 time_between_context_generation = 14
 
 algorithms = ['UCB', 'TS']

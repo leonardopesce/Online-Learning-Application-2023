@@ -515,21 +515,22 @@ def test():
     prices = {'C1': np.array([500, 550, 600, 650, 700]),
               'C2': np.array([500, 550, 600, 650, 700]),
               'C3': np.array([500, 550, 600, 650, 700])}
-    probabilities = {'C1': np.array([0.05, 0.05, 0.2, 0.1, 0.05]),
-                     'C2': np.array([0.05, 0.05, 0.1, 0.2, 0.1]),
-                     'C3': np.array([0.1, 0.2, 0.25, 0.05, 0.05])}
-    bids_to_clicks = {'C1': np.array([100, 2]),
-                      'C2': np.array([90, 2]),
-                      'C3': np.array([80, 3])}
-    bids_to_cum_costs = {'C1': np.array([400, 0.035]),
-                         'C2': np.array([200, 0.07]),
-                         'C3': np.array([300, 0.04])}
+    probabilities = {'C1': np.array([0.10, 0.12, 0.20, 0.04, 0.03]),
+                     # best arm is 2 (starting from 0) young who clicked
+                     'C2': np.array([0.03, 0.04, 0.10, 0.12, 0.20]),  # best arm is 4 old who clicked
+                     'C3': np.array([0.20, 0.12, 0.10, 0.04, 0.03])}  # best arm is 0 no clicks
+    bids_to_clicks = {'C1': np.array([100, 3]),
+                      'C2': np.array([90, 1]),
+                      'C3': np.array([70, 0.5])}
+    bids_to_cum_costs = {'C1': np.array([35, 1]),  # 0.035 instead of 0.08, old value Enri
+                         'C2': np.array([25, 0.5]),
+                         'C3': np.array([15, 0.2])}
     other_costs = 400
 
     env = Environment(n_prices, prices, probabilities, bids_to_clicks, bids_to_cum_costs, other_costs)
-    #env.plot_advertising_model('C1', color='r', axes=None)
+    env.plot_advertising_model('C1', color='r', axes=None)
     env.plot_whole_advertising_model()
-    #env.plot_whole_pricing_model()
+    env.plot_whole_pricing_model()
     env.plot_rewards_given_price_idx(2, plotly_show = True)
     env.plot_rewards(categories=['C1'], plot_aggregate_model=True, plotly_show=True)
 

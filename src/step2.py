@@ -1,11 +1,15 @@
-from Environment import *
-from GPTS_Learner import *
-from GPUCB_Learner import *
-from tqdm import tqdm
-from Clairvoyant import Clairvoyant
-from plots import plot_single_algorithm, plot_all_algorithms, plot_clicks_curve, plot_costs_curve, plot_all_algorithms_divided
-import settings
 import os
+
+import numpy as np
+
+from tqdm import tqdm
+
+import settings
+
+from Environments import Environment
+from Learners import GPTS_Learner, GPUCB_Learner, Clairvoyant
+from Utilities import plot_all_algorithms, plot_clicks_curve, plot_costs_curve, plot_all_algorithms_divided
+
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
 
 """

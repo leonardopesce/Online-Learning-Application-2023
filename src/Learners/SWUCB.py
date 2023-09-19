@@ -1,4 +1,4 @@
-from UCB import *
+from .UCB import *
 
 
 class SWUCBLearner(UCBLearner):

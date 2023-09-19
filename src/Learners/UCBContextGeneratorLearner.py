@@ -1,4 +1,4 @@
-from ContextGeneratorLearner import ContextGeneratorLearner
+from .ContextGeneratorLearner import ContextGeneratorLearner
 
 class UCBContextGeneratorLearner(ContextGeneratorLearner):
     
