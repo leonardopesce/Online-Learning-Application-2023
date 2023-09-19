@@ -334,4 +334,3 @@ def plot_all_algorithms_divided(reward_per_algorithm, best_rewards, x_range, lab
     plt.gca().get_yaxis().get_offset_text().set_fontsize(18)
     plt.savefig('../img/plot_cumulative_reward_' + step_name + '.png', bbox_inches='tight')
     plt.show()
-
