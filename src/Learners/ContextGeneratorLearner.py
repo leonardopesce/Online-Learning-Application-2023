@@ -92,6 +92,7 @@ class ContextGeneratorLearner:
         else:
             old_context = self.context_tree.get_context_structure()
             self.context_tree = ContextTree(self.prices, self.bids, self.feature_names, self.feature_values, self.feature_to_observation, 0.05, self.other_costs)
+
         new_contexts = self.context_tree.get_context_structure()
 
         if old_context != new_contexts:
@@ -157,7 +158,8 @@ class ContextGeneratorLearner:
                         #print()
                         #print(np.concatenate((observation[1], bernoulli_obs_other_classes)))
                         #print("------------------------------------------------------------------------------------------------------------------")
-                        new_learner.update(observation[0], np.concatenate((observation[1], bernoulli_obs_other_classes)), observation[2], observation[3] + mean_clicks, observation[4] + mean_costs, observation[5], False) # rewards[idx])
+                        # new_learner.update(observation[0], np.concatenate((observation[1], bernoulli_obs_other_classes)), observation[2], observation[3] + mean_clicks, observation[4] + mean_costs, observation[5], False) # rewards[idx])
+                        new_learner.update(observation[0], observation[1], observation[2], observation[3], observation[4], observation[5], False)  # rewards[idx])
 
                     new_learner.GP_advertising.update_model()
                 #flatten_obs = self.get_flattened_obs(new_learner_feature_to_obs, self.t)
