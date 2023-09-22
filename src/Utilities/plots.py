@@ -188,7 +188,7 @@ def plot_all_algorithms(reward_per_algorithm, best_rewards, x_range, labels, ste
     axes[3].tick_params(axis='both', which='both', labelsize=18)
     axes[3].yaxis.get_offset_text().set_fontsize(18)
 
-    plt.savefig('../img/plots_all_' + step_name + '.png', bbox_inches='tight')
+    plt.savefig('../../img/plots_all_' + step_name + '.png', bbox_inches='tight')
     plt.show()
 
 
@@ -222,7 +222,7 @@ def plot_clicks_curve(bids, learners, labels, original, additional_label='', ste
     plt.ylabel('Number of clicks', fontsize=15)
     plt.legend(fontsize=15)
     plt.tick_params(axis='both', which='both', labelsize=15)
-    plt.savefig('../img/plot_clicks_' + step_name + '.png', bbox_inches='tight')
+    plt.savefig('../../img/plot_clicks_' + step_name + '.png', bbox_inches='tight')
     plt.show()
 
 
@@ -256,7 +256,7 @@ def plot_costs_curve(bids, learners, labels, original, additional_label='', step
     plt.ylabel('Cumulative cost', fontsize=15)
     plt.legend(fontsize=15)
     plt.tick_params(axis='both', which='both', labelsize=15)
-    plt.savefig('../img/plot_costs' + step_name + '.png', bbox_inches='tight')
+    plt.savefig('../../img/plot_costs' + step_name + '.png', bbox_inches='tight')
     plt.show()
 
 
@@ -290,7 +290,7 @@ def plot_all_algorithms_divided(reward_per_algorithm, best_rewards, x_range, lab
     plt.ylabel("Instantaneous regret", fontsize=18)
     plt.tick_params(axis='both', which='major', labelsize=18)
     plt.gca().get_yaxis().get_offset_text().set_fontsize(18)
-    plt.savefig('../img/plot_instantaneous_regret_' + step_name + '.png', bbox_inches='tight')
+    plt.savefig('../../img/plot_instantaneous_regret_' + step_name + '.png', bbox_inches='tight')
     plt.show()
 
     # Plot the instantaneous reward of all the algorithms
@@ -307,7 +307,7 @@ def plot_all_algorithms_divided(reward_per_algorithm, best_rewards, x_range, lab
     plt.ylabel("Instantaneous reward", fontsize=18)
     plt.tick_params(axis='both', which='major', labelsize=18)
     plt.gca().get_yaxis().get_offset_text().set_fontsize(18)
-    plt.savefig('../img/plot_instantaneous_reward_' + step_name + '.png', bbox_inches='tight')
+    plt.savefig('../../img/plot_instantaneous_reward_' + step_name + '.png', bbox_inches='tight')
     plt.show()
 
     # Plot the cumulative regret of all the algorithms
@@ -323,7 +323,7 @@ def plot_all_algorithms_divided(reward_per_algorithm, best_rewards, x_range, lab
     plt.ylabel("Cumulative regret", fontsize=18)
     plt.tick_params(axis='both', which='major', labelsize=18)
     plt.gca().get_yaxis().get_offset_text().set_fontsize(18)
-    plt.savefig('../img/plot_cumulative_regret_' + step_name + '.png', bbox_inches='tight')
+    plt.savefig('../../img/plot_cumulative_regret_' + step_name + '.png', bbox_inches='tight')
     plt.show()
 
     # Plot the cumulative reward of all the algorithms
@@ -340,5 +340,5 @@ def plot_all_algorithms_divided(reward_per_algorithm, best_rewards, x_range, lab
     plt.ylabel("Cumulative reward", fontsize=18)
     plt.tick_params(axis='both', which='both', labelsize=18)
     plt.gca().get_yaxis().get_offset_text().set_fontsize(18)
-    plt.savefig('../img/plot_cumulative_reward_' + step_name + '.png', bbox_inches='tight')
+    plt.savefig('../../img/plot_cumulative_reward_' + step_name + '.png', bbox_inches='tight')
     plt.show()

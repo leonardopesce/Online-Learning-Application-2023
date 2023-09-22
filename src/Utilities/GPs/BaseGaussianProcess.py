@@ -4,6 +4,7 @@ import torch
 from torch.optim import Adam
 from gpytorch.mlls import ExactMarginalLogLikelihood
 
+
 class BaseGaussianProcess(gpytorch.models.ExactGP):
     """Gausian Process Regressor. Inherits from gpytorch.models.ExactGP.
 
