@@ -30,7 +30,7 @@ assert np.sum(settings.phases_duration) == T
 
 # Since the reward functions are stochastic to better visualize the results and remove the noise
 # we have to perform a sufficiently large number experiments
-n_experiments = 50
+n_experiments = 100
 
 algorithms = ['UCB', 'SW-UCB', 'CUSUM-UCB', 'EXP3']
 
@@ -45,7 +45,7 @@ rewards = {algorithm: [] for algorithm in algorithms}
 best_rewards = np.array([])
 
 # Define the environment for clairvoyant
-env = NonStationaryEnvironment(settings.n_prices, settings.prices, settings.probabilities, settings.bids_to_clicks_cost, settings.bids_to_cum_costs_cost, settings.other_costs, settings.phases_duration)
+env = NonStationaryEnvironment(settings.n_prices, settings.prices, settings.probabilities_step5, settings.bids_to_clicks_cost, settings.bids_to_cum_costs_cost, settings.other_costs, settings.phases_duration)
 # Define the clairvoyant
 clairvoyant = Clairvoyant(env)
 
@@ -58,7 +58,7 @@ for phase, phase_len in enumerate(settings.phases_duration):
 # Each iteration simulates the learner-environment interaction
 for e in tqdm(range(0, n_experiments)):
     # Define the environments
-    environments = {algorithm: NonStationaryEnvironment(settings.n_prices, settings.prices, settings.probabilities, settings.bids_to_clicks_cost, settings.bids_to_cum_costs_cost, settings.other_costs, settings.phases_duration) for algorithm in algorithms}
+    environments = {algorithm: NonStationaryEnvironment(settings.n_prices, settings.prices, settings.probabilities_step5, settings.bids_to_clicks_cost, settings.bids_to_cum_costs_cost, settings.other_costs, settings.phases_duration) for algorithm in algorithms}
 
     # Define the learners
     learners['UCB'] = UCBLearner(settings.prices[category])

@@ -6,7 +6,7 @@ import settings
 
 from Learners import Clairvoyant, SWUCBLearner, CUSUMUCBLearner
 from Environments import NonStationaryEnvironment
-from Utilities import plot_single_algorithm, plot_all_algorithms
+from Utilities import plot_all_algorithms, plot_all_algorithms_divided
 
 """
 Sensitivity analysis of the parameters employed in the algorithms, evaluating different values of the length of the 
@@ -24,7 +24,7 @@ category = 'C1'
 T = 365
 assert np.sum(settings.phases_duration) == T
 
-n_experiments = 20
+n_experiments = 100
 
 # Define the environment
 env = NonStationaryEnvironment(settings.n_prices, settings.prices, settings.probabilities, settings.bids_to_clicks_cost, settings.bids_to_cum_costs_cost, settings.other_costs, settings.phases_duration)
@@ -41,7 +41,7 @@ for phase, phase_len in enumerate(settings.phases_duration):
 # SW-UCB analysis
 if sw_ucb:
     # Learners parameters
-    window_sizes = np.array([1, 2, 3, 4, 5, 6, 7, 15]) * int(np.sqrt(T))
+    window_sizes = np.array([1, 2, 4, 6, 7]) * int(np.sqrt(T))
     window_sizes = np.append(window_sizes, int(2 * np.sqrt(T * np.log(T) / len(settings.phases_duration))))
 
     # Store the rewards for each experiment for the learners
@@ -72,27 +72,28 @@ if sw_ucb:
             swucb_rewards_per_experiment[i].append(learner.collected_rewards)
 
     # Plot the results
-    labels = [r'$1 \cdot \log{T}$', r'$2 \cdot \log{T}$', r'$3 \cdot \log{T}$', r'$4 \cdot \log{T}$', r'$5 \cdot \log{T}$', r'$6 \cdot \log{T}$', r'$7 \cdot \log{T}$', r'$2 \cdot \sqrt{(T \cdot \log{T}) / 3 }$']
-    plot_all_algorithms(swucb_rewards_per_experiment, best_rewards, labels)
-    for i, label in enumerate(labels):
-        plot_single_algorithm(swucb_rewards_per_experiment[i], best_rewards, label, np.arange(0, T, 1))
+    labels = [r'$1 \cdot \sqrt{T} = 19$', r'$2 \cdot \sqrt{T} = 38$', r'$4 \cdot \sqrt{T} = 76$', r'$6 \cdot \sqrt{T}$ = 115', r'$7 \cdot \sqrt{T}$ = 134', r'$2 \cdot \sqrt{(T \cdot \log{T}) / 3 } = 54$']
+    plot_all_algorithms(swucb_rewards_per_experiment, best_rewards, np.arange(0, T, 1), labels, step_name="sensitivity_analysis_swucb")
+    plot_all_algorithms_divided(swucb_rewards_per_experiment, best_rewards, np.arange(0, T, 1), labels, step_name="sensitivity_analysis_swucb")
+    #for i, label in enumerate(labels):
+    #    plot_single_algorithm(swucb_rewards_per_experiment[i], best_rewards, label, np.arange(0, T, 1))
 
 # CUSUM-UCB analysis
 if cusum_ucb:
     # Learners parameters
-    # If find better values change them in settings
-    M = 50
-    eps = 0.1
-    h = 0.5 * np.log(T)
-    alpha = np.sqrt(np.log(T) / T)
+    M = settings.M
+    eps = settings.eps
+    h = settings.h
+    alpha = settings.alpha
 
     Ms = [50, 100, 150, 200, 500]
     epss = [0.01, 0.02, 0.05, 0.1, 0.2]
     hs = np.array([0.5, 1, 2, 5, 10]) * np.log(T)
+    hs = np.append(hs, np.log(T / len(settings.phases_duration)))
     alphas = np.array([0.1, 0.5, 1, 2, 5]) * np.sqrt(np.log(T) / T)
 
     # Store the rewards for each experiment for the learners
-    cusum_ucb_rewards_per_experiment = [[] for _ in alphas]  # To try other parameters change here
+    cusum_ucb_rewards_per_experiment = [[] for _ in hs]  # To try other parameters change here
 
     # Each iteration simulates the learner-environment interaction
     for e in tqdm(range(0, n_experiments)):
@@ -100,7 +101,7 @@ if cusum_ucb:
         environments_cusum_ucb = []
         learners_cusum_ucb = []
 
-        for alpha in alphas:  # To try other parameters change here
+        for h in hs:  # To try other parameters change here
             environments_cusum_ucb.append(NonStationaryEnvironment(settings.n_prices, settings.prices, settings.probabilities, settings.bids_to_clicks_cost, settings.bids_to_cum_costs_cost, settings.other_costs, settings.phases_duration))
             learners_cusum_ucb.append(CUSUMUCBLearner(settings.prices[category], M=M, eps=eps, h=h, alpha=alpha))
 
@@ -121,61 +122,77 @@ if cusum_ucb:
 
     # Plot the results
     labels = ['1', '2', '3', '4', '5']
-    plot_all_algorithms(cusum_ucb_rewards_per_experiment, best_rewards, labels)
-    for i, label in enumerate(labels):
-        plot_single_algorithm(cusum_ucb_rewards_per_experiment[i], best_rewards, label, np.arange(0, T, 1))
+    plot_all_algorithms(cusum_ucb_rewards_per_experiment, best_rewards, np.arange(0, T, 1), labels, step_name="sensitivity_analysis_cusumucb")
+    plot_all_algorithms_divided(cusum_ucb_rewards_per_experiment, best_rewards, np.arange(0, T, 1), labels, step_name="sensitivity_analysis_cusumucb")
+    #for i, label in enumerate(labels):
+    #    plot_single_algorithm(cusum_ucb_rewards_per_experiment[i], best_rewards, label, np.arange(0, T, 1))
 
 
 """
+Parameters for sliding window UCB:
+- windows size: number of valid samples that are used to compute the confidence bounds
+
+windows size
+From the paper, remark 9 (pag11) If the horizon T and the growth rate of the number of breakpoints Υ(T) are known in 
+advance we can set the windows size to 2 * (upper bound reward) * sqrt(T * log(T) / number of breakpoints) = 54.
+
+If I don't know all the terms of the previous formula in advance, in the notebook (Alberto) is written to use a window 
+proportional to sqrt(T). [1, 2, 3, 4, 5, 6, 7] * int(np.sqrt(365)) = [19,  38,  57,  76,  95, 114, 133]
+
+The lower is the window size, the higher is the number of times that the algorithm has to retry all the arms. 
+In this case, applying small multiplicative factors, like 1 or 2, decreases the performance because the window is too 
+short with respect to the length of the phases and so the learner frequently needs to play suboptimal arms.
+While the larger is the window size, the lower is the sensitivity of the algorithm.
+Values for the window in the range between 50 and 80, for instance using a factor of 4, are good.
+Using as multiplicative factor 6 or 7 would be optimal in this case because the window size would be similar to the 
+length of the phases. Applying even higher factors would decrease the performance leading SW-UCB to don’t explore enough.
+https://arxiv.org/pdf/0805.3415.pdf it should be the original paper of SW-UCB, pag 11
+"""
+
+"""
 Parameters for CUSUM are:
-- eps: to have an underestimation of the deviation from the reference point, it's the exploration term of UCB
 - M: number of valid samples that are used to compute the reference point
+- eps: to have an underestimation of the deviation from the reference point
 - h: value over which a detection is flagged
 - alpha: pure exploration parameter
 
-eps 
-The change in the distributions should be greater than 3*eps, anyway eps should be of the order of changes in the 
-distributions. With these parameters the smallest change in the distribution is around 0.05, so eps should be at least 
-0.01. With eps=0.1 the algorithm performs well, if eps is increased the performance are worse.
-
 M 
-If M is too big, so comparable to the length of the horizon, all the observations are used to compute the reference 
-points so the algorithm behaves like a normal UCB. If M is very small like 1 or 2 it is suboptimal. M should be big 
-enough to have a good estimate of the reference point and such that each arm is played at least M times between each 
-breakpoint. In this case since everytime an arm is chosen it receives around 100 clicks, setting M around 50 or 100 is 
-enough to have a good estimate of the reference point.
+Because the detection test is not run until M samples have been gathered, in general, if M is too large, the majority of
+the observations are utilised to compute the reference point, making the algorithm behave similarly to a regular UCB. 
+Therefore, with big values of M, it's possible that the changes aren’t detected or take a long time to be identified.
+Instead, if M is too small, it is still suboptimal since it leads to inaccurate reference point estimation and more 
+frequent change detection, even when there is none.
+Each arm should be played at least M times between each breakpoint, and M should be large enough to allow for an 
+accurate estimation of the reference point. In this instance, placing M between 50 and 100 is sufficient to get a decent 
+estimate of the reference point because each time an arm is chosen, it receives approximately 100 clicks. 
+All of the values taken into consideration perform similarly.
+
+eps 
+In general, with low values of 𝜀 changes are easily detected even when there aren’t. Whereas as 𝜀 increases the 
+sensitivity decreases, so more samples of the new distribution are necessary to flag a change. 
+We note that values in the range between 0.01 and 0.1 produce similar performance, while increasing the value of 𝜀 
+results in a rise of the cumulative regret, since 𝜀 should be of the order of changes in distributions, which in our 
+case are of the order of 0.1.
 
 h
-A lower threshold makes the algorithm more sensitive, while a higher threshold makes it less sensitive. It should be 
-tuned around log(T/number_breakpoints)=2 (from the paper) or should be of the order of logT=6 (notebook Alberto). 
-With h=0.5*log(T) the algorithm performs well, increasing the multiplicative factor the performances are worse.
+We tried values proportional to np.log(T) (from the paper).
+In general, low values of h makes the algorithm more sensitive, while high values make it less sensitive.
+With our parameters the best performing h is the one with multiplicative factor 0.5. As the factor increases the 
+cumulative regret gets worse since the learner needs more evidence to detect a change in the distribution.
+In case the number of breakpoints is known, the paper proposes to use np.log(T / #breakpoints), that would be optimal in 
+this case as it is possible to see from the plot.
 
 alpha
-From the paper it should be tuned around sqrt(log(T/number_breakpoints)*number_breakpoints/T)=0.13 or should be of the
-order of sqrt(log(T) / T) (notebook Alberto). I also tried alpha decreasing in time like 1/t, but it is not good because 
-over time there is less exploration and so it is more difficult to detect changes. A good alpha seems 
-np.sqrt(np.log(T)/T). If alpha is too low the algorithm is suboptimal because doesn't explore, instead if alpha is too
-big the algorithm explores too much.
+We tried values proportional to np.sqrt(np.log(T) / T) (from the paper).
+𝛼 is the probability with which a random arm is played in place of the recommended one by UCB.
+If 𝛼 is too low, the algorithm is suboptimal since it exploits too much, pulling almost always the suggested arm and 
+rarely trying other arms that could became optimal in a non-stationary environment.
+Instead, if 𝛼 is too large, the learner explores too much, thus it frequently pulls random arms being able to detect
+changes, but not exploiting what has learned.
+From the plot we observe that lower values of 𝛼 give lower regret.
 
 In general all these parameters depend also on the other parameters, e.g. the probabilities.
 
 https://arxiv.org/pdf/1711.03539.pdf it should be the pdf used also during lectures, since the formulas in Alberto's
 notebook are the same of the paper by omitting the number of breakpoints, that is usually unknown.
-"""
-
-"""
-Parameters for Sliding widows UCB:
-- windows size: number of valid samples that are used to compute the reference point
-
-windows size
-From the paper, remark 9 (pag11) If the horizon T and the growth rate of the number of breakpoints Υ(T) are known in 
-advance we can set the windows size to 2 * (upper bound reward) * sqrt(T * log(T) / number of breakpoints) = 53.
-The lower is the windows size the higher is the times that the algorithm has to retry all the arms. So, the cumulative 
-regret will increase. However, the larger is the window the lower is the sensitivity of the algorithm.
-If I don't know all the terms of the previous formula in advance, in the notebook (Alberto) is written to use a window 
-proportional to sqrt(T). [1, 2, 3, 4, 5, 6, 7] * int(np.sqrt(365)) = [19,  38,  57,  76,  95, 114, 133]
-A good range of values for the window is between 50 and 90, for example 4 * np.sqrt(365) = 76.
-Using as multiplicative factor 6 or 7 would be optimal in the case in which the phases have all the same length since  
-the window would be similar in length to the phases.
-https://arxiv.org/pdf/0805.3415.pdf it should be the original paper of SW-UCB, pag 11
 """

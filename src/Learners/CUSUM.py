@@ -43,7 +43,7 @@ class CUSUM:
             return 0
         else:
             # Update the internal state
-            s_plus = (sample - self .reference) - self.eps
+            s_plus = (sample - self.reference) - self.eps
             s_minus = -(sample - self.reference) - self.eps
             self.g_plus = max(0, self.g_plus + s_plus)
             self.g_minus = max(0, self.g_minus + s_minus)

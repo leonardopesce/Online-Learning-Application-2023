@@ -106,7 +106,7 @@ for algorithm in algorithms:
         print('The format is price: number of experiments in which it is the most played price')
         settings.iterate_over_counter(Counter(best_prices[algorithm][category]), env.prices[category])
         print('Best bid found in the experiments by ' + algorithm + ' for category ' + category)
-        print('The format is bid: number of experiments in which it is the most bid price')
+        print('The format is bid: number of experiments in which it is the most played bid')
         settings.iterate_over_counter(Counter(best_bids[algorithm][category]), env.bids)
 
 # Plot the results

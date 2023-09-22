@@ -30,7 +30,7 @@ T = 365
 
 # Since the reward functions are stochastic to better visualize the results and remove the noise
 # we have to perform a sufficiently large number experiments
-n_experiments = 50
+n_experiments = 100
 
 algorithms = ['UCB', 'SW-UCB', 'CUSUM-UCB', 'EXP3']
 
@@ -72,7 +72,7 @@ for e in tqdm(range(0, n_experiments)):
     learners['UCB'] = UCBLearner(settings.prices_step6[category])
     learners['SW-UCB'] = SWUCBLearner(settings.prices_step6[category], settings.window_size)
     learners['CUSUM-UCB'] = CUSUMUCBLearner(settings.prices_step6[category], M=settings.M, eps=settings.eps, h=settings.h, alpha=settings.alpha)
-    learners['EXP3'] = EXP3Learner(settings.prices_step6[category], worst_reward=0, best_reward=max(settings.prices_step6[category]) - settings.other_costs, gamma=0.1, other_costs=settings.other_costs)
+    learners['EXP3'] = EXP3Learner(settings.prices_step6[category], worst_reward=0, best_reward=max(settings.prices_step6[category]) - settings.other_costs, gamma=0.2, other_costs=settings.other_costs)
 
     # Iterate over the number of rounds
     for t in range(0, T):
