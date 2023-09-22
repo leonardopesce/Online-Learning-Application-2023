@@ -176,7 +176,7 @@ class ContextNode:
 
     def update_gp(self):
         """
-
+        Updates the Gaussian Processes used to estimate the number of clicks and costs given the bids. [DEPRECATED]
         """
 
         self.flattened_obs = self.get_flattened_observations()
@@ -186,13 +186,11 @@ class ContextNode:
         x = torch.Tensor(np.block([self.prices[price_obs][:, None], self.bids[bids_obs][:, None]]))
 
         y = torch.Tensor([obs[0][-1] for obs in self.flattened_obs])
-        # y = (y - y.min()) / (y.max() - y.min())
         self.gp_reward.fit(x, y)
 
         # Create a vector with 2 columns such that the first column is the price and the second column is the bid.
         # Create all the possible combinations of price and bid.
         price_bids = torch.Tensor(np.array(np.meshgrid(self.prices, self.bids)).T.reshape(-1, 2))
-        # x = torch.Tensor(np.block([self.prices[:, None], self.bids[:, None]]))
         self.means_rewards, self.sigmas_rewards, self.lower_bounds_rewards, self.upper_bounds_rewards = self.gp_reward.predict(price_bids)
 
         best_reward_idx = np.argmax(self.means_rewards)
@@ -213,11 +211,13 @@ class ContextNode:
 
     def get_flattened_observations(self, fto=None):
         """
+        Returns the observations in the node in a flattened format, i.e. merges together the observations of the same day of different feature tuples.
 
-        :param fto:
+        :param fto: custom feature_to_observation dictionary to use, defaults to None
+        :type fto: dict, optional
 
-        :return:
-        :rtype:
+        :return: list containing the flattened observations
+        :rtype: list
 
         """
         if fto is None:
@@ -376,6 +376,12 @@ class ContextNode:
 
     @property
     def leaves(self) -> list:
+        """
+        Returns the leaves of the subtree that starts from the node by recursively exploring the tree.
+
+        :return: list of the leaves of the subtree that starts from the node
+        :rtype: list
+        """
         leaves = []
 
         if len(self.children) != 0:
