@@ -15,6 +15,8 @@ from src.Utilities.GPs import BaseGaussianProcess
 from warnings import simplefilter
 from sklearn.exceptions import ConvergenceWarning
 simplefilter("ignore", category=ConvergenceWarning)
+
+
 class GPTS_Learner(Learner):
     """Gaussian Process Thompson Sampling Learner. Inherits from Learner.
 

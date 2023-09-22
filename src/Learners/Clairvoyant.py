@@ -1,6 +1,7 @@
 import numpy as np
 
 from src.Environments import Environment, fun
+import src.settings as settings
 
 
 class Clairvoyant:
@@ -155,21 +156,14 @@ class Clairvoyant:
 def test():
     # TESTING
 
-    category = 'C2'
-    n_prices = 5
-    prices = {'C1': np.array([500, 550, 600, 650, 700]),
-              'C2': np.array([500, 550, 600, 650, 700]),
-              'C3': np.array([500, 550, 600, 650, 700])}
-    probabilities = {'C1': np.array([0.03, 0.04, 0.05, 0.03, 0.01]),  # best arm is 2 (starting from 0)
-                     'C2': np.array([0.03, 0.05, 0.03, 0.05, 0.02]),  # best arm is 3
-                     'C3': np.array([0.06, 0.07, 0.02, 0.02, 0.01])}  # best arm is 1
-    bids_to_clicks = {'C1': np.array([100, 2]),
-                      'C2': np.array([90, 2]),
-                      'C3': np.array([80, 3])}
-    bids_to_cum_costs = {'C1': np.array([20, 0.5]),
-                         'C2': np.array([18, 0.4]),
-                         'C3': np.array([16, 0.45])}
-    other_costs = 400
+    category = 'C1'
+    n_prices = settings.n_prices
+    prices = settings.prices
+    probabilities = settings.probabilities
+    bids_to_clicks = settings.bids_to_clicks
+    bids_to_cum_costs = settings.bids_to_cum_costs
+    other_costs = settings.other_costs
+
     env = Environment(n_prices, prices, probabilities, bids_to_clicks, bids_to_cum_costs, other_costs)
     clairvoyant = Clairvoyant(env)
     print(clairvoyant.maximize_reward_from_price(category))
@@ -179,7 +173,7 @@ def test():
         print(category)
         clairvoyant.check(category)
 
-# test()
+#test()
 
 # Using the exponential function for number of clicks and cumulative daily cost the best bid is different for each price
 # and the best index is in the middle

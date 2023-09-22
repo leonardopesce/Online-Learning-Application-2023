@@ -3,6 +3,8 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
+import src.settings as settings
+
 
 def fun(x, scale, slope):
     """
@@ -15,7 +17,6 @@ def fun(x, scale, slope):
     :rtype: float
     """
 
-    #return scale * np.log(slope * (x + 1 / slope - starting_value))
     return scale * (1.0 - np.exp(-slope * x))
 
 
@@ -115,7 +116,6 @@ class Environment:
 
         return bernoulli_realizations, clicks_given_bid, cost_given_bid
 
-    # TODO probabilmente sarebbe meglio rendere environment uno per classe e creare un environment con multiple contexts
     def round_all_categories_merged(self, price_idx, bid_idx):
         categories = self.probabilities.keys()
         bernoulli_realizations_all_categories = np.array([])
@@ -511,28 +511,20 @@ class Environment:
 def test():
     # TESTING
 
-    n_prices = 5
-    prices = {'C1': np.array([500, 550, 600, 650, 700]),
-              'C2': np.array([500, 550, 600, 650, 700]),
-              'C3': np.array([500, 550, 600, 650, 700])}
-    probabilities = {'C1': np.array([0.10, 0.12, 0.20, 0.04, 0.03]),
-                     # best arm is 2 (starting from 0) young who clicked
-                     'C2': np.array([0.03, 0.04, 0.10, 0.12, 0.20]),  # best arm is 4 old who clicked
-                     'C3': np.array([0.20, 0.12, 0.10, 0.04, 0.03])}  # best arm is 0 no clicks
-    bids_to_clicks = {'C1': np.array([100, 3]),
-                      'C2': np.array([90, 1]),
-                      'C3': np.array([70, 0.5])}
-    bids_to_cum_costs = {'C1': np.array([35, 1]),  # 0.035 instead of 0.08, old value Enri
-                         'C2': np.array([25, 0.5]),
-                         'C3': np.array([15, 0.2])}
-    other_costs = 400
+    category = 'C1'
+    n_prices = settings.n_prices
+    prices = settings.prices
+    probabilities = settings.probabilities
+    bids_to_clicks = settings.bids_to_clicks
+    bids_to_cum_costs = settings.bids_to_cum_costs
+    other_costs = settings.other_costs
 
     env = Environment(n_prices, prices, probabilities, bids_to_clicks, bids_to_cum_costs, other_costs)
-    env.plot_advertising_model('C1', color='r', axes=None)
+    env.plot_advertising_model(category, color='r', axes=None)
     env.plot_whole_advertising_model()
     env.plot_whole_pricing_model()
     env.plot_rewards_given_price_idx(2, plotly_show = True)
-    env.plot_rewards(categories=['C1'], plot_aggregate_model=True, plotly_show=True)
+    env.plot_rewards(categories=[category], plot_aggregate_model=True, plotly_show=True)
 
 
 # test()

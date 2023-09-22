@@ -6,10 +6,8 @@ class EXP3Learner(Learner):
     Learner that applies the Exponential-weight algorithm for Exploration and Exploitation(EXP3) algorithm
 
     Attributes:
-        successes_per_arm: Number of times each arm has obtained a positive realization
-        total_observations_per_arm: Total number of realizations of each arm
         weights: List with the weight for each arm
-        p: List with the probability for each arm
+        probabilities: List with the probability for each arm
 
     https://jeremykun.com/2013/11/08/adversarial-bandits-and-the-exp3-algorithm/
     """
@@ -21,8 +19,8 @@ class EXP3Learner(Learner):
         :param np.ndarray arms_values: Values associated to the arms
         :param float worst_reward: Worst possible reward
         :param float best_reward: Best possible reward
-        :param float gamma: Exploration parameter
         :param float other_costs: Cost of each arm
+        :param float gamma: Exploration parameter
         """
 
         super().__init__(arms_values)

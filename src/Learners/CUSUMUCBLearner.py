@@ -71,10 +71,6 @@ class CUSUMUCBLearner(UCBLearner):
         self.successes_per_arm[pulled_arm].append(np.sum(bernoulli_realization))
         self.total_observations_per_arm[pulled_arm].append(len(bernoulli_realization))
         self.empirical_means[pulled_arm] = np.sum(self.successes_per_arm[pulled_arm]) / np.sum(self.total_observations_per_arm[pulled_arm])
-        #total_valid_samples = np.sum([np.sum(self.total_observations_per_arm[arm]) for arm in range(self.n_arms)])
-        #for arm in range(self.n_arms):
-         #   n_samples = len(self.valid_rewards_per_arm[arm])
-         #   #self.confidence[arm] = np.sqrt((2 * np.log(total_valid_samples) / np.sum(self.total_observations_per_arm[arm]))) if n_samples > 0 else np.inf
 
         total_valid_samples = np.sum([len(self.valid_rewards_per_arm[arm]) for arm in range(self.n_arms)])
         for arm in range(self.n_arms):

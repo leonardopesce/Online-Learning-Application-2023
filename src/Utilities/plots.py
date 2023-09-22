@@ -127,8 +127,8 @@ def plot_all_algorithms(reward_per_algorithm, best_rewards, x_range, labels, ste
 
     _, axes = plt.subplots(2, 2, figsize=(20, 20))
     axes = axes.flatten()
-    #colors = ['#35879b', '#ba4f35']
-    colors = ["#D00000", "#3335FF", "#FFBA08", "#94C9A9", "#372554"]
+    colors = ["#D00000", "#3335FF", "#67EC42", "#FFBA08", "#372554"]
+    #colors = ["tab:blue", "tab:orange", "tab:green", "tab:red", "tab:purple", "tab:brown", "tab:pink", "tab:gray"]
     # Plot the instantaneous regret of all the algorithms
     axes[0].set_title('Instantaneous regret plot', fontsize=20)
     for i, label in enumerate(labels):
@@ -270,8 +270,8 @@ def plot_all_algorithms_divided(reward_per_algorithm, best_rewards, x_range, lab
     if not os.path.exists('../../img'):
         os.makedirs('../../img')
 
-    #colors = ['#35879b', '#ba4f35']
-    colors = ["#D00000", "#3335FF", "#FFBA08", "#94C9A9", "#372554"]
+    colors = ["#D00000", "#3335FF", "#67EC42", "#FFBA08", "#372554"]
+    #colors = ["tab:blue", "tab:orange", "tab:green", "tab:red", "tab:purple", "tab:brown", "tab:pink", "tab:gray"]
     # Plot the instantaneous regret of all the algorithms
     plt.title('Instantaneous regret plot', fontsize=20)
     for i, label in enumerate(labels):
@@ -305,7 +305,7 @@ def plot_all_algorithms_divided(reward_per_algorithm, best_rewards, x_range, lab
     plt.show()
 
     # Plot the cumulative regret of all the algorithms
-    plt.title('Cumulative regret plot', fontsize=20)
+    plt.title('Cumulative regret plot', fontsize=20)  # r'$(M=50, \epsilon=0.1, h=2.95, \alpha=0.13)$'
     for i, label in enumerate(labels):
         cum_regret_mean = np.mean(np.cumsum(best_rewards - reward_per_algorithm[i], axis=1), axis=0)
         cum_regret_std = np.std(np.cumsum(best_rewards - reward_per_algorithm[i], axis=1), axis=0)

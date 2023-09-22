@@ -10,9 +10,9 @@ n_prices = 5
 prices = {'C1': np.array([500, 550, 600, 650, 700]),
           'C2': np.array([500, 550, 600, 650, 700]),
           'C3': np.array([500, 550, 600, 650, 700])}
-probabilities = {'C1': np.array([0.10, 0.12, 0.20, 0.04, 0.03]),  # best arm is 2 (starting from 0), young who clicked
-                 'C2': np.array([0.03, 0.04, 0.10, 0.12, 0.20]),  # best arm is 4, old who clicked
-                 'C3': np.array([0.20, 0.12, 0.10, 0.04, 0.03])}  # best arm is 0, no clicks
+probabilities = {'C1': np.array([0.10, 0.12, 0.20, 0.04, 0.03]),  # best arm is 2 (starting from 0), young who searched technology terms
+                 'C2': np.array([0.03, 0.04, 0.10, 0.12, 0.20]),  # best arm is 4, old who searched technology terms
+                 'C3': np.array([0.20, 0.12, 0.10, 0.04, 0.03])}  # best arm is 0, no searched technology terms
 bids_to_clicks = {'C1': np.array([100, 3]),
                   'C2': np.array([90, 1]),
                   'C3': np.array([70, 0.5])}

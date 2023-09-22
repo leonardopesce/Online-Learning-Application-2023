@@ -2,7 +2,7 @@ import numpy as np
 
 from .Learner import *
 
-#TODO funziona se è facile capire quale è il migliore arm
+
 class UCBLearner(Learner):
     """
     Learner that applies the Upper Confidence Bound 1(UCB1) algorithm
@@ -55,11 +55,9 @@ class UCBLearner(Learner):
         self.successes_per_arm[pulled_arm].append(np.sum(bernoulli_realization))
         self.total_observations_per_arm[pulled_arm].append(len(bernoulli_realization))
         self.empirical_means[pulled_arm] = np.sum(self.successes_per_arm[pulled_arm]) / np.sum(self.total_observations_per_arm[pulled_arm])
-        #total_valid_samples = np.sum([np.sum(self.total_observations_per_arm[arm]) for arm in range(self.n_arms)])
         for arm in range(self.n_arms):
-            #self.confidence[arm] = np.sqrt(2 * np.log(total_valid_samples) / np.sum(self.total_observations_per_arm[arm])) if self.times_arms_played[arm] > 0 else np.inf
             self.confidence[arm] = np.sqrt(2 * np.log(self.t) / np.sum(self.total_observations_per_arm[arm])) if self.times_arms_played[arm] > 0 else np.inf
-            #TODO secondo me sarebbe più giusta la versione commentata però performa peggio perchè il bound è più grande e tende a provare di più gli altri arms
+
 
     def get_conv_prob(self, pulled_arm):
         """

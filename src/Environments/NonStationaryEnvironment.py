@@ -7,15 +7,6 @@ class NonStationaryEnvironment(Environment):
         t: Time
         n_phases : Number of phases
     """
-
-    # probabilities -> prob matrix that include for each phase the mean of all arms (versione vista a lezione)
-    # capire come gestire le probabilità perchè qui ho solo una categoria con varie probabilità mentre prima avevo tante categorie con solo una probabilità
-    # forse mi basta fare l'override dei metodi che usano probability?
-    # alternativa è di cambiare l'environmnet facendo un refactor per essere generico per ogni classe e poi fare una sottoclasse nel caso del context
-    # oppure la classe context environment puo contenere tanti environment quanti sono i context
-    # oppure come faccio adesso metto un dizionario con chiave la fase
-
-    # altrimenti si puo mettere opzionale la category tipo in environment e clairvoyant
     def __init__(self, n_prices, prices, probabilities, bids_to_clicks, bids_to_cum_costs, other_costs, phases_duration):
         """
         Initializes the NonStationaryEnvironment class

@@ -36,15 +36,10 @@ class SWUCBLearner(UCBLearner):
         self.successes_per_arm[pulled_arm].append(np.sum(bernoulli_realization))
         self.total_observations_per_arm[pulled_arm].append(len(bernoulli_realization))
         # For each arm slide the window over which we compute the estimate
-        #total_valid_samples = 0
-        #for arm in range(self.n_arms):
-         #   n_samples = np.sum(np.array(self.pulled_arms[-self.window_size:]) == arm)
-         #   total_valid_samples += np.sum(self.total_observations_per_arm[arm][-n_samples:])
         for arm in range(self.n_arms):
             # Count the number of times we pulled the current arm in the window
             n_samples = np.sum(np.array(self.pulled_arms[-self.window_size:]) == arm)
             self.empirical_means[arm] = np.sum(self.successes_per_arm[arm][-n_samples:]) / np.sum(self.total_observations_per_arm[arm][-n_samples:]) if n_samples > 0 else 0
-            #self.confidence[arm] = np.sqrt((2 * np.log(total_valid_samples) / np.sum(self.total_observations_per_arm[arm][-n_samples:]))) if n_samples > 0 else np.inf
             self.confidence[arm] = np.sqrt((2 * np.log(self.t) / np.sum(self.total_observations_per_arm[arm][-n_samples:]))) if n_samples > 0 else np.inf
 
     def get_conv_prob(self, pulled_arm):

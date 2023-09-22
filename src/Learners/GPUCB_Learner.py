@@ -14,6 +14,7 @@ from warnings import simplefilter
 from sklearn.exceptions import ConvergenceWarning
 simplefilter("ignore", category=ConvergenceWarning)
 
+
 class GPUCB_Learner(Learner):
     """
     Learner that applies the Upper Confidence Bound 1(UCB1) algorithm

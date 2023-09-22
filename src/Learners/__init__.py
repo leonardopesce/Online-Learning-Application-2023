@@ -10,7 +10,6 @@ from .Learner import Learner
 from .LearnerFactory import LearnerFactory
 from .PricingAdvertisingLearner import PricingAdvertisingLearner
 from .SWUCB import SWUCBLearner
-from .TS import TSLearner
 from .TSContextGeneratorLearner import TSContextGeneratorLearner
 from .TSPricingAdvertising import TSLearnerPricingAdvertising
 from .TSReward import TSRewardLearner
