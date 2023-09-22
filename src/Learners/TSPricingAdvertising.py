@@ -4,8 +4,6 @@ from .PricingAdvertisingLearner import PricingAdvertisingLearner
 from .GPTS_Learner import GPTS_Learner
 from .TSReward import TSRewardLearner
 
-# TODO This learner maximize the reward given prices and bids in a joint way. Do we what this?
-
 
 class TSLearnerPricingAdvertising(PricingAdvertisingLearner):
     """
@@ -50,6 +48,7 @@ class TSLearnerPricingAdvertising(PricingAdvertisingLearner):
 
         # Computing the reward got for each price and bid it is possible to pull.
         rewards = sampled_values_clicks[None, :] * conversion_times_margin[:, None] - sampled_values_costs[None, :]
+
         # Pulling the bid that maximizes the reward
         flat_index_maximum = np.argmax(rewards)
         num_prices, num_bids = rewards.shape
@@ -58,7 +57,7 @@ class TSLearnerPricingAdvertising(PricingAdvertisingLearner):
 
         return best_price_idx, best_bid_idx
 
-    def update(self, pulled_price, bernoulli_realizations, pulled_bid, n_clicks, costs_adv, reward, model_update = True):
+    def update(self, pulled_price, bernoulli_realizations, pulled_bid, n_clicks, costs_adv, reward, model_update=True):
         """
         Updating the parameters of the learners based on the observations obtained by playing the chosen price and bid
         in the environment
@@ -69,6 +68,8 @@ class TSLearnerPricingAdvertising(PricingAdvertisingLearner):
         :param n_clicks: Number of clicks obtained playing the bid in the current time step
         :param costs_adv: Cost due to the advertising when playing the bid in the current time step
         :param float reward: Reward collected in the current time step playing the pulled arm
+        :param bool model_update: If True, the Gaussian processes are updated, otherwise they are not updated and the
+            information about the advertising realizations are just stored
         """
 
         self.learner_pricing.update(pulled_price, reward, bernoulli_realizations)
@@ -95,6 +96,13 @@ class TSLearnerPricingAdvertising(PricingAdvertisingLearner):
         return self.GP_advertising.pulled_arms
 
     def get_reward(self):
+        """
+        Returns the collected rewards
+
+        :returns: Collected rewards
+        :rtype: numpy.ndarray
+        """
+
         return self.learner_pricing.collected_rewards
 
     @property

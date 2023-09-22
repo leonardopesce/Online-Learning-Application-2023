@@ -33,10 +33,14 @@ class Environment:
         prices: Dictionary that maps each class of users to the values(price of the product) associated to the arms
         probabilities: Dictionary that maps each class to the bernoulli probabilities associated to the arms
         bids: Array of 100 possible bid values
-        bids_to_clicks: Dictionary that maps each class to the parameters to build the function that models the number of clicks given the bid
-        bids_to_clicks_variance: Variance of the gaussian noise associated to the function that models the number of clicks given the bid
-        bids_to_cum_costs: Dictionary that maps each class to the parameters to build the function that models the cumulative daily click cost given the bid
-        bids_to_cum_costs_variance: Variance of the gaussian noise associated to the function that models the cumulative daily click cost given the bid
+        bids_to_clicks: Dictionary that maps each class to the parameters to build the function that models the number
+            of clicks given the bid
+        bids_to_clicks_variance: Variance of the gaussian noise associated to the function that models the number of
+            clicks given the bid
+        bids_to_cum_costs: Dictionary that maps each class to the parameters to build the function that models the
+            cumulative daily click cost given the bid
+        bids_to_cum_costs_variance: Variance of the gaussian noise associated to the function that models the cumulative
+            daily click cost given the bid
         other_costs: Cost of the product
     """
 
@@ -45,10 +49,13 @@ class Environment:
         Initializes the Environment class
 
         :param int n_prices: Number of prices
-        :param dict prices: Dictionary that maps each class of users to the values(price of the product) associated to the arms
+        :param dict prices: Dictionary that maps each class of users to the values(price of the product) associated to
+            the arms
         :param dict probabilities: Dictionary that maps each class to the bernoulli probabilities associated to the arms
-        :param dict bids_to_clicks: Dictionary that maps each class to the parameters to build the function that models the number of clicks given the bid
-        :param dict bids_to_cum_costs: Dictionary that maps each class to the parameters to build the function that models the cumulative daily click cost given the bid
+        :param dict bids_to_clicks: Dictionary that maps each class to the parameters to build the function that models
+            the number of clicks given the bid
+        :param dict bids_to_cum_costs: Dictionary that maps each class to the parameters to build the function that
+            models the cumulative daily click cost given the bid
         :param float other_costs: Cost of the product
         """
 
@@ -69,7 +76,8 @@ class Environment:
 
         :param str category: Class of the user
         :param int price_idx: Arm pulled in the current time step
-        :param int n_clicks: Number of clicks in the current time step, so number of observation to draw from the Bernoulli
+        :param int n_clicks: Number of clicks in the current time step, so number of observation to draw from the
+            Bernoulli
 
         :return: Realization of the pulled arm, either 0(not buy) or 1(buy)
         :rtype: numpy.ndarray
@@ -117,6 +125,17 @@ class Environment:
         return bernoulli_realizations, clicks_given_bid, cost_given_bid
 
     def round_all_categories_merged(self, price_idx, bid_idx):
+        """
+        Simulates a round in a pricing-advertising scenario foe all the classes in the context, returning the
+        realizations of the chosen price, number of clicks and cumulative daily click cost given the price and the bid
+
+        :param int price_idx: Arm pulled in the current time step
+        :param int bid_idx: Index of the bid used in the current round
+
+        :return: Realization of the pulled price, number of clicks, cumulative daily click cost
+        :rtype: tuple
+        """
+
         categories = self.probabilities.keys()
         bernoulli_realizations_all_categories = np.array([])
         clicks_given_bid_all_categories = 0
@@ -195,6 +214,7 @@ class Environment:
         :return: Reward
         :rtype: float
         """
+
         #conversion_prob = self.probabilities[category][price_idx] if conversion_prob is None else conversion_prob
 
         return n_clicks * conversion_prob * (self.prices[category][price_idx] - self.other_costs) - cum_daily_costs
@@ -302,9 +322,6 @@ class Environment:
         if axes is None:
             _, axes = plt.subplots(1, 3)
 
-        #x = np.linspace(0, self.bids_to_clicks[category][2], 100)
-        #y = np.zeros((100,))
-        #axes[0].plot(x, y, color=color)
         x = np.linspace(0, xlim, 100)
         y = fun(x, *self.bids_to_clicks[category])
         axes[0].plot(x, y, color=color, label=category)
@@ -313,9 +330,6 @@ class Environment:
         axes[0].set_ylabel('Number of clicks')
         axes[0].legend()
 
-        #x = np.linspace(0, self.bids_to_cum_costs[category][2], 100)
-        #y = np.zeros((100,))
-        #axes[1].plot(x, y, color=color)
         x = np.linspace(0, xlim, 100)
         y = fun(x, *self.bids_to_cum_costs[category])
         axes[1].plot(x, y, color=color, label=category)
@@ -372,6 +386,7 @@ class Environment:
         :return: Axes of the plot
         :rtype: plt.Axes
         """
+
         # Plotly init
         if plotly_show:
             fig = make_subplots(rows=1, cols=1)
@@ -510,7 +525,6 @@ class Environment:
 
 def test():
     # TESTING
-
     category = 'C1'
     n_prices = settings.n_prices
     prices = settings.prices

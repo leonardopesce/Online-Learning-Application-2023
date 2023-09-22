@@ -1,9 +1,11 @@
 import abc
 
+
 class PricingAdvertisingLearner(abc.ABC):
     """
     Learner that applies a multi-armed bandit algorithm to the problem of advertising and pricing
     """
+
     @abc.abstractmethod
     def pull_arm(self, other_costs):
         return

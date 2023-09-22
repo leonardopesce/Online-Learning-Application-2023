@@ -3,10 +3,13 @@ from .Environment import *
 
 class MultiContextEnvironment(Environment):
     """
-    The MultiContextEnvironment class defines the advertising and pricing environment using, for each class, the models of:
+    The MultiContextEnvironment class defines the advertising and pricing environment using, for each class, the models
+    of:
     - the average dependence between the number of clicks and the bid;
     - the average cumulative daily click cost for the bid;
     - the conversion rate for 5 different prices.
+
+    MultiContextEnvironment extends Environment.
 
     The MultiContextEnvironment class allows the agents to interact with it using its functions.
     From outside the structure of the context is not visible and the class allows to have an interaction with an
@@ -17,16 +20,46 @@ class MultiContextEnvironment(Environment):
         prices: Dictionary that maps each class of users to the values(price of the product) associated to the arms
         probabilities: Dictionary that maps each class to the bernoulli probabilities associated to the arms
         bids: Array of 100 possible bid values
-        bids_to_clicks: Dictionary that maps each class to the parameters to build the function that models the number of clicks given the bid
-        bids_to_clicks_variance: Variance of the gaussian noise associated to the function that models the number of clicks given the bid
-        bids_to_cum_costs: Dictionary that maps each class to the parameters to build the function that models the cumulative daily click cost given the bid
-        bids_to_cum_costs_variance: Variance of the gaussian noise associated to the function that models the cumulative daily click cost given the bid
+        bids_to_clicks: Dictionary that maps each class to the parameters to build the function that models the number
+            of clicks given the bid
+        bids_to_clicks_variance: Variance of the gaussian noise associated to the function that models the number of
+            clicks given the bid
+        bids_to_cum_costs: Dictionary that maps each class to the parameters to build the function that models the
+            cumulative daily click cost given the bid
+        bids_to_cum_costs_variance: Variance of the gaussian noise associated to the function that models the cumulative
+            daily click cost given the bid
         other_costs: Cost of the product
+        categories: List containing the names of the possible categories the users can belong to
+        feature_names: List containing the name of the features used to index the feature_values parameter
+        feature_values: Dictionary containing the mapping between the features and the values the features can assume,
+            the format is {feature_name: [value0, value1, value2, ...]}
+        feature_values_to_categories: Dictionary containing the mapping between the features and the categories, the
+            format is {tuple_of_features: category}
+        probability_feature_values_in_categories: Dictionary giving the percentage of presence of a feature tuple inside
+            each category, the format is {category: {tuple_of_features: probability}}
     """
 
     def __init__(self, n_prices, prices, probabilities, bids_to_clicks, bids_to_cum_costs, other_costs, categories, feature_names, feature_values, feature_values_to_categories, probability_feature_values_in_categories):
         """
-        The
+        Initializes the MultiContextEnvironment class
+
+        :param int n_prices: Number of prices
+        :param dict prices: Dictionary that maps each class of users to the values(price of the product) associated to
+            the arms
+        :param dict probabilities: Dictionary that maps each class to the bernoulli probabilities associated to the arms
+        :param dict bids_to_clicks: Dictionary that maps each class to the parameters to build the function that models
+            the number of clicks given the bid
+        :param dict bids_to_cum_costs: Dictionary that maps each class to the parameters to build the function that
+            models the cumulative daily click cost given the bid
+        :param float other_costs: Cost of the product
+        :param list categories: List containing the names of the possible categories the users can belong to
+        :param list feature_names: List containing the name of the features used to index the feature_values parameter
+        :param dict feature_values: Dictionary containing the mapping between the features and the values the features
+            can assume, the format is {feature_name: [value0, value1, value2, ...]}
+        :param dict feature_values_to_categories: Dictionary containing the mapping between the features and the
+            categories, the format is {tuple_of_features: category}
+        :param dict probability_feature_values_in_categories: Dictionary giving the percentage of presence of a feature
+            tuple inside each category, the format is {category: {tuple_of_features: probability}}
         """
 
         super().__init__(n_prices, prices, probabilities, bids_to_clicks, bids_to_cum_costs, other_costs)
@@ -38,23 +71,36 @@ class MultiContextEnvironment(Environment):
         self.probability_feature_values_in_categories = probability_feature_values_in_categories
 
     def get_reward(self, context, price_idx, conversion_prob, n_clicks, cum_daily_costs):
-        tmp = conversion_prob * (self.prices.get(self.feature_values_to_categories.get(context))[price_idx] - self.other_costs) * n_clicks - cum_daily_costs
-        return tmp
+        """
+        Returns the reward given the quantities used to compute it
+
+        :param str context: Class of the user
+        :param int price_idx: Index of the price
+        :param np.ndarray conversion_prob: Conversion probability
+        :param float n_clicks: Number of daily clicks
+        :param float cum_daily_costs: Cumulative daily cost due to the advertising
+
+        :returns: Reward
+        :rtype: dict
+        """
+
+        return conversion_prob * (self.prices.get(self.feature_values_to_categories.get(context))[price_idx] - self.other_costs) * n_clicks - cum_daily_costs
 
     def round(self, price_idx, bid_idx, user_features_set):
-        # price_idx, bid_idx = learner.pull_arms()
-        # bernoulli_realizations, clicks_given_bid, cost_given_bid = environment.round(price_idx, bid_idx, learner.get_context_features() (che potrebbe tornare set((0,0), (0,1))))
         """
-        :param set tuple user_features_set: Tuple containing the features of the
+        Simulates a round in a pricing-advertising scenario, returning the realization of the chosen price, number of
+        clicks and cumulative daily click cost given the price, the bid and features of the users for which the round
+        has to be simulated
+
+        :param int price_idx: Arm pulled in the current time step
+        :param int bid_idx: Index of the bid used in the current round
+        :param set tuple user_features_set: Tuple containing the features of the users for which the round has to be
+            simulated
+
+        :return: List of feature tuples for which the realizations are computed, Ordered realization of the pulled
+            price, Ordered number of clicks, Ordered cumulative daily click cost
+        :rtype: tuple
         """
-
-        # TODO ATTENZIONE DA VEDERE: dobbiamo analizzare bene questo fatto: data la nostra implementazione, se giocassimo
-        # TODO un round per ogni set di features mappandole nella rispettiva categoria e poi estraendo ( da round in Environment) una parte delle osservazioni
-        # TODO basandosi su categories_to_feature_values potremmo dover buttare via parte di esse, è logicamente/computazionalmente sensato farlo?
-        # TODO Abbiamo necessità di fare round in MultiContextEnvironment basandoci su set di features perchè il learner necessiteràdi giocare queste.
-
-        # TODO To check: ha senso tornare il numero di click e il cost aggregato su tutte le tuple di user_features o no?
-        # TODO Secondo noi ha più senso separare anche nell'advertiseing sulla base delle features (come stiamo facendo in questo metodo)
 
         features_list = []
         bernoulli_realizations_list = []
@@ -75,30 +121,3 @@ class MultiContextEnvironment(Environment):
             bernoulli_realizations_list.append(np.random.choice(bernoulli_realizations, clicks_given_features))
 
         return features_list, bernoulli_realizations_list, clicks_given_bid_list, cost_given_bid_list
-
-
-if __name__ == '__main__':
-    n_prices = 5
-    prices = {'C1': np.array([500, 550, 600, 650, 700]),
-              'C2': np.array([500, 550, 600, 650, 700]),
-              'C3': np.array([500, 550, 600, 650, 700])}
-    probabilities = {'C1': np.array([0.05, 0.05, 0.2, 0.1, 0.05]),
-                     'C2': np.array([0.05, 0.05, 0.1, 0.2, 0.1]),
-                     'C3': np.array([0.1, 0.2, 0.25, 0.05, 0.05])}
-    bids_to_clicks = {'C1': np.array([100, 2]),
-                      'C2': np.array([90, 2]),
-                      'C3': np.array([80, 3])}
-    bids_to_cum_costs = {'C1': np.array([400, 0.035]),
-                         'C2': np.array([200, 0.07]),
-                         'C3': np.array([300, 0.04])}
-    other_costs = 400
-
-    categories = ['C1', 'C2', 'C3']
-    # C1: young 0, man 1; C2: old 1, man 1; C3: [0,1], woman 0
-    feature_names = ['age', 'sex']
-    feature_values = {'age': [0, 1], 'sex': [0, 1]}
-    # age: 0 -> young, 1 -> old; sex: 0 -> woman, 1 -> man
-    feature_values_to_categories = {(0, 0): 'C3', (0, 1): 'C1', (1, 0): 'C3', (1, 1): 'C2'}
-    probability_feature_values_in_categories = {'C1': {(0, 1): 1}, 'C2': {(1, 1): 1}, 'C3': {(0, 0): 0.5, (1, 0): 0.5}}
-
-    env = MultiContextEnvironment(n_prices, prices, probabilities, bids_to_clicks, bids_to_cum_costs, other_costs, categories, feature_names, feature_values, feature_values_to_categories, probability_feature_values_in_categories)

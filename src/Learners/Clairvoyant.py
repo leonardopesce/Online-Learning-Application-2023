@@ -174,6 +174,3 @@ def test():
         clairvoyant.check(category)
 
 #test()
-
-# Using the exponential function for number of clicks and cumulative daily cost the best bid is different for each price
-# and the best index is in the middle

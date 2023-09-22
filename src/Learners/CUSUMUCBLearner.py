@@ -13,6 +13,7 @@ class CUSUMUCBLearner(UCBLearner):
         change_detection: List with a CUSUM for each arm
         valid_rewards_per_arm: List of rewards that are considered valid for each arm
         detections: List to store the times when a change is detected for each arm
+        alpha: Pure exploration parameter
     """
 
     def __init__(self, arms_values, M, eps, h, alpha):
@@ -37,6 +38,10 @@ class CUSUMUCBLearner(UCBLearner):
         Chooses the arm to play based on the UCB1 algorithm with probability 1-alpha, therefore choosing the arm with
         higher upper confidence bound, which is the mean of the reward of the arm plus the confidence interval. With
         probability alpha plays a random arm
+
+        :param float cost: Other costs associated to all the prices
+        :param np.ndarray n_clicks: Number of clicks
+        :param np.ndarray cum_daily_costs: Cumulative daily costs
 
         :return: Index of the arm to pull
         :rtype: int

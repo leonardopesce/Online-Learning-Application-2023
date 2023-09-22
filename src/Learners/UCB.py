@@ -32,6 +32,10 @@ class UCBLearner(Learner):
         Chooses the arm to play based on the UCB1 algorithm, therefore choosing the arm with higher upper
         confidence bound, which is the mean of the reward of the arm plus the confidence interval
 
+        :param float cost: Other costs associated to all the prices
+        :param np.ndarray n_clicks: Number of clicks
+        :param np.ndarray cum_daily_costs: Cumulative daily costs
+
         :return: Index of the arm to pull
         :rtype: int
         """

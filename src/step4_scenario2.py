@@ -38,9 +38,10 @@ for the second scenario.
 categories = ['C1', 'C2', 'C3']
 
 # Considered features and values (binary)
-feature_names = ['age', 'sex']
-feature_values = {'age': [0, 1], 'sex': [0, 1]}
-# age: 0 -> young, 1 -> old; sex: 0 -> not clicked, 1 -> clicked
+feature_names = ['age', 'has searched technology terms']
+feature_values = {'age': [0, 1], 'has searched technology terms': [0, 1]}
+# age: 0 -> young, 1 -> old; has searched technology terms: 0 -> not searched, 1 -> searched
+
 feature_values_to_categories = {(0, 0): 'C3', (0, 1): 'C1', (1, 0): 'C3', (1, 1): 'C2'}
 probability_feature_values_in_categories = {'C1': {(0, 1): 1}, 'C2': {(1, 1): 1}, 'C3': {(0, 0): 0.5, (1, 0): 0.5}}
 
@@ -52,30 +53,16 @@ T = 365
 
 # Since the reward functions are stochastic to better visualize the results and remove the noise
 # we have to perform a sufficiently large number experiments
-n_experiments = 10
+n_experiments = 5
 time_between_context_generation = 14
 
+# Algorithms used
 algorithms = ['UCB', 'TS']
 
 # To store the learners, environments and rewards for each experiment for the learners
 learners = dict()
 rewards_per_algorithm = {algorithm: [] for algorithm in algorithms}
 best_rewards = np.array([])
-
-"""
-# Store some features for each experiment for the learners
-gpts_clicks_per_experiment = 0
-gpts_mean_clicks_per_experiment = 0
-gpts_sigmas_clicks_per_experiment = 0
-gpts_cum_costs_per_experiment = 0
-gpts_mean_cum_costs_per_experiment = 0
-gpts_sigmas_cum_costs_per_experiment = 0
-gpts_pulled_bids_per_experiment = 0
-"""
-
-# To evaluate which are the most played prices and bids
-#ts_best_price, ts_best_bid, ucb_best_price, ucb_best_bid = [], [], [], []
-#TS, UCB = 0, 1
 
 # Define the environment
 env = MultiContextEnvironment(settings.n_prices, settings.prices, settings.probabilities, settings.bids_to_clicks, settings.bids_to_cum_costs, settings.other_costs,
@@ -124,7 +111,6 @@ for e in tqdm(range(0, n_experiments)):
             for context, price_idx, bid_idx in context_price_bid_learners:
                 feature_list, bernoulli_realizations, n_clicks, cum_daily_cost = env.round(price_idx, bid_idx, context)
 
-                # TODO: may be still based on category and not on features
                 reward = []
                 for i, feature in enumerate(feature_list):
                     reward.append(env.get_reward(feature, price_idx, float(np.mean(bernoulli_realizations[i])), n_clicks[i], cum_daily_cost[i]))
@@ -143,40 +129,17 @@ for e in tqdm(range(0, n_experiments)):
                        clicks_given_bid_list=clicks_given_bid_list, cost_given_bid_list=cost_given_bid_list,
                        rewards=rewards)
 
-
-    # Store the most played prices and bids by TS
-    #ts_best_price.append(Counter(context_learners_type[TS].get_pulled_prices()).most_common(1)[0])
-    #ts_best_bid.append(Counter(context_learners_type[TS].get_pulled_bids()).most_common(1)[0])
-
-    # Store the most played prices and bids by UCB1
-    #ucb_best_price.append(Counter(context_learners_type[UCB].get_pulled_prices()).most_common(1)[0])
-    #ucb_best_bid.append(Counter(context_learners_type[UCB].get_pulled_bids()).most_common(1)[0])
-
     # Store the values of the collected rewards of the learners
     for algorithm in algorithms:
         rewards_per_algorithm[algorithm].append(learners[algorithm].get_collective_reward())
-
-    """gpts_clicks_per_experiment[category].append(ts_learner[category].GPTS_advertising.collected_clicks)
-    gpts_mean_clicks_per_experiment[category].append(ts_learner[category].GPTS_advertising.means_clicks)
-    gpts_sigmas_clicks_per_experiment[category].append(ts_learner[category].GPTS_advertising.sigmas_clicks)
-    gpts_cum_costs_per_experiment[category].append(ts_learner[category].GPTS_advertising.collected_costs)
-    gpts_mean_cum_costs_per_experiment[category].append(ts_learner[category].GPTS_advertising.means_costs)
-    gpts_sigmas_cum_costs_per_experiment[category].append(ts_learner[category].GPTS_advertising.sigmas_costs)
-    gpts_pulled_bids_per_experiment[category].append(ts_learner[category].GPTS_advertising.pulled_bids)"""
-
-# Print occurrences of best arm in TS
-#print(Counter(ts_best_price))
-#print(Counter(ts_best_bid))
-# Print occurrences of best arm in UCB1
-#print(Counter(ucb_best_price))
-#print(Counter(ucb_best_bid))
 
 # Plot the results
 reward_per_algorithm = [rewards_per_algorithm[algorithm] for algorithm in algorithms]
 plot_all_algorithms(reward_per_algorithm, best_rewards, np.arange(0, T, 1), algorithms, step_name="step4_2")
 plot_all_algorithms_divided(reward_per_algorithm, best_rewards, np.arange(0, T, 1), algorithms, step_name="step4_2")
+#for i, algorithm in enumerate(algorithms):
+#    plot_single_algorithm(reward_per_algorithm[i], best_rewards, algorithm, np.arange(0, T, 1))
+
 fileObj = open('rewards.pickle', 'wb')
 pickle.dump(reward_per_algorithm, fileObj)
 fileObj.close()
-#for i, algorithm in enumerate(algorithms):
-#    plot_single_algorithm(reward_per_algorithm[i], best_rewards, algorithm, np.arange(0, T, 1))

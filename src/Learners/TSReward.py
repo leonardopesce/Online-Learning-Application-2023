@@ -15,6 +15,7 @@ class TSRewardLearner(Learner):
 
         :param numpy.ndarray arms_values: Values associated to the arms
         """
+
         super().__init__(arms_values)
         # Initializing the Beta distribution of each arm to a uniform distribution
         self.beta_parameters = np.ones((self.n_arms, 2))

@@ -14,14 +14,12 @@ from warnings import simplefilter
 from sklearn.exceptions import ConvergenceWarning
 simplefilter("ignore", category=ConvergenceWarning)
 
-def lower_bound1(delta, num_samples, interval):
-    return np.sqrt((-np.log(delta) * (interval ** 2)) / (2 * num_samples))
 
 def lower_bound(delta, num_samples):
     """
     Computes the lower bound used by the context generation algorithm
 
-    :param float confidence: Confidence to use in the lower bound used in the context generation algorithm
+    :param float delta: Confidence to use in the lower bound used in the context generation algorithm
     :param float num_samples: Number of samples in the context to evaluate
 
     :return: Lower bound used by the context generation algorithm
@@ -50,29 +48,43 @@ class ContextNode:
     Node of the context tree that is used to apply the context generation algorithm
 
     Attributes:
-        feature_names: List containing the name of the features used to index the feature_values parameter
+        prices: Dictionary that maps each class of users to the possible prices of the product
+        bids: Array of 100 possible bid values
+        whole_feature_names: List containing the all the names of the features used in the setting
+        feature_names: List containing the name of the features used to index the feature_values parameter.
+            It contains only the features that are not constrained in the current node. It is a subset of
+            whole_feature_names
         feature_values: Dictionary containing the mapping between the features and the values the features
-        can assume, the format is {feature_name: [value0, value1, value2, ...]}
+            can assume, the format is {feature_name: [value0, value1, value2, ...]}
         feature_to_observation: Dictionary of the observations divided by tuples of features, the format is
-        {tuple_of_features: [observation_list_1, observation_list_2, ...]}
+            {tuple_of_features: [observation_list_1, observation_list_2, ...]}
         confidence: Confidence to use in the lower bound used in the context generation algorithm
         aggregate_reward: Aggregate reward of the current context without splitting the node
         father: Father node
         children: List of child nodes
         choice: Name of the feature that the context generation algorithm decided to split in the current node, it is
-        None if no context disaggregation is done
+            None if no context disaggregation is done
     """
 
     def __init__(self, prices, bids, whole_feature_names, feature_names, feature_values, feature_to_observation, confidence, father, other_costs, sklearn=True):
         """
         Initializes the node of the context tree
-        :param list feature_names: List containing the name of the features used to index the feature_values parameter
+
+        :param dict prices: Dictionary that maps each class of users to the possible prices of the product
+        :param np.ndarray bids: Array of 100 possible bid values
+        :param list whole_feature_names: List containing the all the names of the features used in the setting
+        :param list feature_names: List containing the name of the features used to index the feature_values parameter.
+            It contains only the features that are not constrained in the current node. It is a subset of
+            whole_feature_names
         :param dict feature_values: Dictionary containing the mapping between the features and the values the features
-        can assume, the format is {feature_name: [value0, value1, value2, ...]}
+            can assume, the format is {feature_name: [value0, value1, value2, ...]}
         feature_to_observation: Dictionary of the observations divided by tuples of features, the format is
-        {tuple_of_features: [observation_list_1, observation_list_2, ...]}
+            {tuple_of_features: [observation_list_1, observation_list_2, ...]}
         :param float confidence: Confidence to use in the lower bound used in the context generation algorithm
         :param ContextNode father: Father node
+        :param float other_costs: Cost of the product
+        :param bool sklearn: If True the sklearn implementation of the Gaussian Processes is used, otherwise the
+            GPyTorch one is used
         """
 
         # Setting the attributes of the node
@@ -163,6 +175,10 @@ class ContextNode:
         self.aggregate_reward = np.max(rewards)
 
     def update_gp(self):
+        """
+
+        """
+
         self.flattened_obs = self.get_flattened_observations()
         price_obs = np.array([obs[0][0] for obs in self.flattened_obs])
         bids_obs = np.array([obs[0][2] for obs in self.flattened_obs])
@@ -196,6 +212,14 @@ class ContextNode:
         # self.aggregate_reward = np.max(means_rewards - lower_bound1(0.01, num_samples, 1)) # np.max(means_rewards - lower_bound1(self.confidence, num_samples, 1)) #np.max(means_rewards) - np.min(means_rewards)))
 
     def get_flattened_observations(self, fto=None):
+        """
+
+        :param fto:
+
+        :return:
+        :rtype:
+
+        """
         if fto is None:
             fto = self.feature_to_observation
 
@@ -248,7 +272,6 @@ class ContextNode:
             # Computing the lower bounds of the rewards of disaggregate contexts for a split on the various features
             # taken separately
             feature_split_to_children = {}
-            rewards_sub_contexts = {}
             feature_values_to_reward = {}
 
             #print(f"The aggregate reward of the not split node is {self.aggregate_reward}")
@@ -268,6 +291,7 @@ class ContextNode:
 
                 for feature_value in self.feature_values[feature_name]:
                     #print(f"Evaluating {feature_value}")
+
                     # Computing the number of samples when splitting on the feature with feature_name and considering
                     # to take the samples with value of feature_name equal to the value feature_value
                     feature_values_to_num_samples[feature_value] = sum([observation[3] for key in self.feature_to_observation.keys() for observation in self.feature_to_observation.get(key) if key[feature_idx] == feature_value])
@@ -280,19 +304,19 @@ class ContextNode:
                     child = ContextNode(self.prices, self.bids, self.whole_feature_names, new_feature_names,
                                         new_feature_values, child_observations, self.confidence, self, self.other_costs)
 
-                    feature_split_to_children[feature_name][feature_value] = child # {sex : { 0 : nodo femmine, 1 : nodo maschi }, age : { 0 : nodo giovani, 1 : nodo vecchi }}
+                    feature_split_to_children[feature_name][feature_value] = child
 
                     feature_values_to_reward_lower_bound[feature_value] = child.aggregate_reward
-                    # feature_values_to_reward_lower_bound[feature_value] = np.mean([observation[-1] for key in self.feature_to_observation.keys() for observation in self.feature_to_observation.get(key) if key[feature_idx] == feature_value]) - lower_bound(self.confidence, feature_values_to_num_samples[feature_value])
 
                     # Computing the lower bound of the probability of having the context obtained by splitting on the
                     # feature with feature_name and considering to take the samples with value of feature_name equal to
                     # the value feature_value
-                    feature_values_to_reward_probability_split[feature_value] = (feature_values_to_num_samples[feature_value] / total_num_samples) - np.sqrt(-np.log(self.confidence) / (2 * feature_values_to_num_samples[feature_value])) #- lower_bound(self.confidence, feature_values_to_num_samples[feature_value])
+                    feature_values_to_reward_probability_split[feature_value] = (feature_values_to_num_samples[feature_value] / total_num_samples) - np.sqrt(-np.log(self.confidence) / (2 * feature_values_to_num_samples[feature_value]))
 
                 # Computing the lower bound of the reward given by splitting on the feature with name feature_name as
                 # the sum of the product between the reward of a context and the probability of that context
                 feature_values_to_reward[feature_name] = sum([feature_values_to_reward_lower_bound[feature_value] * feature_values_to_reward_probability_split[feature_value] for feature_value in self.feature_values[feature_name]])
+
                 #print(f"Aggregate : {self.aggregate_reward}")
                 #print(f"The reward coming from the split on {feature_name} is {feature_values_to_reward[feature_name]}")
 
@@ -342,6 +366,12 @@ class ContextNode:
         return contexts
 
     def set_feature_to_observation(self, new_feature_to_obs: dict) -> None:
+        """
+        Sets the new observations in the node
+
+        :param dict new_feature_to_obs: Dictionary of the new observations divided by tuples of features
+        """
+
         self.feature_to_observation = new_feature_to_obs
 
     @property

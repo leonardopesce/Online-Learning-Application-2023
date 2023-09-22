@@ -20,7 +20,7 @@ simplefilter("ignore", category=ConvergenceWarning)
 class GPTS_Learner(Learner):
     """Gaussian Process Thompson Sampling Learner. Inherits from Learner.
 
-    Parameters:
+    Attributes:
     -----------
         :param np.array arms: List of arms to be pulled. In this case the arms are the bids.
         :param np.array means_clicks: Means of the Gaussian distributions of the clicks.
@@ -72,11 +72,10 @@ class GPTS_Learner(Learner):
     def update_observations(self, pulled_arm : int, reward) -> None:
         """Update the reward, number of clicks and cumulative costs after having pulled the selected arm.
 
-        Args:
-        -----
-            :param int pulled_arm: index of the pulled bid.
-            :param tuple reward: tuple of the form (reward, n_clicks, costs) sampled from the environment.
+        :param int pulled_arm: index of the pulled bid.
+        :param tuple reward: tuple of the form (reward, n_clicks, costs) sampled from the environment.
         """
+
         # Here reward is a tuple:
         # reward[0] = reward of the environment
         # reward[1] = n_clicks sampled from the environment
@@ -89,7 +88,11 @@ class GPTS_Learner(Learner):
         self.collected_costs = np.append(self.collected_costs, reward[2])
 
     def update_model(self) -> None:
-        """Updates the means and standard deviations of the Gaussian distributions of the clicks and costs curves fitting a Gaussian process model."""
+        """
+        Updates the means and standard deviations of the Gaussian distributions of the clicks and costs curves fitting
+        a Gaussian process model.
+        """
+
         if self.sklearn:
             x = np.array(self.pulled_bids).reshape(-1 ,1) # Bids previously pulled.
             y = np.array(self.collected_clicks).reshape(-1 ,1) # torch.Tensor(self.collected_clicks)       # Clicks previously collected.
@@ -122,10 +125,8 @@ class GPTS_Learner(Learner):
     def update(self, pulled_arm : int, reward, model_update = True) -> None:
         """Updates the timestep, the observations and the model of the thompson sampling algorithm.
 
-        Args:
-        -----
-            :param int pulled_arm: index of the pulled bid
-            :param tuple reward: tuple of the form (reward, n_clicks, costs) sampled from the environment.
+        :param int pulled_arm: index of the pulled bid
+        :param tuple reward: tuple of the form (reward, n_clicks, costs) sampled from the environment.
         """
         self.t += 1
         self.update_observations(pulled_arm, reward)
@@ -136,15 +137,12 @@ class GPTS_Learner(Learner):
     def pull_arm_GPs(self, prob_margin : float) -> int:
         """Decides which arm to pull based on the current estimations of the clicks and cumulative daily costs.
 
-        Args:
-        -----
-            :param float prob_margin: conversion_rate * (price - other_costs)
+        :param float prob_margin: conversion_rate * (price - other_costs)
 
-        Returns:
-        --------
-            :return: index of the bid to pull in the current round.
-            :rtype: int
+        :return: index of the bid to pull in the current round.
+        :rtype: int
         """
+
         # Sampling from a normal distribution with mean and std estimated by the GP
         # Do the same for clicks and costs.
         sampled_values_clicks = np.random.normal(self.means_clicks, self.sigmas_clicks)
@@ -160,7 +158,10 @@ class GPTS_Learner(Learner):
         return bid_idx
     
     def plot_clicks(self) -> None:
-        """Plot the clicks curve and the confidence interval together with the data points."""
+        """
+        Plot the clicks curve and the confidence interval together with the data points.
+        """
+
         plt.figure(0)
         plt.scatter(self.pulled_bids, self.collected_clicks, color='r', label = 'clicks per bid')
         plt.plot(self.arms, self.means_clicks, color='r', label = 'mean clicks')
@@ -174,7 +175,10 @@ class GPTS_Learner(Learner):
         plt.show()
 
     def plot_costs(self) -> None:
-        """Plot the costs curve and the confidence interval together with the data points."""
+        """
+        Plot the costs curve and the confidence interval together with the data points.
+        """
+
         plt.figure(1)
         plt.scatter(self.pulled_bids, self.collected_costs, color='b', label = 'costs per bid')
         plt.plot(self.arms, self.means_costs, color='b', label = 'mean costs')

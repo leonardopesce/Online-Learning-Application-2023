@@ -19,26 +19,27 @@ class GPUCB_Learner(Learner):
     """
     Learner that applies the Upper Confidence Bound 1(UCB1) algorithm
 
-    :param np.ndarray arms_values: Values associated to the arms
-    :param np.ndarray means_clicks: Empirical means of the clicks
-    :param np.ndarray confidence_clicks: Confidence intervals of the clicks
-    :param np.ndarray means_costs: Empirical means of the costs
-    :param np.ndarray confidence_costs: Confidence intervals of the costs
-    :param np.ndarray sigmas_clicks: Standard deviations of the clicks
-    :param np.ndarray lower_bounds_clicks: Lower bounds of the clicks
-    :param np.ndarray upper_bounds_clicks: Upper bounds of the clicks
-    :param np.ndarray sigmas_costs: Standard deviations of the costs
-    :param np.ndarray lower_bounds_costs: Lower bounds of the costs
-    :param np.ndarray upper_bounds_costs: Upper bounds of the costs
-    :param list pulled_bids: List of the pulled bids values
-    :param np.ndarray collected_clicks: Array of the collected clicks values
-    :param np.ndarray collected_costs: Array of the collected costs values
-    :param confidence_level: Confidence level of the algorithm regret bounds, defaults to 0.95
-    :type confidence_level: float, optional
-    :param delta: Delta value of the algorithm regret bounds. The bounds hold in high probability (1 - delta), defaults to 0.05
-    :type delta: float, optional
-    :param BaseGaussianProcess gp_clicks: Gaussian Process Regressor for the clicks
-    :param BaseGaussianProcess gp_costs: Gaussian Process Regressor for the costs
+    Attributes:
+        :param np.ndarray arms_values: Values associated to the arms
+        :param np.ndarray means_clicks: Empirical means of the clicks
+        :param np.ndarray confidence_clicks: Confidence intervals of the clicks
+        :param np.ndarray means_costs: Empirical means of the costs
+        :param np.ndarray confidence_costs: Confidence intervals of the costs
+        :param np.ndarray sigmas_clicks: Standard deviations of the clicks
+        :param np.ndarray lower_bounds_clicks: Lower bounds of the clicks
+        :param np.ndarray upper_bounds_clicks: Upper bounds of the clicks
+        :param np.ndarray sigmas_costs: Standard deviations of the costs
+        :param np.ndarray lower_bounds_costs: Lower bounds of the costs
+        :param np.ndarray upper_bounds_costs: Upper bounds of the costs
+        :param list pulled_bids: List of the pulled bids values
+        :param np.ndarray collected_clicks: Array of the collected clicks values
+        :param np.ndarray collected_costs: Array of the collected costs values
+        :param confidence_level: Confidence level of the algorithm regret bounds, defaults to 0.95
+        :type confidence_level: float, optional
+        :param delta: Delta value of the algorithm regret bounds. The bounds hold in high probability (1 - delta), defaults to 0.05
+        :type delta: float, optional
+        :param BaseGaussianProcess gp_clicks: Gaussian Process Regressor for the clicks
+        :param BaseGaussianProcess gp_costs: Gaussian Process Regressor for the costs
     """
 
     def __init__(self, arms_values, confidence_level=0.95, sklearn=False):
@@ -77,7 +78,11 @@ class GPUCB_Learner(Learner):
             self.gp_costs = BaseGaussianProcess(likelihood=likelihood_costs, kernel=kernel_costs)
 
     def update_model(self) -> None:
-        """Updates the means and standard deviations of the Gaussian distributions of the clicks and costs curves fitting a Gaussian process model."""
+        """
+        Updates the means and standard deviations of the Gaussian distributions of the clicks and costs curves fitting a
+        Gaussian process model.
+        """
+
         if self.sklearn:
             x = np.array(self.pulled_bids).reshape(-1, 1) # torch.Tensor(self.pulled_bids)            # Bids previously pulled.
 
@@ -119,8 +124,8 @@ class GPUCB_Learner(Learner):
 
     def pull_arm_GPs(self, prob_margin : float) -> int:
         """
-        Chooses the arm to play based on the UCB1 algorithm, therefore choosing the arm with higher upper
-        confidence bound, which is the mean of the reward of the arm plus the confidence interval
+        Chooses the arm to play based on the UCB1 algorithm, therefore choosing the arm with higher upper confidence
+        bound, which is the mean of the reward of the arm plus the confidence interval
         
         :param float prob_margin: conversion_rate * (price - other_costs)
         :return: Index of the arm to pull
@@ -141,6 +146,7 @@ class GPUCB_Learner(Learner):
         :param int pulled_arm: index of the pulled bid
         :param tuple reward: tuple of the form (reward, n_clicks, costs) sampled from the environment
         """
+
         # Here reward is a tuple:
         # reward[0] = reward of the environment
         # reward[1] = n_clicks sampled from the environment
@@ -154,8 +160,8 @@ class GPUCB_Learner(Learner):
 
     def update(self, pulled_arm : int, reward, model_update = True) -> None:
         """
-        Updating the attributes given the observations of the results obtained by playing the
-        pulled arm in the environment
+        Updating the attributes given the observations of the results obtained by playing the pulled arm in the
+        environment
 
         :param int pulled_arm: Arm pulled in the current time step
         :param tuple reward: tuple of the form (reward, n_clicks, costs) sampled from the environment
@@ -171,13 +177,16 @@ class GPUCB_Learner(Learner):
         """
         Returns the upper confidence bound for all the arms
 
-        Returns:
-            upper confidence bound for all the arms
+        :return: upper confidence bound for all the arms
+        :rtype: np.ndarray
         """
         return self.means_clicks + self.confidence_clicks, self.means_costs - self.confidence_costs
 
     def plot_clicks(self) -> None:
-        """Plot the clicks curve and the confidence interval together with the data points."""
+        """
+        Plot the clicks curve and the confidence interval together with the data points.
+        """
+
         plt.figure(0)
         plt.scatter(self.pulled_bids, self.collected_clicks, color='r', label = 'clicks per bid')
         plt.plot(self.arms_values, self.empirical_means_clicks, color='r', label = 'mean clicks')

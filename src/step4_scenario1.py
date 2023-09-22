@@ -9,6 +9,7 @@ import settings
 from Environments import Environment
 from Learners import Clairvoyant, TSLearnerPricingAdvertising, UCBLearnerPricingAdvertising
 from Utilities import plot_all_algorithms, plot_clicks_curve, plot_costs_curve, plot_all_algorithms_divided
+import pickle
 
 """
 Step 4: Contexts and their generation
@@ -131,3 +132,7 @@ plot_all_algorithms(total_reward_per_algorithm, total_best_rewards, np.arange(0,
 plot_all_algorithms_divided(total_reward_per_algorithm, total_best_rewards, np.arange(0, T, 1), algorithms, step_name="step4_1")
 #for i, algorithm in enumerate(algorithms):
 #    plot_single_algorithm(total_reward_per_algorithm[i], total_best_rewards, f'Aggregated {algorithm}', np.arange(0, T, 1))
+
+fileObj = open('learners_step4_scenario1.pkl', 'wb')
+pickle.dump(rewards, fileObj)
+fileObj.close()
